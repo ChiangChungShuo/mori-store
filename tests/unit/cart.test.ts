@@ -1,12 +1,12 @@
 import { createElement } from 'react'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import CartPage from '@/app/(store)/cart/page'
 import { CartProvider, useCart } from '@/features/cart/cart-provider'
 import { CartDrawer } from '@/features/cart/cart-drawer'
 import { cartReducer } from '@/features/cart/reducer'
 import { calculateCart } from '@/features/cart/totals'
-import type { CartItem } from '@/features/cart/types'
+import { parseStoredCartItems, type CartItem } from '@/features/cart/types'
 
 const tee: CartItem = {
   variantId: 'variant-sage-100',
@@ -130,6 +130,11 @@ describe('CartProvider', () => {
     expect(await screen.findByText('1')).toBeInTheDocument()
   })
 
+  it('rejects persisted quantities and stock above the single-item limit', () => {
+    expect(parseStoredCartItems([{ ...tee, quantity: 100 }])).toEqual([])
+    expect(parseStoredCartItems([{ ...tee, maxStock: 100 }])).toEqual([])
+  })
+
   it('hydrates stored items without allowing quantity above maxStock', async () => {
     window.localStorage.setItem('mori-cart-v1', JSON.stringify([{ ...tee, quantity: 99 }]))
 
@@ -166,5 +171,32 @@ describe('CartPage refresh', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '重試' }))
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+  })
+
+  it('renders at most 99 quantity options for a large-stock add action', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
+
+    function AddLargeStockItem() {
+      const { dispatch } = useCart()
+      return createElement('button', {
+        type: 'button',
+        onClick: () => dispatch({
+          type: 'add',
+          item: { ...tee, maxStock: 120 },
+        }),
+      }, '加入大量庫存商品')
+    }
+
+    render(createElement(
+      CartProvider,
+      null,
+      createElement('div', null, createElement(AddLargeStockItem), createElement(CartPage)),
+    ))
+
+    await screen.findByText('購物袋還是空的。')
+    fireEvent.click(screen.getByRole('button', { name: '加入大量庫存商品' }))
+    await screen.findByRole('alert')
+
+    expect(within(screen.getByLabelText('數量')).getAllByRole('option')).toHaveLength(99)
   })
 })

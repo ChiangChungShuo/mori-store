@@ -1,4 +1,4 @@
-import type { CartItem } from '@/features/cart/types'
+import { getCartQuantityLimit, type CartItem } from '@/features/cart/types'
 
 export type CartAction =
   | { type: 'add'; item: CartItem }
@@ -7,25 +7,28 @@ export type CartAction =
   | { type: 'clear' }
 
 function capQuantity(quantity: number, maxStock: number) {
-  return Math.min(Math.max(1, quantity), maxStock)
+  return Math.min(Math.max(1, quantity), getCartQuantityLimit(maxStock))
 }
 
 export function cartReducer(items: CartItem[], action: CartAction): CartItem[] {
   switch (action.type) {
     case 'add': {
       const existing = items.find((item) => item.variantId === action.item.variantId)
+      const maxStock = getCartQuantityLimit(action.item.maxStock)
 
       if (!existing) {
         return [...items, {
           ...action.item,
-          quantity: capQuantity(action.item.quantity, action.item.maxStock),
+          maxStock,
+          quantity: capQuantity(action.item.quantity, maxStock),
         }]
       }
 
       return items.map((item) => item.variantId === action.item.variantId
         ? {
             ...action.item,
-            quantity: capQuantity(item.quantity + action.item.quantity, action.item.maxStock),
+            maxStock,
+            quantity: capQuantity(item.quantity + action.item.quantity, maxStock),
           }
         : item)
     }

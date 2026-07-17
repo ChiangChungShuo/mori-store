@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import { POST } from '@/app/api/cart/refresh/route'
 import * as cartRefresh from '@/features/cart/refresh'
 import { reconcileCartItems, type CartVariantSnapshot } from '@/features/cart/refresh'
 import type { CartItem } from '@/features/cart/types'
+
+const firstUuid = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+const secondUuid = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
 
 const staleTee: CartItem = {
   variantId: 'variant-sage-100',
@@ -61,6 +65,13 @@ describe('reconcileCartItems', () => {
   it('removes variants that no longer have stock', () => {
     expect(reconcileCartItems([staleTee], [{ ...freshTee, maxStock: 0 }])).toEqual([])
   })
+
+  it('caps refreshed high stock at the single-item purchase limit', () => {
+    expect(reconcileCartItems(
+      [{ variantId: staleTee.variantId, quantity: 99 }],
+      [{ ...freshTee, maxStock: 120 }],
+    )).toEqual([{ ...freshTee, maxStock: 99, quantity: 99 }])
+  })
 })
 
 describe('parseCartRefreshRequest', () => {
@@ -75,11 +86,52 @@ describe('parseCartRefreshRequest', () => {
     if (!parseCartRefreshRequest) return
 
     expect(parseCartRefreshRequest({
-      items: [{ variantId: 'variant-sage-100', quantity: 2 }],
-    })).toEqual([{ variantId: 'variant-sage-100', quantity: 2 }])
+      items: [{ variantId: firstUuid, quantity: 2 }],
+    })).toEqual([{ variantId: firstUuid, quantity: 2 }])
     expect(parseCartRefreshRequest({
-      items: [{ variantId: 'variant-sage-100', quantity: 0 }],
+      items: [{ variantId: firstUuid, quantity: 0 }],
+    })).toBeNull()
+    expect(parseCartRefreshRequest({
+      items: [{ variantId: firstUuid, quantity: 100 }],
     })).toBeNull()
     expect(parseCartRefreshRequest({ items: 'not-an-array' })).toBeNull()
+  })
+
+  it('rejects invalid UUIDs before querying variants', () => {
+    expect(cartRefresh.parseCartRefreshRequest({
+      items: [{ variantId: 'not-a-uuid', quantity: 1 }],
+    })).toBeNull()
+  })
+
+  it('rejects requests containing more than 50 raw items', () => {
+    const items = Array.from({ length: 51 }, (_, index) => ({
+      variantId: `00000000-0000-4000-8000-${index.toString(16).padStart(12, '0')}`,
+      quantity: 1,
+    }))
+
+    expect(cartRefresh.parseCartRefreshRequest({ items })).toBeNull()
+  })
+
+  it('deduplicates variant IDs before they reach Supabase', () => {
+    expect(cartRefresh.parseCartRefreshRequest({
+      items: [
+        { variantId: firstUuid, quantity: 2 },
+        { variantId: secondUuid, quantity: 1 },
+        { variantId: firstUuid.toUpperCase(), quantity: 9 },
+      ],
+    })).toEqual([
+      { variantId: firstUuid, quantity: 2 },
+      { variantId: secondUuid, quantity: 1 },
+    ])
+  })
+
+  it('returns 400 at the route boundary for an invalid body', async () => {
+    const response = await POST(new Request('http://localhost/api/cart/refresh', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ items: [{ variantId: 'not-a-uuid', quantity: 1 }] }),
+    }))
+
+    expect(response.status).toBe(400)
   })
 })

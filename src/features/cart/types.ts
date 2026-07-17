@@ -10,6 +10,13 @@ export type CartItem = {
   maxStock: number
 }
 
+export const MAX_CART_ITEM_QUANTITY = 99
+
+export function getCartQuantityLimit(maxStock: number) {
+  if (!Number.isFinite(maxStock)) return 0
+  return Math.min(Math.max(0, Math.floor(maxStock)), MAX_CART_ITEM_QUANTITY)
+}
+
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0
 }
@@ -29,8 +36,10 @@ export function isCartItem(item: unknown): item is CartItem {
     && candidate.unitPrice >= 0
     && Number.isInteger(candidate.quantity)
     && (candidate.quantity as number) > 0
+    && (candidate.quantity as number) <= MAX_CART_ITEM_QUANTITY
     && Number.isInteger(candidate.maxStock)
     && (candidate.maxStock as number) > 0
+    && (candidate.maxStock as number) <= MAX_CART_ITEM_QUANTITY
 }
 
 export function parseStoredCartItems(value: unknown): CartItem[] {

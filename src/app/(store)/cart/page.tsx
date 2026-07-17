@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useCart } from '@/features/cart/cart-provider'
-import { isCartItem } from '@/features/cart/types'
+import { getCartQuantityLimit, isCartItem } from '@/features/cart/types'
 import { calculateCart } from '@/features/cart/totals'
 import { formatTwd } from '@/lib/money'
 
@@ -102,7 +102,10 @@ export default function CartPage() {
                         quantity: Number(event.target.value),
                       })}
                     >
-                      {Array.from({ length: item.maxStock }, (_, index) => index + 1).map((quantity) => (
+                      {Array.from(
+                        { length: getCartQuantityLimit(item.maxStock) },
+                        (_, index) => index + 1,
+                      ).map((quantity) => (
                         <option key={quantity} value={quantity}>{quantity}</option>
                       ))}
                     </select>
