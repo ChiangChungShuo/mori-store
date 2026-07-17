@@ -19,6 +19,32 @@ type ProductFormProps = {
 
 const ageBands: ProductInput['ageBands'][number][] = ['0-2', '3-5', '6-9', '10-12']
 
+export function ProductPublishForm({
+  isPublished,
+  onToggle,
+}: {
+  isPublished: boolean
+  onToggle: (published: boolean) => Promise<ProductActionResult>
+}) {
+  const [result, setResult] = useState<ProductActionResult | null>(null)
+  const [pending, startTransition] = useTransition()
+
+  function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    startTransition(async () => setResult(await onToggle(!isPublished)))
+  }
+
+  return (
+    <form onSubmit={submit}>
+      <button type="submit" disabled={pending}>
+        {pending ? '處理中…' : isPublished ? '下架商品' : '上架商品'}
+      </button>
+      {result?.message && <p role="alert">{result.message}</p>}
+      {result?.ok && <p role="status">商品已{isPublished ? '下架' : '上架'}</p>}
+    </form>
+  )
+}
+
 export function ProductForm({ initialProduct, onSave }: ProductFormProps) {
   const [product, setProduct] = useState(initialProduct)
   const [result, setResult] = useState<ProductActionResult | null>(null)

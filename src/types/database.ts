@@ -263,6 +263,7 @@ export type Database = {
           compare_at_price: number | null
           created_at: string
           id: string
+          is_active: boolean
           price: number
           product_id: string
           size: string
@@ -275,6 +276,7 @@ export type Database = {
           compare_at_price?: number | null
           created_at?: string
           id?: string
+          is_active?: boolean
           price: number
           product_id: string
           size: string
@@ -287,6 +289,7 @@ export type Database = {
           compare_at_price?: number | null
           created_at?: string
           id?: string
+          is_active?: boolean
           price?: number
           product_id?: string
           size?: string
@@ -411,6 +414,22 @@ export type Database = {
     }
     Views: Record<string, never>
     Functions: {
+      admin_create_product: {
+        Args: { p_product: Json; p_variants: Json }
+        Returns: string
+      }
+      admin_insert_product_image: {
+        Args: { p_alt_text: string; p_product_id: string; p_storage_path: string }
+        Returns: string
+      }
+      admin_set_product_published: {
+        Args: { p_product_id: string; p_published: boolean }
+        Returns: undefined
+      }
+      admin_update_product: {
+        Args: { p_product: Json; p_product_id: string; p_variants: Json }
+        Returns: undefined
+      }
       complete_test_payment: {
         Args: { payment_attempt_id: string; provider_reference: string }
         Returns: Database['public']['Tables']['orders']['Row']
@@ -418,6 +437,7 @@ export type Database = {
       handle_new_user: { Args: Record<PropertyKey, never>; Returns: unknown }
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean }
       prevent_order_item_mutation: { Args: Record<PropertyKey, never>; Returns: unknown }
+      prevent_inactive_variant_sale: { Args: Record<PropertyKey, never>; Returns: unknown }
       protect_member_profile: { Args: Record<PropertyKey, never>; Returns: unknown }
       set_updated_at: { Args: Record<PropertyKey, never>; Returns: unknown }
     }

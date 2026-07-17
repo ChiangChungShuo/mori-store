@@ -16,6 +16,17 @@ describe('catalog review invariants', () => {
 
     expect(route).toMatch(/getPublishedCartVariants/)
     expect(queries).toMatch(/\.eq\(['"]products\.is_published['"], true\)/)
+    expect(queries).toMatch(/\.eq\(['"]is_active['"], true\)/)
+    expect(queries).toMatch(/\.eq\(['"]product_variants\.is_active['"], true\)/)
+  })
+
+  it('excludes inactive variants from checkout server pricing', () => {
+    const checkout = readFileSync(
+      resolve(process.cwd(), 'src/features/checkout/service.ts'),
+      'utf8',
+    )
+
+    expect(checkout).toMatch(/\.eq\(['"]is_active['"], true\)/)
   })
 
   it('limits the homepage new arrivals section to isNew products', () => {

@@ -14,17 +14,17 @@ insert into public.products (
 )
 on conflict (slug) do nothing;
 
-insert into public.product_variants (product_id, sku, color, size, price, compare_at_price, stock)
-select id, 'MORI-TEE-SAGE-100', '鼠尾草綠', '100', 680, 780, 12
+insert into public.product_variants (product_id, sku, color, size, price, compare_at_price, stock, is_active)
+select id, 'MORI-TEE-SAGE-100', '鼠尾草綠', '100', 680, 780, 12, true
 from public.products
 where slug = 'mori-organic-cotton-tee'
-on conflict (sku) do nothing;
+on conflict (lower(sku)) do nothing;
 
-insert into public.product_variants (product_id, sku, color, size, price, compare_at_price, stock)
-select id, 'MORI-TEE-SAGE-120', '鼠尾草綠', '120', 680, 780, 8
+insert into public.product_variants (product_id, sku, color, size, price, compare_at_price, stock, is_active)
+select id, 'MORI-TEE-SAGE-120', '鼠尾草綠', '120', 680, 780, 8, true
 from public.products
 where slug = 'mori-organic-cotton-tee'
-on conflict (sku) do nothing;
+on conflict (lower(sku)) do nothing;
 
 insert into public.store_settings (key, value)
 values ('shipping_fee', '{"amount": 60}'::jsonb)

@@ -16,6 +16,19 @@ const validProduct = {
   ],
 }
 
+const variantId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+
+function imageFile(type: 'image/jpeg' | 'image/png' | 'image/webp', size?: number) {
+  const signature = {
+    'image/jpeg': [0xff, 0xd8, 0xff],
+    'image/png': [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+    'image/webp': [0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50],
+  }[type]
+  const bytes = new Uint8Array(size ?? signature.length)
+  bytes.set(signature)
+  return new File([bytes], 'image', { type })
+}
+
 describe('productSchema', () => {
   it('accepts the approved product fields', () => {
     expect(productSchema.safeParse(validProduct).success).toBe(true)
@@ -66,6 +79,38 @@ describe('productSchema', () => {
     expect(result.success).toBe(false)
   })
 
+  it('accepts stable variant IDs and canonicalizes SKUs to uppercase', () => {
+    const result = productSchema.safeParse({
+      ...validProduct,
+      variants: [{ ...validProduct.variants[0], id: variantId, sku: ' tee-y-100 ' }],
+    })
+
+    expect(result.success).toBe(true)
+    expect(result.data?.variants[0]).toMatchObject({ id: variantId, sku: 'TEE-Y-100' })
+  })
+
+  it('rejects malformed stable variant IDs', () => {
+    expect(productSchema.safeParse({
+      ...validProduct,
+      variants: [{ ...validProduct.variants[0], id: 'not-a-uuid' }],
+    }).success).toBe(false)
+  })
+
+  it('rejects duplicate stable variant IDs', () => {
+    expect(productSchema.safeParse({
+      ...validProduct,
+      variants: [
+        { ...validProduct.variants[0], id: variantId },
+        {
+          ...validProduct.variants[0],
+          id: variantId,
+          sku: 'TEE-Y-110',
+          size: '110',
+        },
+      ],
+    }).success).toBe(false)
+  })
+
   it.each([
     ['missing age band', { ...validProduct, ageBands: [] }],
     ['missing variant', { ...validProduct, variants: [] }],
@@ -91,20 +136,34 @@ describe('productSchema', () => {
 })
 
 describe('productImageSchema', () => {
-  it('accepts JPEG, PNG and WebP files up to 5 MB with alt text', () => {
+  it('accepts JPEG, PNG and WebP files up to 5 MB with matching magic bytes', async () => {
     for (const type of ['image/jpeg', 'image/png', 'image/webp']) {
-      const file = new File([new Uint8Array(5 * 1024 * 1024)], `image.${type.split('/')[1]}`, { type })
-      expect(productImageSchema.safeParse({ alt: '孩子穿著彩色口袋 Tee', file }).success).toBe(true)
+      const file = imageFile(type as 'image/jpeg' | 'image/png' | 'image/webp', 5 * 1024 * 1024)
+      expect((await productImageSchema.safeParseAsync({
+        alt: '孩子穿著彩色口袋 Tee',
+        file,
+      })).success).toBe(true)
     }
   })
 
-  it('rejects missing alt text, unsupported types and files over 5 MB', () => {
-    const jpeg = new File(['image'], 'image.jpg', { type: 'image/jpeg' })
+  it('rejects missing alt text, unsupported types and files over 5 MB', async () => {
+    const jpeg = imageFile('image/jpeg')
     const gif = new File(['image'], 'image.gif', { type: 'image/gif' })
-    const tooLarge = new File([new Uint8Array(5 * 1024 * 1024 + 1)], 'large.webp', { type: 'image/webp' })
+    const tooLarge = imageFile('image/webp', 5 * 1024 * 1024 + 1)
 
-    expect(productImageSchema.safeParse({ alt: '', file: jpeg }).success).toBe(false)
-    expect(productImageSchema.safeParse({ alt: '商品圖', file: gif }).success).toBe(false)
-    expect(productImageSchema.safeParse({ alt: '商品圖', file: tooLarge }).success).toBe(false)
+    expect((await productImageSchema.safeParseAsync({ alt: '', file: jpeg })).success).toBe(false)
+    expect((await productImageSchema.safeParseAsync({ alt: '商品圖', file: gif })).success).toBe(false)
+    expect((await productImageSchema.safeParseAsync({ alt: '商品圖', file: tooLarge })).success).toBe(false)
+  })
+
+  it('rejects files whose declared MIME type does not match their magic bytes', async () => {
+    const fakePng = new File([new Uint8Array([0xff, 0xd8, 0xff])], 'fake.png', {
+      type: 'image/png',
+    })
+
+    expect((await productImageSchema.safeParseAsync({
+      alt: '商品圖',
+      file: fakePng,
+    })).success).toBe(false)
   })
 })

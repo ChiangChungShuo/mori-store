@@ -28,7 +28,7 @@ export function VariantGrid({ variants, onChange }: VariantGridProps) {
     <fieldset>
       <legend>商品規格</legend>
       {variants.map((variant, index) => (
-        <div className="admin-variant-row" key={index}>
+        <div className="admin-variant-row" key={variant.id ?? index}>
           <label>
             SKU
             <input

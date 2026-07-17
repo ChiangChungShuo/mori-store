@@ -160,6 +160,8 @@ export async function listProducts(filters: ProductFilters): Promise<CatalogProd
     .from('products')
     .select(productFields)
     .eq('is_published', true)
+    .eq('product_variants.is_active', true)
+    .eq('matching_variants.is_active', true)
 
   if (filters.age) query = query.contains('age_bands', [filters.age])
   if (filters.category) query = query.eq('category', filters.category)
@@ -183,6 +185,8 @@ export async function getProductBySlug(slug: string): Promise<CatalogProduct | n
     .select(productFields)
     .eq('slug', slug)
     .eq('is_published', true)
+    .eq('product_variants.is_active', true)
+    .eq('matching_variants.is_active', true)
     .maybeSingle()
 
   if (error) throw error
@@ -223,6 +227,7 @@ export async function getPublishedCartVariants(
       )
     `)
     .in('id', variantIds)
+    .eq('is_active', true)
     .eq('products.is_published', true)
 
   if (error) throw error

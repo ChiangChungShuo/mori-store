@@ -271,6 +271,7 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
         .from('product_variants')
         .select('id, sku, color, size, price, stock, products!inner(name, is_published)')
         .in('id', variantIds)
+        .eq('is_active', true)
       if (error) throw error
 
       return (data ?? []).map((variant) => {

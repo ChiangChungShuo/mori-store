@@ -29,15 +29,9 @@ export type AdminProductDetail = {
   images: Array<{ id: string; url: string; alt: string }>
 }
 
-type PublishReadiness = {
-  imageCount: number
-  inStockVariantCount: number
-}
-
 export interface ProductRepository {
   createProduct(input: ProductInput): Promise<string>
   updateProduct(productId: string, input: ProductInput): Promise<void>
-  getPublishReadiness(productId: string): Promise<PublishReadiness>
   setPublished(productId: string, published: boolean): Promise<void>
   uploadFile(path: string, file: File): Promise<void>
   insertImage(productId: string, path: string, alt: string): Promise<void>
@@ -49,6 +43,7 @@ type AdminProductDependencies = {
   requireAdmin: () => Promise<unknown>
   randomUUID?: () => string
   onChanged?: (productId: string) => void | Promise<void>
+  logError?: (message: string, context: { path: string }) => void
 }
 
 const productIdSchema = z.string().uuid()
@@ -61,15 +56,27 @@ function validationFailure(error: z.ZodError): ActionResult {
   }
 }
 
+function databaseErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String(error.message)
+  }
+  return ''
+}
+
 export function createAdminProductActions(dependencies: AdminProductDependencies) {
   const randomUUID = dependencies.randomUUID ?? (() => crypto.randomUUID())
   const changed = dependencies.onChanged ?? (() => undefined)
+  const logError = dependencies.logError ?? ((message, context) => console.error(message, context))
 
   return {
     async createProduct(input: unknown): Promise<ActionResult> {
       await dependencies.requireAdmin()
       const parsed = productSchema.safeParse(input)
       if (!parsed.success) return validationFailure(parsed.error)
+      if (parsed.data.variants.some((variant) => variant.id)) {
+        return { ok: false, message: '新商品不可包含既有商品規格編號' }
+      }
 
       try {
         const productId = await dependencies.repository.createProduct(parsed.data)
@@ -94,7 +101,10 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
         await dependencies.repository.updateProduct(id.data, parsed.data)
         await changed(id.data)
         return { ok: true, productId: id.data }
-      } catch {
+      } catch (error) {
+        if (databaseErrorMessage(error).includes('variant_not_owned')) {
+          return { ok: false, message: '商品規格不存在或不屬於此商品' }
+        }
         return { ok: false, message: '目前無法更新商品，請稍後再試' }
       }
     },
@@ -105,20 +115,17 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
       if (!id.success) return { ok: false, message: '商品不存在' }
 
       try {
-        if (published) {
-          const readiness = await dependencies.repository.getPublishReadiness(id.data)
-          if (readiness.imageCount < 1) {
-            return { ok: false, message: '商品至少需要一張圖片才能上架' }
-          }
-          if (readiness.inStockVariantCount < 1) {
-            return { ok: false, message: '商品至少需要一個有庫存的規格才能上架' }
-          }
-        }
-
         await dependencies.repository.setPublished(id.data, published)
         await changed(id.data)
         return { ok: true, productId: id.data }
-      } catch {
+      } catch (error) {
+        const message = databaseErrorMessage(error)
+        if (message.includes('product_image_required')) {
+          return { ok: false, message: '商品至少需要一張圖片才能上架' }
+        }
+        if (message.includes('in_stock_variant_required')) {
+          return { ok: false, message: '商品至少需要一個有庫存的規格才能上架' }
+        }
         return { ok: false, message: '目前無法變更上架狀態，請稍後再試' }
       }
     },
@@ -126,7 +133,7 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
     async uploadProductImage(productId: string, input: unknown): Promise<ActionResult> {
       await dependencies.requireAdmin()
       const id = productIdSchema.safeParse(productId)
-      const parsed = productImageSchema.safeParse(input)
+      const parsed = await productImageSchema.safeParseAsync(input)
       if (!id.success || !parsed.success) {
         return parsed.success
           ? { ok: false, message: '商品不存在' }
@@ -152,7 +159,8 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
         try {
           await dependencies.repository.removeFile(path)
         } catch {
-          // Preserve the database failure result; storage cleanup can be retried operationally.
+          logError('product image cleanup failed', { path })
+          return { ok: false, message: '圖片資料儲存失敗，且暫時無法清理上傳檔案' }
         }
         return { ok: false, message: '目前無法儲存圖片資料，請稍後再試' }
       }
@@ -163,137 +171,39 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
   }
 }
 
-type ProductInsert = Database['public']['Tables']['products']['Insert']
-type VariantInsert = Database['public']['Tables']['product_variants']['Insert']
-
-function productRow(input: ProductInput): ProductInsert {
-  return {
-    name: input.name,
-    slug: input.slug,
-    category: input.category,
-    age_bands: input.ageBands,
-    description: input.description,
-    material: input.material,
-    care_instructions: input.careInstructions,
-    size_guide: input.sizeGuide,
-    is_new: input.isNew,
-  }
-}
-
-function variantRows(productId: string, input: ProductInput): VariantInsert[] {
-  return input.variants.map((variant) => ({
-    product_id: productId,
-    sku: variant.sku,
-    color: variant.color,
-    size: variant.size,
-    price: variant.price,
-    compare_at_price: variant.compareAtPrice ?? null,
-    stock: variant.stock,
-  }))
-}
-
 function createSupabaseProductRepository(): ProductRepository {
   async function client() {
-    const { createAdminClient } = await import('@/lib/supabase/admin')
-    return createAdminClient()
+    const { createClient } = await import('@/lib/supabase/server')
+    return createClient()
   }
 
   return {
     async createProduct(input) {
       const supabase = await client()
-      const { data, error } = await supabase
-        .from('products')
-        .insert(productRow(input))
-        .select('id')
-        .single()
+      const { data, error } = await supabase.rpc('admin_create_product', {
+        p_product: input as unknown as Database['public']['Functions']['admin_create_product']['Args']['p_product'],
+        p_variants: input.variants as unknown as Database['public']['Functions']['admin_create_product']['Args']['p_variants'],
+      })
       if (error) throw error
-
-      const variants = await supabase.from('product_variants').insert(variantRows(data.id, input))
-      if (variants.error) {
-        await supabase.from('products').delete().eq('id', data.id)
-        throw variants.error
-      }
-      return data.id
+      return data
     },
 
     async updateProduct(productId, input) {
       const supabase = await client()
-      const { data: currentProduct, error: productError } = await supabase
-        .from('products')
-        .select('name, slug, category, age_bands, description, material, care_instructions, size_guide, is_new')
-        .eq('id', productId)
-        .single()
-      if (productError) throw productError
-
-      const { data: currentVariants, error: variantsError } = await supabase
-        .from('product_variants')
-        .select('id, product_id, sku, color, size, price, compare_at_price, stock')
-        .eq('product_id', productId)
-      if (variantsError) throw variantsError
-
-      const existingBySku = new Map(currentVariants.map((variant) => [variant.sku, variant]))
-      const requestedSkus = new Set(input.variants.map((variant) => variant.sku))
-      const insertedIds: string[] = []
-
-      try {
-        for (const variant of variantRows(productId, input)) {
-          const existing = existingBySku.get(variant.sku)
-          if (existing) {
-            const { error } = await supabase.from('product_variants').update({
-              color: variant.color,
-              size: variant.size,
-              price: variant.price,
-              compare_at_price: variant.compare_at_price,
-              stock: variant.stock,
-            }).eq('id', existing.id)
-            if (error) throw error
-          } else {
-            const { data, error } = await supabase
-              .from('product_variants')
-              .insert(variant)
-              .select('id')
-              .single()
-            if (error) throw error
-            insertedIds.push(data.id)
-          }
-        }
-
-        for (const variant of currentVariants) {
-          if (!requestedSkus.has(variant.sku)) {
-            const { error } = await supabase.from('product_variants').delete().eq('id', variant.id)
-            if (error) throw error
-          }
-        }
-
-        const { error } = await supabase.from('products').update(productRow(input)).eq('id', productId)
-        if (error) throw error
-      } catch (error) {
-        if (insertedIds.length > 0) {
-          await supabase.from('product_variants').delete().in('id', insertedIds)
-        }
-        await supabase.from('product_variants').upsert(currentVariants, { onConflict: 'id' })
-        await supabase.from('products').update(currentProduct).eq('id', productId)
-        throw error
-      }
-    },
-
-    async getPublishReadiness(productId) {
-      const supabase = await client()
-      const [images, variants] = await Promise.all([
-        supabase.from('product_images').select('id', { count: 'exact', head: true }).eq('product_id', productId),
-        supabase.from('product_variants').select('id', { count: 'exact', head: true }).eq('product_id', productId).gt('stock', 0),
-      ])
-      if (images.error) throw images.error
-      if (variants.error) throw variants.error
-      return { imageCount: images.count ?? 0, inStockVariantCount: variants.count ?? 0 }
+      const { error } = await supabase.rpc('admin_update_product', {
+        p_product_id: productId,
+        p_product: input as unknown as Database['public']['Functions']['admin_update_product']['Args']['p_product'],
+        p_variants: input.variants as unknown as Database['public']['Functions']['admin_update_product']['Args']['p_variants'],
+      })
+      if (error) throw error
     },
 
     async setPublished(productId, published) {
       const supabase = await client()
-      const { error } = await supabase
-        .from('products')
-        .update({ is_published: published })
-        .eq('id', productId)
+      const { error } = await supabase.rpc('admin_set_product_published', {
+        p_product_id: productId,
+        p_published: published,
+      })
       if (error) throw error
     },
 
@@ -307,20 +217,10 @@ function createSupabaseProductRepository(): ProductRepository {
 
     async insertImage(productId, path, alt) {
       const supabase = await client()
-      const { data: lastImage, error: positionError } = await supabase
-        .from('product_images')
-        .select('position')
-        .eq('product_id', productId)
-        .order('position', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      if (positionError) throw positionError
-
-      const { error } = await supabase.from('product_images').insert({
-        product_id: productId,
-        storage_path: path,
-        alt_text: alt,
-        position: (lastImage?.position ?? -1) + 1,
+      const { error } = await supabase.rpc('admin_insert_product_image', {
+        p_product_id: productId,
+        p_storage_path: path,
+        p_alt_text: alt,
       })
       if (error) throw error
     },
@@ -351,6 +251,7 @@ export async function listAdminProducts(): Promise<AdminProductSummary[]> {
       product_images(storage_path, alt_text, position),
       product_variants(stock)
     `)
+    .eq('product_variants.is_active', true)
     .order('created_at', { ascending: false })
   if (error) throw error
 
@@ -380,9 +281,10 @@ export async function getAdminProduct(productId: string): Promise<AdminProductDe
       id, name, slug, category, age_bands, description, material,
       care_instructions, size_guide, is_new, is_published,
       product_images(id, storage_path, alt_text, position),
-      product_variants(sku, color, size, price, compare_at_price, stock)
+      product_variants(id, sku, color, size, price, compare_at_price, stock)
     `)
     .eq('id', id.data)
+    .eq('product_variants.is_active', true)
     .maybeSingle()
   if (error) throw error
   if (!data) return null
@@ -401,6 +303,7 @@ export async function getAdminProduct(productId: string): Promise<AdminProductDe
       sizeGuide: data.size_guide,
       isNew: data.is_new,
       variants: data.product_variants.map((variant) => ({
+        id: variant.id,
         sku: variant.sku,
         color: variant.color,
         size: variant.size,

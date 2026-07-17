@@ -3,7 +3,8 @@ import { z } from 'zod'
 const ageBandSchema = z.enum(['0-2', '3-5', '6-9', '10-12'])
 
 const variantSchema = z.object({
-  sku: z.string().trim().min(1, 'SKU 為必填'),
+  id: z.string().uuid('商品規格編號無效').optional(),
+  sku: z.string().trim().min(1, 'SKU 為必填').transform((sku) => sku.toUpperCase()),
   color: z.string().trim().min(1, '顏色為必填'),
   size: z.string().trim().min(1, '尺寸為必填'),
   price: z.number().int('售價必須是整數').nonnegative('售價不可小於 0'),
@@ -28,8 +29,18 @@ export const productSchema = z.object({
 }).strict().superRefine((product, context) => {
   const skus = new Set<string>()
   const combinations = new Set<string>()
+  const ids = new Set<string>()
 
   product.variants.forEach((variant, index) => {
+    if (variant.id && ids.has(variant.id)) {
+      context.addIssue({
+        code: 'custom',
+        message: '商品規格編號不可重複',
+        path: ['variants', index, 'id'],
+      })
+    }
+    if (variant.id) ids.add(variant.id)
+
     const sku = variant.sku.toLocaleLowerCase()
     if (skus.has(sku)) {
       context.addIssue({
@@ -61,6 +72,23 @@ const imageFileSchema = z.custom<File>(
 ).refine(
   (file) => file.size <= 5 * 1024 * 1024,
   '圖片不可超過 5 MB',
+).refine(
+  async (file) => {
+    const bytes = new Uint8Array(await file.slice(0, 12).arrayBuffer())
+    if (file.type === 'image/jpeg') {
+      return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff
+    }
+    if (file.type === 'image/png') {
+      const png = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
+      return png.every((byte, index) => bytes[index] === byte)
+    }
+    if (file.type === 'image/webp') {
+      return String.fromCharCode(...bytes.slice(0, 4)) === 'RIFF'
+        && String.fromCharCode(...bytes.slice(8, 12)) === 'WEBP'
+    }
+    return false
+  },
+  '圖片內容與檔案類型不符',
 )
 
 export const productImageSchema = z.object({
