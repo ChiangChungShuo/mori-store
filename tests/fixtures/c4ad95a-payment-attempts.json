@@ -1,0 +1,29 @@
+[
+  {
+    "name": "completed historical payment",
+    "order_id": "11111111-1111-4111-8111-111111111111",
+    "provider_reference": "test-payment:paid",
+    "paid_at": "2026-07-17T10:00:00.000Z",
+    "expected_status": "paid",
+    "expected_review_code": null,
+    "expected_review_reason": null
+  },
+  {
+    "name": "untouched historical payment",
+    "order_id": null,
+    "provider_reference": null,
+    "paid_at": null,
+    "expected_status": "pending",
+    "expected_review_code": null,
+    "expected_review_reason": null
+  },
+  {
+    "name": "partially completed historical payment",
+    "order_id": "22222222-2222-4222-8222-222222222222",
+    "provider_reference": "test-payment:incomplete",
+    "paid_at": null,
+    "expected_status": "requires_review",
+    "expected_review_code": "historical_payment_fields_inconsistent",
+    "expected_review_reason": "歷史付款完成資料不一致，請人工確認"
+  }
+]

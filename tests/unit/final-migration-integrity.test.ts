@@ -17,6 +17,53 @@ const oldSchemaFixture = readFileSync(
   resolve(process.cwd(), 'tests/fixtures/c4ad95a-era-store-schema.sql'),
   'utf8',
 )
+const historicalAttempts = JSON.parse(readFileSync(
+  resolve(process.cwd(), 'tests/fixtures/c4ad95a-payment-attempts.json'),
+  'utf8',
+)) as Array<Record<string, string | null>>
+
+function evaluateBackfillExpression(
+  node: Record<string, unknown>,
+  row: Record<string, string | null>,
+): string | null | boolean {
+  if ('A_Const' in node) {
+    const constant = node.A_Const as { isnull?: boolean; sval?: { sval: string } }
+    return constant.isnull ? null : constant.sval?.sval ?? null
+  }
+  if ('ColumnRef' in node) {
+    const column = node.ColumnRef as { fields: Array<{ String: { sval: string } }> }
+    return row[column.fields.at(-1)?.String.sval ?? ''] ?? null
+  }
+  if ('NullTest' in node) {
+    const test = node.NullTest as {
+      arg: Record<string, unknown>
+      nulltesttype: 'IS_NULL' | 'IS_NOT_NULL'
+    }
+    const isNull = evaluateBackfillExpression(test.arg, row) === null
+    return test.nulltesttype === 'IS_NULL' ? isNull : !isNull
+  }
+  if ('BoolExpr' in node) {
+    const expression = node.BoolExpr as {
+      boolop: 'AND_EXPR' | 'OR_EXPR'
+      args: Array<Record<string, unknown>>
+    }
+    const values = expression.args.map((arg) => Boolean(evaluateBackfillExpression(arg, row)))
+    return expression.boolop === 'AND_EXPR' ? values.every(Boolean) : values.some(Boolean)
+  }
+  if ('CaseExpr' in node) {
+    const expression = node.CaseExpr as {
+      args: Array<{ CaseWhen: { expr: Record<string, unknown>; result: Record<string, unknown> } }>
+      defresult: Record<string, unknown>
+    }
+    for (const branch of expression.args) {
+      if (evaluateBackfillExpression(branch.CaseWhen.expr, row)) {
+        return evaluateBackfillExpression(branch.CaseWhen.result, row)
+      }
+    }
+    return evaluateBackfillExpression(expression.defresult, row)
+  }
+  throw new Error(`Unsupported migration expression: ${Object.keys(node).join(', ')}`)
+}
 
 beforeAll(async () => {
   await loadModule()
@@ -44,8 +91,39 @@ describe('c4ad95a forward migration', () => {
     expect(forwardMigration).toMatch(/pg_type[\s\S]*payment_attempt_status/i)
     expect(forwardMigration).toMatch(/add value if not exists 'requires_review'/i)
     expect(forwardMigration).toMatch(/add column if not exists status public\.payment_attempt_status/i)
-    expect(forwardMigration).toMatch(/set status = 'pending'/i)
     expect(forwardMigration).toMatch(/alter column status set not null/i)
+  })
+
+  it('preserves historical paid attempts and isolates inconsistent completion fields', () => {
+    const parsed = parseSync(forwardMigration)
+    const backfill = parsed.stmts
+      .map((statement) => statement.stmt.UpdateStmt)
+      .find((update) => update?.relation.relname === 'payment_attempts')
+    const targets = new Map(backfill?.targetList.map((target) => [
+      target.ResTarget.name,
+      target.ResTarget.val as Record<string, unknown>,
+    ]))
+
+    expect(backfill?.whereClause).toMatchObject({
+      NullTest: { nulltesttype: 'IS_NULL' },
+    })
+    expect([...targets.keys()]).toEqual(['status', 'review_code', 'review_reason'])
+
+    for (const attempt of historicalAttempts) {
+      expect(evaluateBackfillExpression(targets.get('status')!, attempt), attempt.name ?? '')
+        .toBe(attempt.expected_status)
+      expect(evaluateBackfillExpression(targets.get('review_code')!, attempt), attempt.name ?? '')
+        .toBe(attempt.expected_review_code)
+      expect(evaluateBackfillExpression(targets.get('review_reason')!, attempt), attempt.name ?? '')
+        .toBe(attempt.expected_review_reason)
+    }
+
+    const paymentFunction = forwardMigration.slice(
+      forwardMigration.indexOf('function public.complete_test_payment'),
+    )
+    expect(paymentFunction).toMatch(
+      /existing_attempt\.status = 'paid' and existing_attempt\.order_id is not null[\s\S]*?return row\([\s\S]*?'paid'/i,
+    )
   })
 
   it('repairs profile protection and signup for existing auth users idempotently', () => {

@@ -23,17 +23,43 @@ add value if not exists 'requires_review';
 alter table public.payment_attempts
 add column if not exists status public.payment_attempt_status;
 
+alter table public.payment_attempts
+add column if not exists review_code text,
+add column if not exists review_reason text;
+
 update public.payment_attempts
-set status = 'pending'
+set status = case
+      when order_id is not null
+        and provider_reference is not null
+        and paid_at is not null then 'paid'
+      when order_id is null
+        and provider_reference is null
+        and paid_at is null then 'pending'
+      else 'requires_review'
+    end,
+  review_code = case
+      when order_id is not null
+        and provider_reference is not null
+        and paid_at is not null then null
+      when order_id is null
+        and provider_reference is null
+        and paid_at is null then null
+      else 'historical_payment_fields_inconsistent'
+    end,
+  review_reason = case
+      when order_id is not null
+        and provider_reference is not null
+        and paid_at is not null then null
+      when order_id is null
+        and provider_reference is null
+        and paid_at is null then null
+      else '歷史付款完成資料不一致，請人工確認'
+    end
 where status is null;
 
 alter table public.payment_attempts
 alter column status set default 'pending',
 alter column status set not null;
-
-alter table public.payment_attempts
-add column if not exists review_code text,
-add column if not exists review_reason text;
 
 alter table public.product_variants
 add column if not exists updated_at timestamptz;
