@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #26305b;
+  --yellow: #ffd951;
+  --coral: #f26f65;
+  --mint: #9eddd1;
+  --pink: #f9b6c5;
+  --paper: #fffdf6;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+a { color: inherit; }
+
+:focus-visible { outline: 3px solid var(--coral); outline-offset: 3px; }
+
+.announcement {
+  margin: 0;
+  padding: 0.65rem 1rem;
+  background: var(--yellow);
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.site-nav, .site-footer, .section, .hero {
+  max-width: 70rem;
+  margin: 0 auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 4.5rem;
+}
+
+.brand { font-size: 1.5rem; font-weight: 800; letter-spacing: 0.08em; text-decoration: none; }
+
+.nav-links, .age-links { display: flex; flex-wrap: wrap; gap: 1rem; }
+
+.nav-links a { text-decoration: none; font-weight: 700; }
+
+.hero { padding-top: 6rem; padding-bottom: 6rem; background: var(--mint); }
+
+.hero h1 { max-width: 10ch; margin: 0.5rem 0; font-size: clamp(2.5rem, 7vw, 5rem); line-height: 1.05; }
+
+.hero p { max-width: 34rem; font-size: 1.125rem; }
+
+.button, .age-links a {
+  display: inline-block;
+  padding: 0.75rem 1rem;
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.section { padding-top: 4rem; padding-bottom: 4rem; }
+
+.section h2 { margin-top: 0; font-size: clamp(1.75rem, 4vw, 3rem); }
+
+.empty-state { background: var(--pink); text-align: center; }
+
+.category-feature { background: var(--yellow); }
+
+.brand-story { background: var(--coral); }
+
+.site-footer { padding-top: 2rem; padding-bottom: 2rem; }
+
+@media (max-width: 36rem) {
+  .site-nav { align-items: flex-start; flex-direction: column; padding-top: 1rem; padding-bottom: 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}
