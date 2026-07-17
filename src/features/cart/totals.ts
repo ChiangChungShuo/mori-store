@@ -6,13 +6,14 @@ type PricedCartItem = Pick<
 export function calculateCart(
   items: PricedCartItem[],
   shippingFee: number,
-  freeShippingThreshold: number,
+  freeShippingThreshold: number | null,
 ) {
   const subtotal = items.reduce(
     (total, item) => total + item.unitPrice * item.quantity,
     0,
   )
-  const shipping = subtotal === 0 || subtotal >= freeShippingThreshold ? 0 : shippingFee
+  const hasFreeShipping = freeShippingThreshold !== null && subtotal >= freeShippingThreshold
+  const shipping = subtotal === 0 || hasFreeShipping ? 0 : shippingFee
 
   return { subtotal, shipping, total: subtotal + shipping }
 }

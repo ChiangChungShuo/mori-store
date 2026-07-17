@@ -430,6 +430,23 @@ export type Database = {
         Args: { p_product: Json; p_product_id: string; p_variants: Json }
         Returns: undefined
       }
+      admin_update_order_status: {
+        Args: {
+          p_expected_status: Database['public']['Enums']['order_status']
+          p_next_status: Database['public']['Enums']['order_status']
+          p_order_id: string
+          p_updated_at: string
+        }
+        Returns: undefined
+      }
+      admin_update_store_settings: {
+        Args: {
+          p_contact_email: string
+          p_free_shipping_threshold: number | null
+          p_shipping_fee: number
+        }
+        Returns: undefined
+      }
       complete_test_payment: {
         Args: { payment_attempt_id: string; provider_reference: string }
         Returns: Database['public']['Tables']['orders']['Row']
