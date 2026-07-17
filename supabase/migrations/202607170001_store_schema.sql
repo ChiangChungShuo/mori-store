@@ -164,7 +164,8 @@ security definer
 set search_path = public
 as $$
 begin
-  if not public.is_admin()
+  if auth.role() = 'authenticated'
+    and not public.is_admin()
     and (
       new.id is distinct from old.id
       or new.role is distinct from old.role

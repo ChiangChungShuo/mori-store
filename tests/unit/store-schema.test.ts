@@ -10,6 +10,7 @@ const schema = readFileSync(
 describe('store schema security invariants', () => {
   it('prevents members from escalating their own profile role', () => {
     expect(schema).toMatch(/create trigger profiles_protect_member_fields/i)
+    expect(schema).toMatch(/if auth\.role\(\) = 'authenticated'\s+and not public\.is_admin\(\)/i)
     expect(schema).toMatch(/raise exception 'members may only update display_name'/i)
   })
 
