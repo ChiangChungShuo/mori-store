@@ -1,6 +1,7 @@
 create type public.age_band as enum ('0-2', '3-5', '6-9', '10-12');
 create type public.order_status as enum ('pending_payment', 'paid', 'preparing', 'shipped', 'collected', 'cancelled');
 create type public.store_chain as enum ('seven_eleven', 'family_mart');
+create type public.payment_attempt_status as enum ('pending', 'paid', 'failed', 'cancelled');
 
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -63,7 +64,7 @@ create table public.orders (
   id uuid primary key default gen_random_uuid(),
   order_number text not null unique default concat('MORI-', upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 10))),
   user_id uuid references public.profiles(id) on delete set null,
-  email text not null check (email = lower(email)),
+  email text not null check (email = lower(btrim(email))),
   recipient_name text not null,
   recipient_phone text not null,
   store_chain public.store_chain not null,
@@ -94,7 +95,7 @@ create table public.order_items (
 create table public.payment_attempts (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references public.profiles(id) on delete set null,
-  email text not null check (email = lower(email)),
+  email text not null check (email = lower(btrim(email))),
   recipient_name text not null,
   recipient_phone text not null,
   store_chain public.store_chain not null,
@@ -104,6 +105,7 @@ create table public.payment_attempts (
   shipping_fee integer not null check (shipping_fee >= 0),
   total integer not null check (total = subtotal + shipping_fee),
   items jsonb not null check (jsonb_typeof(items) = 'array' and jsonb_array_length(items) > 0),
+  status public.payment_attempt_status not null default 'pending',
   provider_reference text unique,
   order_id uuid unique references public.orders(id) on delete set null,
   paid_at timestamptz,
@@ -141,20 +143,6 @@ for each row execute function public.set_updated_at();
 create trigger payment_attempts_set_updated_at before update on public.payment_attempts
 for each row execute function public.set_updated_at();
 
-create or replace function public.prevent_order_item_mutation()
-returns trigger
-language plpgsql
-set search_path = public
-as $$
-begin
-  raise exception 'order items are immutable';
-end;
-$$;
-
-create trigger order_items_immutable
-before update or delete on public.order_items
-for each row execute function public.prevent_order_item_mutation();
-
 create or replace function public.is_admin()
 returns boolean
 language sql
@@ -169,6 +157,61 @@ as $$
   );
 $$;
 
+create or replace function public.protect_member_profile()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_admin()
+    and (
+      new.id is distinct from old.id
+      or new.role is distinct from old.role
+      or new.created_at is distinct from old.created_at
+    ) then
+    raise exception 'members may only update display_name';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger profiles_protect_member_fields before update on public.profiles
+for each row execute function public.protect_member_profile();
+
+create or replace function public.prevent_order_item_mutation()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  raise exception 'order items are immutable';
+end;
+$$;
+
+create trigger order_items_immutable
+before update or delete on public.order_items
+for each row execute function public.prevent_order_item_mutation();
+
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, display_name, role)
+  values (new.id, nullif(new.raw_user_meta_data ->> 'display_name', ''), 'customer')
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+create trigger on_auth_user_created
+after insert on auth.users
+for each row execute function public.handle_new_user();
+
 create or replace function public.complete_test_payment(
   payment_attempt_id uuid,
   provider_reference text
@@ -182,7 +225,7 @@ declare
   payment public.payment_attempts%rowtype;
   completed_order public.orders%rowtype;
   variant public.product_variants%rowtype;
-  item jsonb;
+  item record;
   requested_variant_id uuid;
   requested_quantity integer;
   calculated_subtotal integer := 0;
@@ -219,6 +262,10 @@ begin
     raise exception 'payment attempt already has a provider reference';
   end if;
 
+  if payment.status <> 'pending' then
+    raise exception 'payment attempt is not pending';
+  end if;
+
   if exists (
     select 1
     from public.payment_attempts
@@ -227,23 +274,37 @@ begin
     raise exception 'provider reference already belongs to another payment attempt';
   end if;
 
+  if exists (
+    select 1
+    from jsonb_array_elements(payment.items) as entry(value)
+    where (entry.value ->> 'quantity')::integer is null
+      or (entry.value ->> 'quantity')::integer <= 0
+  ) then
+    raise exception 'item quantity must be positive';
+  end if;
+
   insert into public.orders (
     user_id, email, recipient_name, recipient_phone, store_chain, store_id, store_name,
     subtotal, shipping_fee, total, status
   ) values (
-    payment.user_id, payment.email, payment.recipient_name, payment.recipient_phone,
+    payment.user_id, lower(btrim(payment.email)), payment.recipient_name, payment.recipient_phone,
     payment.store_chain, payment.store_id, payment.store_name,
     payment.subtotal, payment.shipping_fee, payment.total, 'paid'
   ) returning * into completed_order;
 
-  for item in select value from jsonb_array_elements(payment.items)
+  for item in
+    select requested.variant_id, requested.quantity
+    from (
+      select
+        (entry.value ->> 'variant_id')::uuid as variant_id,
+        sum((entry.value ->> 'quantity')::integer)::integer as quantity
+      from jsonb_array_elements(payment.items) as entry(value)
+      group by (entry.value ->> 'variant_id')::uuid
+    ) as requested
+    order by requested.variant_id
   loop
-    requested_variant_id := (item ->> 'variant_id')::uuid;
-    requested_quantity := (item ->> 'quantity')::integer;
-
-    if requested_quantity is null or requested_quantity <= 0 then
-      raise exception 'item quantity must be positive';
-    end if;
+    requested_variant_id := item.variant_id;
+    requested_quantity := item.quantity;
 
     select * into variant
     from public.product_variants
@@ -280,7 +341,8 @@ begin
   update public.payment_attempts
   set provider_reference = complete_test_payment.provider_reference,
     order_id = completed_order.id,
-    paid_at = now()
+    paid_at = now(),
+    status = 'paid'
   where id = payment.id;
 
   return completed_order;
