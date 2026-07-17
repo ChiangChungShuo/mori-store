@@ -9,7 +9,7 @@ import { calculateCart } from '@/features/cart/totals'
 import { parseStoredCartItems, type CartItem } from '@/features/cart/types'
 
 const tee: CartItem = {
-  variantId: 'variant-sage-100',
+  variantId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
   productSlug: 'mori-organic-cotton-tee',
   name: '有機棉小樹 T 恤',
   imageUrl: null,
@@ -21,7 +21,7 @@ const tee: CartItem = {
 }
 
 const pants: CartItem = {
-  variantId: 'variant-blue-110',
+  variantId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
   productSlug: 'mori-everyday-pants',
   name: '自在長褲',
   imageUrl: '/pants.jpg',
@@ -88,6 +88,33 @@ describe('cartReducer', () => {
     ])
   })
 
+  it('treats UUID case variants as one item and uses the latest metadata', () => {
+    const latest = {
+      ...tee,
+      variantId: tee.variantId.toUpperCase(),
+      name: '最新名稱',
+      quantity: 2,
+      maxStock: 3,
+    }
+
+    expect(cartReducer([{ ...tee, quantity: 2 }], { type: 'add', item: latest })).toEqual([
+      { ...latest, variantId: tee.variantId, quantity: 3 },
+    ])
+  })
+
+  it('does not add a 51st distinct variant', () => {
+    const fullCart = Array.from({ length: 50 }, (_, index) => ({
+      ...tee,
+      variantId: `00000000-0000-4000-8000-${index.toString(16).padStart(12, '0')}`,
+    }))
+    const extra = {
+      ...tee,
+      variantId: '00000000-0000-4000-8000-000000000050',
+    }
+
+    expect(cartReducer(fullCart, { type: 'add', item: extra })).toEqual(fullCart)
+  })
+
   it('caps setQuantity at stock and supports removing and clearing', () => {
     const capped = cartReducer([tee], {
       type: 'setQuantity',
@@ -133,6 +160,34 @@ describe('CartProvider', () => {
   it('rejects persisted quantities and stock above the single-item limit', () => {
     expect(parseStoredCartItems([{ ...tee, quantity: 100 }])).toEqual([])
     expect(parseStoredCartItems([{ ...tee, maxStock: 100 }])).toEqual([])
+  })
+
+  it('rejects invalid persisted UUIDs and keeps at most 50 distinct items', () => {
+    expect(parseStoredCartItems([{ ...tee, variantId: 'not-a-uuid' }])).toEqual([])
+
+    const storedItems = Array.from({ length: 51 }, (_, index) => ({
+      ...tee,
+      variantId: `00000000-0000-4000-8000-${index.toString(16).padStart(12, '0')}`,
+    }))
+    expect(parseStoredCartItems(storedItems)).toHaveLength(50)
+  })
+
+  it('canonicalizes persisted IDs and merges case duplicates with current stock caps', () => {
+    expect(parseStoredCartItems([
+      { ...tee, quantity: 2, maxStock: 9 },
+      {
+        ...tee,
+        variantId: tee.variantId.toUpperCase(),
+        name: '最新名稱',
+        quantity: 2,
+        maxStock: 3,
+      },
+    ])).toEqual([{
+      ...tee,
+      name: '最新名稱',
+      quantity: 3,
+      maxStock: 3,
+    }])
   })
 
   it('hydrates stored items without allowing quantity above maxStock', async () => {

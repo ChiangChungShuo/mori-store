@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { POST } from '@/app/api/cart/refresh/route'
 import * as cartRefresh from '@/features/cart/refresh'
 import { reconcileCartItems, type CartVariantSnapshot } from '@/features/cart/refresh'
-import type { CartItem } from '@/features/cart/types'
+import {
+  canonicalizeCartVariantId,
+  MAX_CART_ITEMS,
+  type CartItem,
+} from '@/features/cart/types'
 
 const firstUuid = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 const secondUuid = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
@@ -75,6 +79,12 @@ describe('reconcileCartItems', () => {
 })
 
 describe('parseCartRefreshRequest', () => {
+  it('uses the cart-wide item limit and UUID canonicalizer', () => {
+    expect(MAX_CART_ITEMS).toBe(50)
+    expect(canonicalizeCartVariantId(firstUuid.toUpperCase())).toBe(firstUuid)
+    expect(canonicalizeCartVariantId('not-a-uuid')).toBeNull()
+  })
+
   it('accepts only variant IDs with positive integer quantities', () => {
     const parseCartRefreshRequest = (
       cartRefresh as unknown as {
@@ -104,7 +114,7 @@ describe('parseCartRefreshRequest', () => {
   })
 
   it('rejects requests containing more than 50 raw items', () => {
-    const items = Array.from({ length: 51 }, (_, index) => ({
+    const items = Array.from({ length: MAX_CART_ITEMS + 1 }, (_, index) => ({
       variantId: `00000000-0000-4000-8000-${index.toString(16).padStart(12, '0')}`,
       quantity: 1,
     }))

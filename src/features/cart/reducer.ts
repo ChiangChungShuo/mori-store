@@ -1,4 +1,9 @@
-import { getCartQuantityLimit, type CartItem } from '@/features/cart/types'
+import {
+  canonicalizeCartVariantId,
+  getCartQuantityLimit,
+  MAX_CART_ITEMS,
+  type CartItem,
+} from '@/features/cart/types'
 
 export type CartAction =
   | { type: 'add'; item: CartItem }
@@ -13,31 +18,47 @@ function capQuantity(quantity: number, maxStock: number) {
 export function cartReducer(items: CartItem[], action: CartAction): CartItem[] {
   switch (action.type) {
     case 'add': {
-      const existing = items.find((item) => item.variantId === action.item.variantId)
+      const variantId = canonicalizeCartVariantId(action.item.variantId)
+      if (!variantId) return items
+
+      const existing = items.find(
+        (item) => canonicalizeCartVariantId(item.variantId) === variantId,
+      )
       const maxStock = getCartQuantityLimit(action.item.maxStock)
 
       if (!existing) {
+        if (items.length >= MAX_CART_ITEMS) return items
         return [...items, {
           ...action.item,
+          variantId,
           maxStock,
           quantity: capQuantity(action.item.quantity, maxStock),
         }]
       }
 
-      return items.map((item) => item.variantId === action.item.variantId
+      return items.map((item) => canonicalizeCartVariantId(item.variantId) === variantId
         ? {
             ...action.item,
+            variantId,
             maxStock,
             quantity: capQuantity(item.quantity + action.item.quantity, maxStock),
           }
         : item)
     }
-    case 'setQuantity':
-      return items.map((item) => item.variantId === action.variantId
-        ? { ...item, quantity: capQuantity(action.quantity, item.maxStock) }
+    case 'setQuantity': {
+      const variantId = canonicalizeCartVariantId(action.variantId)
+      if (!variantId) return items
+      return items.map((item) => canonicalizeCartVariantId(item.variantId) === variantId
+        ? { ...item, variantId, quantity: capQuantity(action.quantity, item.maxStock) }
         : item)
-    case 'remove':
-      return items.filter((item) => item.variantId !== action.variantId)
+    }
+    case 'remove': {
+      const variantId = canonicalizeCartVariantId(action.variantId)
+      if (!variantId) return items
+      return items.filter(
+        (item) => canonicalizeCartVariantId(item.variantId) !== variantId,
+      )
+    }
     case 'clear':
       return []
   }

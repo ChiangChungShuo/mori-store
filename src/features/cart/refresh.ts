@@ -1,5 +1,7 @@
 import {
+  canonicalizeCartVariantId,
   getCartQuantityLimit,
+  MAX_CART_ITEMS,
   MAX_CART_ITEM_QUANTITY,
   type CartItem,
 } from '@/features/cart/types'
@@ -7,19 +9,15 @@ import {
 export type CartVariantSnapshot = Omit<CartItem, 'quantity'>
 export type CartRefreshRequestItem = Pick<CartItem, 'variantId' | 'quantity'>
 
-const MAX_CART_REFRESH_ITEMS = 50
-const uuidPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i
-
 export function parseCartRefreshRequest(value: unknown): CartRefreshRequestItem[] | null {
   if (!value || typeof value !== 'object') return null
   const items = (value as { items?: unknown }).items
-  if (!Array.isArray(items) || items.length > MAX_CART_REFRESH_ITEMS) return null
+  if (!Array.isArray(items) || items.length > MAX_CART_ITEMS) return null
 
   const valid = items.every((item) => {
     if (!item || typeof item !== 'object') return false
     const candidate = item as Record<string, unknown>
-    return typeof candidate.variantId === 'string'
-      && uuidPattern.test(candidate.variantId)
+    return canonicalizeCartVariantId(candidate.variantId) !== null
       && Number.isInteger(candidate.quantity)
       && (candidate.quantity as number) > 0
       && (candidate.quantity as number) <= MAX_CART_ITEM_QUANTITY
@@ -29,7 +27,8 @@ export function parseCartRefreshRequest(value: unknown): CartRefreshRequestItem[
 
   const uniqueItems = new Map<string, CartRefreshRequestItem>()
   for (const item of items as CartRefreshRequestItem[]) {
-    const variantId = item.variantId.toLowerCase()
+    const variantId = canonicalizeCartVariantId(item.variantId)
+    if (!variantId) continue
     if (!uniqueItems.has(variantId)) {
       uniqueItems.set(variantId, { ...item, variantId })
     }
