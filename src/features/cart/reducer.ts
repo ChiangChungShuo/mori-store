@@ -16,7 +16,7 @@ export function cartReducer(items: CartItem[], action: CartAction): CartItem[] {
       const existing = items.find((item) => item.variantId === action.item.variantId)
 
       if (!existing) {
-        return [{
+        return [...items, {
           ...action.item,
           quantity: capQuantity(action.item.quantity, action.item.maxStock),
         }]
@@ -24,8 +24,7 @@ export function cartReducer(items: CartItem[], action: CartAction): CartItem[] {
 
       return items.map((item) => item.variantId === action.item.variantId
         ? {
-            ...item,
-            maxStock: action.item.maxStock,
+            ...action.item,
             quantity: capQuantity(item.quantity + action.item.quantity, action.item.maxStock),
           }
         : item)

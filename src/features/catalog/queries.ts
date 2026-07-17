@@ -1,4 +1,28 @@
 import type { AgeBand } from '@/types/store'
+import type { CartVariantSnapshot } from '@/features/cart/refresh'
+
+const CATALOG_CONFIGURATION_ERROR = 'MORI catalog configuration error: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY are required.'
+
+type CatalogEnvironment = {
+  NODE_ENV?: string
+  NEXT_PHASE?: string
+  NEXT_PUBLIC_SUPABASE_URL?: string
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?: string
+}
+
+export function resolveCatalogConfiguration(
+  environment: CatalogEnvironment = process.env,
+) {
+  const configured = Boolean(
+    environment.NEXT_PUBLIC_SUPABASE_URL
+    && environment.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+  )
+  if (configured) return true
+  if (environment.NODE_ENV !== 'production'
+    || environment.NEXT_PHASE === 'phase-production-build') return false
+
+  throw new Error(CATALOG_CONFIGURATION_ERROR)
+}
 
 export type ProductFilters = {
   age?: '0-2' | '3-5' | '6-9' | '10-12'
@@ -119,13 +143,6 @@ function mapProduct(record: ProductRecord): CatalogProduct {
   }
 }
 
-function hasSupabaseEnvironment() {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL
-    && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-  )
-}
-
 const productFields = `
   id, slug, name, description, category, age_bands, material,
   care_instructions, size_guide, is_new,
@@ -135,7 +152,7 @@ const productFields = `
 `
 
 export async function listProducts(filters: ProductFilters): Promise<CatalogProduct[]> {
-  if (!hasSupabaseEnvironment()) return []
+  if (!resolveCatalogConfiguration()) return []
 
   const { createClient } = await import('@/lib/supabase/server')
   const supabase = await createClient()
@@ -157,7 +174,7 @@ export async function listProducts(filters: ProductFilters): Promise<CatalogProd
 }
 
 export async function getProductBySlug(slug: string): Promise<CatalogProduct | null> {
-  if (!hasSupabaseEnvironment()) return null
+  if (!resolveCatalogConfiguration()) return null
 
   const { createClient } = await import('@/lib/supabase/server')
   const supabase = await createClient()
@@ -170,4 +187,59 @@ export async function getProductBySlug(slug: string): Promise<CatalogProduct | n
 
   if (error) throw error
   return data ? mapProduct(data as unknown as ProductRecord) : null
+}
+
+type CartVariantRecord = {
+  id: string
+  color: string
+  size: string
+  price: number
+  stock: number
+  products: {
+    slug: string
+    name: string
+    is_published: boolean
+    product_images: Array<{ storage_path: string; position: number }>
+  }
+}
+
+export async function getPublishedCartVariants(
+  variantIds: string[],
+): Promise<CartVariantSnapshot[]> {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL
+    || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
+    throw new Error(CATALOG_CONFIGURATION_ERROR)
+  }
+
+  const { createClient } = await import('@/lib/supabase/server')
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('product_variants')
+    .select(`
+      id, color, size, price, stock,
+      products!inner(
+        slug, name, is_published,
+        product_images(storage_path, position)
+      )
+    `)
+    .in('id', variantIds)
+    .eq('products.is_published', true)
+
+  if (error) throw error
+
+  return ((data ?? []) as unknown as CartVariantRecord[]).map((variant) => {
+    const image = [...variant.products.product_images]
+      .sort((a, b) => a.position - b.position)[0]
+
+    return {
+      variantId: variant.id,
+      productSlug: variant.products.slug,
+      name: variant.products.name,
+      imageUrl: image ? publicImageUrl(image.storage_path) : null,
+      color: variant.color,
+      size: variant.size,
+      unitPrice: variant.price,
+      maxStock: variant.stock,
+    }
+  })
 }

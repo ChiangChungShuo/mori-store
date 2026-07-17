@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function StoreHomePage() {
   const products = await listProducts({})
+  const newProducts = products.filter((product) => product.isNew)
 
   return (
     <main>
@@ -28,12 +29,12 @@ export default async function StoreHomePage() {
       </section>
 
       <section id="new" className="section" aria-labelledby="new-title">
-        <h2 id="new-title">新品</h2>
-        {products.length === 0 ? (
+        <h2 id="new-title">剛剛上架</h2>
+        {newProducts.length === 0 ? (
           <p>商品準備中，第一批新品很快見面。</p>
         ) : (
           <div className="product-grid">
-            {products.map((product) => <ProductCard product={product} key={product.id} />)}
+            {newProducts.map((product) => <ProductCard product={product} key={product.id} />)}
           </div>
         )}
         <p className="section-action"><Link href="/products">查看全部商品</Link></p>

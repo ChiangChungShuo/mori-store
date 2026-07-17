@@ -1,14 +1,16 @@
 'use client'
 
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { cartReducer, type CartAction } from '@/features/cart/reducer'
-import type { CartItem } from '@/features/cart/types'
+import { parseStoredCartItems, type CartItem } from '@/features/cart/types'
 
 const STORAGE_KEY = 'mori-cart-v1'
 
 type CartContextValue = {
   items: CartItem[]
+  hydrated: boolean
   dispatch: (action: CartAction) => void
+  replaceItems: (items: CartItem[]) => void
 }
 
 const CartContext = createContext<CartContextValue | null>(null)
@@ -22,7 +24,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       try {
         const stored = window.localStorage.getItem(STORAGE_KEY)
         if (stored) {
-          const storedItems = JSON.parse(stored) as CartItem[]
+          const storedItems = parseStoredCartItems(JSON.parse(stored) as unknown)
           setItems(storedItems.reduce<CartItem[]>(
             (current, item) => cartReducer(current, { type: 'add', item }),
             [],
@@ -41,12 +43,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (hydrated) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
   }, [hydrated, items])
 
+  const replaceItems = useCallback((nextItems: CartItem[]) => {
+    setItems(nextItems)
+  }, [])
+
   const value = useMemo<CartContextValue>(() => ({
     items,
+    hydrated,
     dispatch(action) {
       setItems((current) => cartReducer(current, action))
     },
-  }), [items])
+    replaceItems,
+  }), [hydrated, items, replaceItems])
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }
