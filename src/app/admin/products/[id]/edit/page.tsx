@@ -25,6 +25,10 @@ export default async function EditAdminProductPage({
   const save = updateProduct.bind(null, productId)
   const upload = uploadProductImage.bind(null, productId)
   const togglePublished = setProductPublished.bind(null, productId)
+  const variantSignature = product.product.variants
+    .map((variant) => variant.id)
+    .sort()
+    .join(':')
 
   return (
     <main className="section">
@@ -35,7 +39,7 @@ export default async function EditAdminProductPage({
       </header>
       <p>目前狀態：{product.isPublished ? '已上架' : '草稿'}</p>
       <ProductPublishForm isPublished={product.isPublished} onToggle={togglePublished} />
-      <ProductForm initialProduct={product.product} onSave={save} />
+      <ProductForm key={variantSignature} initialProduct={product.product} onSave={save} />
       <section>
         <h2>商品圖片</h2>
         {product.images.length === 0 ? (

@@ -1,7 +1,7 @@
 import { createElement, useState } from 'react'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import {
   createAdminProductActions,
@@ -103,6 +103,7 @@ class MemoryProductRepository implements ProductRepository {
 function setup(
   repository = new MemoryProductRepository(),
   logError = vi.fn(),
+  onChanged: (id: string) => void | Promise<void> = vi.fn(),
 ) {
   return {
     repository,
@@ -114,6 +115,7 @@ function setup(
       },
       randomUUID: () => 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
       logError,
+      onChanged,
     }),
   }
 }
@@ -212,6 +214,39 @@ describe('admin product actions', () => {
 
     expect(repository.events).toEqual(['admin', `publish:${productId}:false`])
     expect(repository.published).toBe(false)
+  })
+
+  it('returns fixed publish success messages for the requested target state', async () => {
+    const { actions, repository } = setup()
+    repository.imageCount = 1
+
+    await expect(actions.setProductPublished(productId, true)).resolves.toMatchObject({
+      ok: true,
+      message: '商品已上架',
+    })
+    await expect(actions.setProductPublished(productId, false)).resolves.toMatchObject({
+      ok: true,
+      message: '商品已下架',
+    })
+  })
+
+  it('keeps successful mutations successful when cache revalidation fails', async () => {
+    const repository = new MemoryProductRepository()
+    repository.imageCount = 1
+    const logError = vi.fn()
+    const onChanged = vi.fn().mockRejectedValue(new Error('cache unavailable'))
+    const { actions } = setup(repository, logError, onChanged)
+
+    await expect(actions.createProduct(newProduct)).resolves.toMatchObject({ ok: true })
+    await expect(actions.updateProduct(productId, product)).resolves.toMatchObject({ ok: true })
+    await expect(actions.setProductPublished(productId, true)).resolves.toMatchObject({ ok: true })
+    await expect(actions.uploadProductImage(productId, {
+      file: imageFile('image/png'),
+      alt: '黃色口袋 Tee 正面',
+    })).resolves.toMatchObject({ ok: true })
+
+    expect(logError).toHaveBeenCalledTimes(4)
+    expect(logError).toHaveBeenCalledWith('product admin cache refresh failed', { productId })
   })
 
   it('uploads to a unique product path and records required alt text', async () => {
@@ -335,6 +370,64 @@ describe('admin product form', () => {
     await vi.waitFor(() => expect(onSave).toHaveBeenCalledWith({ ...product, name: '彩色 Tee' }))
   })
 
+  it('remounts with canonical IDs after adding and saving a new variant', async () => {
+    const editPage = readFileSync(
+      resolve(process.cwd(), 'src/app/admin/products/[id]/edit/page.tsx'),
+      'utf8',
+    )
+    expect(editPage).toMatch(/variantSignature/)
+    expect(editPage).toMatch(/<ProductForm key=\{variantSignature\}/)
+
+    const onSave = vi.fn().mockResolvedValue({ ok: true, productId })
+    const initialSignature = product.variants.map((variant) => variant.id).sort().join(':')
+    const view = render(createElement(ProductForm, {
+      key: initialSignature,
+      initialProduct: product,
+      onSave,
+    }))
+    const form = within(view.container)
+
+    fireEvent.click(form.getByRole('button', { name: '新增規格' }))
+    fireEvent.change(form.getAllByLabelText('SKU')[1], { target: { value: 'TEE-Y-110' } })
+    fireEvent.change(form.getAllByLabelText('顏色')[1], { target: { value: '黃色' } })
+    fireEvent.change(form.getAllByLabelText('尺寸')[1], { target: { value: '110' } })
+    fireEvent.change(form.getAllByLabelText('售價')[1], { target: { value: '590' } })
+    fireEvent.change(form.getAllByLabelText('庫存')[1], { target: { value: '2' } })
+    fireEvent.click(form.getByRole('button', { name: '儲存商品' }))
+    await vi.waitFor(() => expect(onSave).toHaveBeenCalledTimes(1))
+    expect(onSave.mock.calls[0][0].variants[1].id).toBeUndefined()
+
+    const canonicalVariantId = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'
+    const canonicalProduct: ProductInput = {
+      ...product,
+      variants: [
+        product.variants[0],
+        {
+          id: canonicalVariantId,
+          sku: 'TEE-Y-110',
+          color: '黃色',
+          size: '110',
+          price: 590,
+          stock: 2,
+        },
+      ],
+    }
+    const canonicalSignature = canonicalProduct.variants
+      .map((variant) => variant.id)
+      .sort()
+      .join(':')
+    view.rerender(createElement(ProductForm, {
+      key: canonicalSignature,
+      initialProduct: canonicalProduct,
+      onSave,
+    }))
+    fireEvent.click(form.getByRole('button', { name: '儲存商品' }))
+
+    await vi.waitFor(() => expect(onSave).toHaveBeenCalledTimes(2))
+    expect(onSave.mock.calls[1][0].variants.map((variant: ProductInput['variants'][number]) => variant.id))
+      .toEqual([variantId, canonicalVariantId])
+  })
+
   it('shows the atomic publish error instead of discarding the action result', async () => {
     const onToggle = vi.fn().mockResolvedValue({
       ok: false,
@@ -346,5 +439,16 @@ describe('admin product form', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('商品至少需要一張圖片才能上架')
     expect(onToggle).toHaveBeenCalledWith(true)
+  })
+
+  it('shows the publish success message returned by the action', async () => {
+    const onToggle = vi.fn().mockResolvedValue({ ok: true, message: '商品已上架' })
+    const view = render(createElement(ProductPublishForm, { isPublished: false, onToggle }))
+    const form = within(view.container)
+
+    fireEvent.click(form.getByRole('button', { name: '上架商品' }))
+
+    expect(await form.findByRole('status')).toHaveTextContent('商品已上架')
+    expect(form.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

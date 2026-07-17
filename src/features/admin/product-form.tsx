@@ -39,8 +39,8 @@ export function ProductPublishForm({
       <button type="submit" disabled={pending}>
         {pending ? '處理中…' : isPublished ? '下架商品' : '上架商品'}
       </button>
-      {result?.message && <p role="alert">{result.message}</p>}
-      {result?.ok && <p role="status">商品已{isPublished ? '下架' : '上架'}</p>}
+      {!result?.ok && result?.message && <p role="alert">{result.message}</p>}
+      {result?.ok && result.message && <p role="status">{result.message}</p>}
     </form>
   )
 }

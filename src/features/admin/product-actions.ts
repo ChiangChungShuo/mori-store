@@ -43,7 +43,7 @@ type AdminProductDependencies = {
   requireAdmin: () => Promise<unknown>
   randomUUID?: () => string
   onChanged?: (productId: string) => void | Promise<void>
-  logError?: (message: string, context: { path: string }) => void
+  logError?: (message: string, context: { path?: string; productId?: string }) => void
 }
 
 const productIdSchema = z.string().uuid()
@@ -69,6 +69,14 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
   const changed = dependencies.onChanged ?? (() => undefined)
   const logError = dependencies.logError ?? ((message, context) => console.error(message, context))
 
+  async function refreshAfterMutation(productId: string) {
+    try {
+      await changed(productId)
+    } catch {
+      logError('product admin cache refresh failed', { productId })
+    }
+  }
+
   return {
     async createProduct(input: unknown): Promise<ActionResult> {
       await dependencies.requireAdmin()
@@ -78,13 +86,14 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
         return { ok: false, message: '新商品不可包含既有商品規格編號' }
       }
 
+      let productId: string
       try {
-        const productId = await dependencies.repository.createProduct(parsed.data)
-        await changed(productId)
-        return { ok: true, productId }
+        productId = await dependencies.repository.createProduct(parsed.data)
       } catch {
         return { ok: false, message: '目前無法建立商品，請稍後再試' }
       }
+      await refreshAfterMutation(productId)
+      return { ok: true, productId }
     },
 
     async updateProduct(productId: string, input: unknown): Promise<ActionResult> {
@@ -99,14 +108,14 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
 
       try {
         await dependencies.repository.updateProduct(id.data, parsed.data)
-        await changed(id.data)
-        return { ok: true, productId: id.data }
       } catch (error) {
         if (databaseErrorMessage(error).includes('variant_not_owned')) {
           return { ok: false, message: '商品規格不存在或不屬於此商品' }
         }
         return { ok: false, message: '目前無法更新商品，請稍後再試' }
       }
+      await refreshAfterMutation(id.data)
+      return { ok: true, productId: id.data }
     },
 
     async setProductPublished(productId: string, published: boolean): Promise<ActionResult> {
@@ -116,8 +125,6 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
 
       try {
         await dependencies.repository.setPublished(id.data, published)
-        await changed(id.data)
-        return { ok: true, productId: id.data }
       } catch (error) {
         const message = databaseErrorMessage(error)
         if (message.includes('product_image_required')) {
@@ -127,6 +134,12 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
           return { ok: false, message: '商品至少需要一個有庫存的規格才能上架' }
         }
         return { ok: false, message: '目前無法變更上架狀態，請稍後再試' }
+      }
+      await refreshAfterMutation(id.data)
+      return {
+        ok: true,
+        productId: id.data,
+        message: published ? '商品已上架' : '商品已下架',
       }
     },
 
@@ -165,7 +178,7 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
         return { ok: false, message: '目前無法儲存圖片資料，請稍後再試' }
       }
 
-      await changed(id.data)
+      await refreshAfterMutation(id.data)
       return { ok: true, productId: id.data }
     },
   }
