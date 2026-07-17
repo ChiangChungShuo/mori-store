@@ -195,6 +195,25 @@ a { color: inherit; }
 .cart-summary p { display: flex; justify-content: space-between; gap: 1rem; }
 .cart-total { padding-top: 1rem; border-top: 2px solid var(--ink); font-size: 1.25rem; }
 
+.checkout-form { display: grid; gap: 1rem; max-width: 40rem; }
+.checkout-form > label, .store-picker label { display: grid; gap: 0.4rem; font-weight: 700; }
+.checkout-form input, .checkout-form select {
+  min-height: 2.75rem;
+  border: 2px solid var(--ink);
+  background: white;
+  padding: 0.5rem;
+  color: inherit;
+  font: inherit;
+}
+.store-picker { display: grid; gap: 1rem; margin: 0; padding: 1.5rem; border: 2px solid var(--ink); }
+.store-picker legend { padding: 0 0.5rem; font-weight: 800; }
+.payment-actions { display: flex; flex-wrap: wrap; gap: 1rem; }
+.payment-actions button { padding: 0.75rem 1rem; font: inherit; font-weight: 700; }
+.order-result { max-width: 40rem; border-top: 2px solid var(--ink); }
+.order-result div { display: grid; grid-template-columns: 8rem 1fr; padding: 1rem 0; border-bottom: 1px solid var(--ink); }
+.order-result dt { font-weight: 800; }
+.order-result dd { margin: 0; }
+
 @media (max-width: 36rem) {
   .site-nav { align-items: flex-start; flex-direction: column; padding-top: 1rem; padding-bottom: 1rem; }
   .product-grid, .product-filters, .product-page, .cart-layout { grid-template-columns: 1fr; }

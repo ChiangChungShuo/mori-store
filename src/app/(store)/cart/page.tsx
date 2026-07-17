@@ -126,6 +126,7 @@ export default function CartPage() {
               <p><span>運費</span><strong>{totals.shipping === 0 ? '免運' : formatTwd(totals.shipping)}</strong></p>
               <p className="cart-total"><span>合計</span><strong>{formatTwd(totals.total)}</strong></p>
               <p>滿 {formatTwd(freeShippingThreshold)} 免運。</p>
+              <Link href="/checkout" className="button">前往結帳</Link>
               <button type="button" onClick={() => dispatch({ type: 'clear' })}>清空購物袋</button>
             </aside>
           </div>
