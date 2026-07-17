@@ -1,7 +1,27 @@
+import type { NextRequest } from 'next/server'
 import { completeTestPayment } from '@/features/checkout/test-payment'
 import { testPaymentRequestSchema } from '@/lib/validation/checkout'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const origin = request.headers.get('origin')
+  // This browser-only endpoint rejects missing Origin; server/form callers use the server service.
+  if (!origin) {
+    return Response.json({ error: '不允許的付款來源' }, { status: 403 })
+  }
+
+  try {
+    if (new URL(origin).origin !== request.nextUrl.origin) {
+      return Response.json({ error: '不允許的付款來源' }, { status: 403 })
+    }
+  } catch {
+    return Response.json({ error: '不允許的付款來源' }, { status: 403 })
+  }
+
+  const contentType = request.headers.get('content-type')?.split(';', 1)[0].trim().toLowerCase()
+  if (contentType !== 'application/json') {
+    return Response.json({ error: '付款請求必須使用 JSON' }, { status: 415 })
+  }
+
   let body: unknown
   try {
     body = await request.json()

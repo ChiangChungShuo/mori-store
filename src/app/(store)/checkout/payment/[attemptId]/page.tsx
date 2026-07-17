@@ -1,3 +1,5 @@
+import { notFound } from 'next/navigation'
+import { authorizePaymentAttempt } from '@/features/checkout/service'
 import { TestPayment } from '@/features/checkout/test-payment-panel'
 
 type TestPaymentPageProps = {
@@ -6,6 +8,11 @@ type TestPaymentPageProps = {
 
 export default async function TestPaymentPage({ params }: TestPaymentPageProps) {
   const { attemptId } = await params
+  try {
+    await authorizePaymentAttempt(attemptId)
+  } catch {
+    notFound()
+  }
 
   return (
     <main className="section payment-page">

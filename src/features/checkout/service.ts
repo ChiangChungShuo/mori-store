@@ -1,5 +1,8 @@
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { calculateCart } from '@/features/cart/totals'
 import { parseCartRefreshRequest } from '@/features/cart/refresh'
+import { canonicalizeCartVariantId } from '@/features/cart/types'
+import { findTestStore } from '@/features/checkout/stores'
 import type {
   CheckoutCartItem,
   CheckoutInput,
@@ -42,10 +45,27 @@ export type PaymentAttemptInsert = {
   shippingFee: number
   total: number
   items: PaymentAttemptItem[]
+  paymentAccessTokenHash: string | null
+}
+
+type PaymentAttemptAccess = {
+  userId: string | null
+  paymentAccessTokenHash: string | null
+}
+
+export type CompletedOrder = {
+  orderNumber: string
+  storeChain: CheckoutInput['chain']
+  storeId: string
+  storeName: string
+  status: string
 }
 
 export interface CheckoutRepository {
   getCurrentUserId(): Promise<string | null>
+  getGuestAccessToken(attemptId: string): Promise<string | null>
+  setGuestAccessToken(attemptId: string, token: string): Promise<void>
+  getPaymentAttemptAccess(attemptId: string): Promise<PaymentAttemptAccess | null>
   getVariants(variantIds: string[]): Promise<CheckoutVariant[]>
   getStoreSettings(): Promise<{ shippingFee: number; freeShippingThreshold: number }>
   insertPaymentAttempt(attempt: PaymentAttemptInsert): Promise<{ id: string }>
@@ -57,15 +77,55 @@ export interface CheckoutRepository {
     attemptId: string,
     providerReference: string,
   ): Promise<{ orderNumber: string }>
+  getCompletedOrderForAttempt(attemptId: string): Promise<CompletedOrder | null>
+}
+
+function canonicalizePaymentAttemptId(attemptId: string) {
+  const canonical = canonicalizeCartVariantId(attemptId)
+  if (!canonical) throw new Error('付款交易編號無效')
+  return canonical
+}
+
+function hashPaymentAccessToken(token: string) {
+  return createHash('sha256').update(token).digest('hex')
+}
+
+function tokenHashMatches(actual: string | null, expected: string) {
+  if (!actual || !/^[0-9a-f]{64}$/.test(actual)) return false
+  return timingSafeEqual(Buffer.from(actual, 'hex'), Buffer.from(expected, 'hex'))
 }
 
 export function createTestProviderReference(attemptId: string) {
-  return `test-payment:${attemptId}`
+  return `test-payment:${canonicalizePaymentAttemptId(attemptId)}`
 }
 
 export function createCheckoutService(repository: CheckoutRepository) {
+  async function authorizePaymentAttempt(attemptIdInput: string) {
+    const attemptId = canonicalizePaymentAttemptId(attemptIdInput)
+    const attempt = await repository.getPaymentAttemptAccess(attemptId)
+    if (!attempt) throw new Error('無權存取付款交易')
+
+    if (attempt.userId) {
+      const userId = await repository.getCurrentUserId()
+      if (userId !== attempt.userId) throw new Error('無權存取付款交易')
+      return attemptId
+    }
+
+    const token = await repository.getGuestAccessToken(attemptId)
+    if (!token || !tokenHashMatches(
+      attempt.paymentAccessTokenHash,
+      hashPaymentAccessToken(token),
+    )) {
+      throw new Error('無權存取付款交易')
+    }
+
+    return attemptId
+  }
+
   async function createPaymentAttempt(input: CheckoutInput, cart: CheckoutCartItem[]) {
     const customer = checkoutSchema.parse(input)
+    const store = findTestStore(customer.chain, customer.storeId)
+    if (!store) throw new Error('不支援的取貨門市')
     const requestedItems = parseCartRefreshRequest({ items: cart })
     if (!requestedItems?.length) throw new Error('購物袋內容無效')
 
@@ -88,6 +148,7 @@ export function createCheckoutService(repository: CheckoutRepository) {
       settings.freeShippingThreshold,
     )
     const userId = await repository.getCurrentUserId()
+    const guestToken = userId ? null : randomBytes(32).toString('base64url')
     const attempt = await repository.insertPaymentAttempt({
       userId,
       email: customer.email,
@@ -95,7 +156,7 @@ export function createCheckoutService(repository: CheckoutRepository) {
       recipientPhone: customer.phone,
       storeChain: customer.chain,
       storeId: customer.storeId,
-      storeName: customer.storeName,
+      storeName: store.storeName,
       subtotal: totals.subtotal,
       shippingFee: totals.shipping,
       total: totals.total,
@@ -108,7 +169,9 @@ export function createCheckoutService(repository: CheckoutRepository) {
         color: variant.color,
         size: variant.size,
       })),
+      paymentAccessTokenHash: guestToken ? hashPaymentAccessToken(guestToken) : null,
     })
+    if (guestToken) await repository.setGuestAccessToken(attempt.id, guestToken)
 
     return { attemptId: attempt.id }
   }
@@ -117,24 +180,36 @@ export function createCheckoutService(repository: CheckoutRepository) {
     attemptId: string,
     outcome: TestPaymentOutcome,
   ): Promise<PaymentResult> {
+    const canonicalAttemptId = await authorizePaymentAttempt(attemptId)
     if (outcome !== 'success') {
       const status = outcome === 'failure' ? 'failed' : 'cancelled'
-      await repository.updatePaymentAttemptStatus(attemptId, status)
+      await repository.updatePaymentAttemptStatus(canonicalAttemptId, status)
       return { outcome, redirectUrl: `/checkout?payment=${outcome}` }
     }
 
     const order = await repository.completePayment(
-      attemptId,
-      createTestProviderReference(attemptId),
+      canonicalAttemptId,
+      createTestProviderReference(canonicalAttemptId),
     )
     return {
       outcome,
       orderNumber: order.orderNumber,
-      redirectUrl: `/order-complete/${order.orderNumber}`,
+      redirectUrl: `/order-complete/${order.orderNumber}?attemptId=${canonicalAttemptId}`,
     }
   }
 
-  return { createPaymentAttempt, completeTestPayment }
+  async function getAuthorizedCompletedOrder(attemptId: string, orderNumber: string) {
+    const canonicalAttemptId = await authorizePaymentAttempt(attemptId)
+    const order = await repository.getCompletedOrderForAttempt(canonicalAttemptId)
+    return order?.orderNumber === orderNumber ? order : null
+  }
+
+  return {
+    authorizePaymentAttempt,
+    createPaymentAttempt,
+    completeTestPayment,
+    getAuthorizedCompletedOrder,
+  }
 }
 
 async function createLiveRepository(): Promise<CheckoutRepository> {
@@ -150,6 +225,36 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
       const { data, error } = await supabase.auth.getUser()
       if (error) return null
       return data.user?.id ?? null
+    },
+
+    async getGuestAccessToken(attemptId) {
+      const { cookies } = await import('next/headers')
+      return (await cookies()).get(`mori-payment-access-${attemptId}`)?.value ?? null
+    },
+
+    async setGuestAccessToken(attemptId, token) {
+      const { cookies } = await import('next/headers')
+      const cookieStore = await cookies()
+      cookieStore.set(`mori-payment-access-${attemptId}`, token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60,
+      })
+    },
+
+    async getPaymentAttemptAccess(attemptId) {
+      const { data, error } = await admin
+        .from('payment_attempts')
+        .select('user_id, payment_access_token_hash')
+        .eq('id', attemptId)
+        .maybeSingle()
+      if (error) throw error
+      return data ? {
+        userId: data.user_id,
+        paymentAccessTokenHash: data.payment_access_token_hash,
+      } : null
     },
 
     async getVariants(variantIds) {
@@ -210,6 +315,7 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
         shipping_fee: attempt.shippingFee,
         total: attempt.total,
         items: attempt.items as unknown as Json,
+        payment_access_token_hash: attempt.paymentAccessTokenHash,
       }
       const { data, error } = await admin
         .from('payment_attempts')
@@ -248,6 +354,33 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
       if (error) throw error
       return { orderNumber: data.order_number }
     },
+
+    async getCompletedOrderForAttempt(attemptId) {
+      const { data, error } = await admin
+        .from('payment_attempts')
+        .select(`
+          orders!inner(order_number, store_chain, store_id, store_name, status)
+        `)
+        .eq('id', attemptId)
+        .maybeSingle()
+      if (error) throw error
+      if (!data) return null
+
+      const order = data.orders as unknown as {
+        order_number: string
+        store_chain: CheckoutInput['chain']
+        store_id: string
+        store_name: string
+        status: string
+      }
+      return {
+        orderNumber: order.order_number,
+        storeChain: order.store_chain,
+        storeId: order.store_id,
+        storeName: order.store_name,
+        status: order.status,
+      }
+    },
   }
 }
 
@@ -263,14 +396,15 @@ export async function completeTestPayment(
     .completeTestPayment(attemptId, outcome)
 }
 
-export async function getCompletedOrder(orderNumber: string) {
-  const { createAdminClient } = await import('@/lib/supabase/admin')
-  const admin = createAdminClient()
-  const { data, error } = await admin
-    .from('orders')
-    .select('order_number, store_chain, store_id, store_name, status')
-    .eq('order_number', orderNumber)
-    .maybeSingle()
-  if (error) throw error
-  return data
+export async function authorizePaymentAttempt(attemptId: string) {
+  return createCheckoutService(await createLiveRepository())
+    .authorizePaymentAttempt(attemptId)
+}
+
+export async function getAuthorizedCompletedOrder(
+  attemptId: string,
+  orderNumber: string,
+) {
+  return createCheckoutService(await createLiveRepository())
+    .getAuthorizedCompletedOrder(attemptId, orderNumber)
 }

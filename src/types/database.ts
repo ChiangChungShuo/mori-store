@@ -143,6 +143,7 @@ export type Database = {
           items: Json
           order_id: string | null
           paid_at: string | null
+          payment_access_token_hash: string | null
           provider_reference: string | null
           recipient_name: string
           recipient_phone: string
@@ -163,6 +164,7 @@ export type Database = {
           items: Json
           order_id?: string | null
           paid_at?: string | null
+          payment_access_token_hash: string | null
           provider_reference?: string | null
           recipient_name: string
           recipient_phone: string
@@ -183,6 +185,7 @@ export type Database = {
           items?: Json
           order_id?: string | null
           paid_at?: string | null
+          payment_access_token_hash?: string | null
           provider_reference?: string | null
           recipient_name?: string
           recipient_phone?: string

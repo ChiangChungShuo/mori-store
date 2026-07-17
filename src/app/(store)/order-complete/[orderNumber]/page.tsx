@@ -1,13 +1,22 @@
 import { notFound } from 'next/navigation'
-import { getCompletedOrder } from '@/features/checkout/service'
+import { getAuthorizedCompletedOrder } from '@/features/checkout/service'
 
 type OrderCompletePageProps = {
   params: Promise<{ orderNumber: string }>
+  searchParams: Promise<{ attemptId?: string }>
 }
 
-export default async function OrderCompletePage({ params }: OrderCompletePageProps) {
+export default async function OrderCompletePage({ params, searchParams }: OrderCompletePageProps) {
   const { orderNumber } = await params
-  const order = await getCompletedOrder(orderNumber)
+  const { attemptId } = await searchParams
+  if (!attemptId) notFound()
+
+  let order
+  try {
+    order = await getAuthorizedCompletedOrder(attemptId, orderNumber)
+  } catch {
+    notFound()
+  }
   if (!order) notFound()
 
   return (
@@ -17,11 +26,11 @@ export default async function OrderCompletePage({ params }: OrderCompletePagePro
         <h1>訂單完成</h1>
       </header>
       <dl className="order-result">
-        <div><dt>訂單編號</dt><dd>{order.order_number}</dd></div>
+        <div><dt>訂單編號</dt><dd>{order.orderNumber}</dd></div>
         <div><dt>付款結果</dt><dd>付款成功</dd></div>
         <div>
           <dt>取貨門市</dt>
-          <dd>{order.store_name}（{order.store_id}）</dd>
+          <dd>{order.storeName}（{order.storeId}）</dd>
         </div>
         <div><dt>後續狀態</dt><dd>{order.status === 'paid' ? '已付款，等待備貨' : order.status}</dd></div>
       </dl>

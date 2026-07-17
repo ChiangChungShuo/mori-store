@@ -26,7 +26,6 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
       phone: formData.get('phone')?.toString() ?? '',
       chain: formData.get('chain')?.toString() as 'seven_eleven' | 'family_mart',
       storeId: formData.get('storeId')?.toString() ?? '',
-      storeName: formData.get('storeName')?.toString() ?? '',
     }, cart)
 
     redirect(`/checkout/payment/${attemptId}`)
