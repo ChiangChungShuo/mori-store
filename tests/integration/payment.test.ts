@@ -82,6 +82,7 @@ class MemoryCheckoutRepository implements CheckoutRepository {
     return attempt ? {
       userId: attempt.userId,
       paymentAccessTokenHash: attempt.paymentAccessTokenHash,
+      paymentAccessExpiresAt: attempt.paymentAccessExpiresAt,
     } : null
   }
 
@@ -195,6 +196,8 @@ describe('checkout payment integration', () => {
     expect(repository.attempts[0].paymentAccessTokenHash).toBe(
       createHash('sha256').update(token ?? '').digest('hex'),
     )
+    expect(new Date(repository.attempts[0].paymentAccessExpiresAt).getTime())
+      .toBeGreaterThan(Date.now() + 59 * 60 * 1000)
     expect(JSON.stringify(repository.attempts[0])).not.toContain(token)
     expect(result).toEqual({ attemptId: repository.attempts[0].id })
   })
@@ -315,6 +318,48 @@ describe('checkout payment integration', () => {
     repository.guestTokens.set(attemptId, 'wrong-token')
     await expect(securedService.getAuthorizedCompletedOrder(attemptId, 'MORI-ORDER-1'))
       .rejects.toThrow('無權存取付款交易')
+  })
+
+  it('rejects expired guest access before payment update and completed-order read', async () => {
+    const updateRepository = new MemoryCheckoutRepository()
+    const updateService = createCheckoutService(updateRepository)
+    const updateAttempt = await updateService.createPaymentAttempt(
+      checkoutInput,
+      [{ variantId: teeId, quantity: 1 }],
+    )
+    updateRepository.attempts[0].paymentAccessExpiresAt = new Date(Date.now() - 1).toISOString()
+
+    await expect(updateService.completeTestPayment(updateAttempt.attemptId, 'failure'))
+      .rejects.toThrow('無權存取付款交易')
+    await expect(updateService.completeTestPayment(updateAttempt.attemptId, 'success'))
+      .rejects.toThrow('無權存取付款交易')
+    expect(updateRepository.attempts[0].status).toBe('pending')
+    expect(updateRepository.completionCalls).toHaveLength(0)
+
+    const readRepository = new MemoryCheckoutRepository()
+    const readService = createCheckoutService(readRepository)
+    const readAttempt = await readService.createPaymentAttempt(
+      checkoutInput,
+      [{ variantId: teeId, quantity: 1 }],
+    )
+    await readService.completeTestPayment(readAttempt.attemptId, 'success')
+    readRepository.attempts[0].paymentAccessExpiresAt = new Date(Date.now() - 1).toISOString()
+
+    await expect(readService.getAuthorizedCompletedOrder(readAttempt.attemptId, 'MORI-ORDER-1'))
+      .rejects.toThrow('無權存取付款交易')
+  })
+
+  it('does not apply guest expiry to member ownership', async () => {
+    const repository = new MemoryCheckoutRepository(variants, 'member-a')
+    const service = createCheckoutService(repository)
+    const { attemptId } = await service.createPaymentAttempt(
+      checkoutInput,
+      [{ variantId: teeId, quantity: 1 }],
+    )
+    repository.attempts[0].paymentAccessExpiresAt = new Date(Date.now() - 1).toISOString()
+
+    await expect(service.completeTestPayment(attemptId, 'success'))
+      .resolves.toMatchObject({ orderNumber: 'MORI-ORDER-1' })
   })
 
   it.each(['failure', 'cancelled'] as const)(

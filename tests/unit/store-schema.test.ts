@@ -42,6 +42,13 @@ describe('store schema security invariants', () => {
     expect(checkoutService).toMatch(/path: '\/'/)
   })
 
+  it('persists a server-side payment access expiry and backfills old attempts', () => {
+    expect(migrations).toMatch(/payment_access_expires_at timestamptz/i)
+    expect(migrations).toMatch(/payment_access_expires_at = created_at \+ interval '1 hour'/i)
+    expect(migrations).toMatch(/alter column payment_access_expires_at set not null/i)
+    expect(databaseTypes).toMatch(/payment_access_expires_at: string/i)
+  })
+
   it('aggregates and locks variants in UUID order before decrementing stock', () => {
     expect(schema).toMatch(/sum\(\(entry\.value ->> 'quantity'\)::integer\)::integer as quantity/i)
     expect(schema).toMatch(/order by requested\.variant_id/i)

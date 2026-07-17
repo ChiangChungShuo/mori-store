@@ -45,11 +45,13 @@ export type PaymentAttemptInsert = {
   shippingFee: number
   total: number
   items: PaymentAttemptItem[]
+  paymentAccessExpiresAt: string
   paymentAccessTokenHash: string | null
 }
 
 type PaymentAttemptAccess = {
   userId: string | null
+  paymentAccessExpiresAt: string
   paymentAccessTokenHash: string | null
 }
 
@@ -111,6 +113,11 @@ export function createCheckoutService(repository: CheckoutRepository) {
       return attemptId
     }
 
+    const expiresAt = Date.parse(attempt.paymentAccessExpiresAt)
+    if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+      throw new Error('無權存取付款交易')
+    }
+
     const token = await repository.getGuestAccessToken(attemptId)
     if (!token || !tokenHashMatches(
       attempt.paymentAccessTokenHash,
@@ -169,6 +176,7 @@ export function createCheckoutService(repository: CheckoutRepository) {
         color: variant.color,
         size: variant.size,
       })),
+      paymentAccessExpiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
       paymentAccessTokenHash: guestToken ? hashPaymentAccessToken(guestToken) : null,
     })
     if (guestToken) await repository.setGuestAccessToken(attempt.id, guestToken)
@@ -247,12 +255,13 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
     async getPaymentAttemptAccess(attemptId) {
       const { data, error } = await admin
         .from('payment_attempts')
-        .select('user_id, payment_access_token_hash')
+        .select('user_id, payment_access_expires_at, payment_access_token_hash')
         .eq('id', attemptId)
         .maybeSingle()
       if (error) throw error
       return data ? {
         userId: data.user_id,
+        paymentAccessExpiresAt: data.payment_access_expires_at,
         paymentAccessTokenHash: data.payment_access_token_hash,
       } : null
     },
@@ -315,6 +324,7 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
         shipping_fee: attempt.shippingFee,
         total: attempt.total,
         items: attempt.items as unknown as Json,
+        payment_access_expires_at: attempt.paymentAccessExpiresAt,
         payment_access_token_hash: attempt.paymentAccessTokenHash,
       }
       const { data, error } = await admin
