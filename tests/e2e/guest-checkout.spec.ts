@@ -1,13 +1,13 @@
 import { expect, test } from '@playwright/test'
 
-const baseUrl = process.env.E2E_BASE_URL
+const hasLiveData = process.env.HAS_LIVE_DATA === '1'
 const variantId = process.env.E2E_GUEST_VARIANT_ID
 
 test.describe('guest checkout', () => {
-  test.skip(!baseUrl || !variantId, 'requires E2E_BASE_URL, E2E_GUEST_VARIANT_ID and a seeded Supabase project')
+  test.skip(!hasLiveData || !variantId, 'requires HAS_LIVE_DATA=1, E2E_GUEST_VARIANT_ID and a seeded Supabase project')
 
   test('keeps the cart after failure and clears it after an idempotent success', async ({ page }) => {
-    await page.goto(baseUrl ?? '')
+    await page.goto('/')
     await page.evaluate((id) => {
       window.localStorage.setItem('mori-cart-v1', JSON.stringify([{
         variantId: id,
@@ -22,7 +22,7 @@ test.describe('guest checkout', () => {
       }]))
     }, variantId)
 
-    await page.goto(`${baseUrl ?? ''}/checkout`)
+    await page.goto('/checkout')
     await page.getByLabel('Email').fill('parent@example.com')
     await page.getByLabel('收件人姓名').fill('王小美')
     await page.getByLabel('手機號碼').fill('0912345678')

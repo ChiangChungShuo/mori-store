@@ -4,7 +4,7 @@
 
 ## 開始使用
 
-建議使用 Node.js 22 LTS；最低支援 Node.js 20.9。另需 pnpm 與一個專用的 Supabase 開發／測試專案。
+需要 Node.js 22 或更新版本與 pnpm。Live 資料流程另需一個專用的 Supabase 開發／測試專案。
 
 ```bash
 pnpm install
@@ -24,4 +24,4 @@ pnpm dev
 pnpm vitest run && pnpm lint && pnpm build && pnpm playwright test
 ```
 
-第一次執行 E2E 前先安裝瀏覽器：`pnpm exec playwright install chromium`。完整流程規格另需本機設定指南列出的測試帳號與 seed 資料；缺少時，對應規格會明確標示 skip。
+第一次執行 E2E 前先安裝瀏覽器：`pnpm exec playwright install chromium`。預設 E2E 使用只限本機 Playwright server 的 deterministic fixtures；完整 live 流程另需本機設定指南列出的 Supabase 測試帳號與 seed 資料，缺少時對應規格會明確標示 skip。

@@ -96,7 +96,7 @@ export function CheckoutForm({ action }: CheckoutFormProps) {
         onStoreChange={setStore}
       />
       <input type="hidden" name="cart" value={JSON.stringify(cart)} />
-      <button className="button" type="submit" disabled={!hydrated || cart.length === 0 || !store}>
+      <button className="button" type="submit" disabled={!hydrated || cart.length === 0}>
         前往測試付款
       </button>
       {hydrated && cart.length === 0 ? <p role="alert">購物袋沒有可結帳的商品。</p> : null}

@@ -1,21 +1,21 @@
 import { expect, test } from '@playwright/test'
 
-const baseUrl = process.env.E2E_BASE_URL
+const hasLiveData = process.env.HAS_LIVE_DATA === '1'
 const email = process.env.E2E_ADMIN_EMAIL
 const password = process.env.E2E_ADMIN_PASSWORD
 
 test.describe('admin product inventory', () => {
-  test.skip(!baseUrl || !email || !password, 'requires E2E_BASE_URL and admin credentials')
+  test.skip(!hasLiveData || !email || !password, 'requires HAS_LIVE_DATA=1 and admin credentials')
 
   test('creates, edits and publishes a storefront-visible product', async ({ page }) => {
     const suffix = Date.now().toString()
     const slug = `e2e-color-pocket-tee-${suffix}`
 
-    await page.goto(`${baseUrl}/login?next=/admin/products/new`)
+    await page.goto('/login?next=/admin/products/new')
     await page.getByLabel('Email').fill(email ?? '')
     await page.getByLabel('密碼').fill(password ?? '')
     await page.getByRole('button', { name: '登入' }).click()
-    await expect(page).toHaveURL(`${baseUrl}/admin/products/new`)
+    await expect(page).toHaveURL(/\/admin\/products\/new$/)
 
     await page.getByLabel('商品名稱').fill('E2E 彩色口袋 Tee')
     await page.getByLabel('網址代稱').fill(slug)
@@ -49,7 +49,7 @@ test.describe('admin product inventory', () => {
     await page.getByRole('button', { name: '上架商品' }).click()
     await expect(page.getByText('商品已上架', { exact: true })).toBeVisible()
 
-    await page.goto(`${baseUrl}/products/${slug}`)
+    await page.goto(`/products/${slug}`)
     await expect(page.getByRole('heading', { name: 'E2E 彩色口袋 Tee 已編輯' })).toBeVisible()
   })
 })

@@ -152,6 +152,10 @@ const productFields = `
 `
 
 export async function listProducts(filters: ProductFilters): Promise<CatalogProduct[]> {
+  if (process.env.NODE_ENV !== 'production' && process.env.MORI_E2E_FIXTURES === '1') {
+    const { listE2EProducts } = await import('@/testing/e2e-storefront-fixtures')
+    return listE2EProducts(filters)
+  }
   if (!resolveCatalogConfiguration()) return []
 
   const { createClient } = await import('@/lib/supabase/server')
@@ -176,6 +180,10 @@ export async function listProducts(filters: ProductFilters): Promise<CatalogProd
 }
 
 export async function getProductBySlug(slug: string): Promise<CatalogProduct | null> {
+  if (process.env.NODE_ENV !== 'production' && process.env.MORI_E2E_FIXTURES === '1') {
+    const { getE2EProduct } = await import('@/testing/e2e-storefront-fixtures')
+    return getE2EProduct(slug)
+  }
   if (!resolveCatalogConfiguration()) return null
 
   const { createClient } = await import('@/lib/supabase/server')
@@ -210,6 +218,10 @@ type CartVariantRecord = {
 export async function getPublishedCartVariants(
   variantIds: string[],
 ): Promise<CartVariantSnapshot[]> {
+  if (process.env.NODE_ENV !== 'production' && process.env.MORI_E2E_FIXTURES === '1') {
+    const { getE2ECartVariants } = await import('@/testing/e2e-storefront-fixtures')
+    return getE2ECartVariants(variantIds)
+  }
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL
     || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
     throw new Error(CATALOG_CONFIGURATION_ERROR)

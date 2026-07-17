@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 
-const liveBaseUrl = process.env.E2E_BASE_URL
+const externalTarget = Boolean(process.env.E2E_BASE_URL)
+const hasLiveData = process.env.HAS_LIVE_DATA === '1'
 const checkoutCart = [{
   variantId: '00000000-0000-4000-8000-000000000001',
   productSlug: 'mori-organic-cotton-tee',
@@ -47,17 +48,22 @@ async function openCheckoutWithCart(page: Page) {
 test('tabs through the header with visible focus', async ({ page }) => {
   await page.goto('/checkout')
 
-  const brand = page.getByRole('link', { name: 'mori', exact: true })
-  await tabTo(page, brand)
-  await expectVisibleFocus(brand)
+  const focusOrder = [
+    page.getByRole('link', { name: 'mori', exact: true }),
+    page.getByRole('link', { name: '新品', exact: true }),
+    page.getByRole('link', { name: '依年齡', exact: true }),
+    page.getByRole('link', { name: '品牌故事', exact: true }),
+    page.locator('.cart-drawer summary'),
+  ]
 
-  const newProducts = page.getByRole('link', { name: '新品', exact: true })
-  await tabTo(page, newProducts)
-  await expectVisibleFocus(newProducts)
+  for (const target of focusOrder) {
+    await page.keyboard.press('Tab')
+    await expectVisibleFocus(target)
+  }
 })
 
 test('tabs through seeded product controls with visible focus', async ({ page }) => {
-  test.skip(!liveBaseUrl, 'requires E2E_BASE_URL and a seeded Supabase project')
+  test.skip(externalTarget && !hasLiveData, 'external target requires HAS_LIVE_DATA=1')
   const response = await page.goto('/products/mori-organic-cotton-tee')
   expect(response?.ok(), 'seeded product route must return a successful response').toBe(true)
   const color = page.getByRole('button', { name: /^顏色 / }).first()
@@ -74,15 +80,15 @@ test('tabs through seeded product controls with visible focus', async ({ page })
   await expectVisibleFocus(addToCart)
 })
 
-test('tabs through checkout and connects every field error to its label', async ({ page }) => {
+test('tabs through checkout fields with programmatic labels', async ({ page }) => {
   await openCheckoutWithCart(page)
 
   const fields = [
-    { label: 'Email', errorId: 'checkout-email-error', value: 'parent@example.com' },
-    { label: '收件人姓名', errorId: 'checkout-recipient-name-error', value: '王小美' },
-    { label: '手機號碼', errorId: 'checkout-phone-error', value: '0912345678' },
-    { label: '超商通路', errorId: 'checkout-chain-error', value: 'seven_eleven' },
-    { label: '取貨門市', errorId: 'checkout-store-error', value: '123456' },
+    { label: 'Email', value: 'parent@example.com' },
+    { label: '收件人姓名', value: '王小美' },
+    { label: '手機號碼', value: '0912345678' },
+    { label: '超商通路', value: 'seven_eleven' },
+    { label: '取貨門市', value: '123456' },
   ]
 
   for (const { label, value } of fields) {
@@ -102,22 +108,35 @@ test('tabs through checkout and connects every field error to its label', async 
   const submit = page.getByRole('button', { name: '前往測試付款' })
   await tabTo(page, submit)
   await expectVisibleFocus(submit)
+})
 
-  for (const { label, errorId } of fields) {
-    const field = page.getByLabel(label)
-    await field.evaluate((element: HTMLInputElement | HTMLSelectElement) => {
-      element.setCustomValidity('請修正此欄位。')
-    })
-    await submit.click()
+test('connects real checkout validation errors to invalid fields', async ({ page }) => {
+  await openCheckoutWithCart(page)
 
-    await expect(field).toHaveAttribute('aria-describedby', errorId)
+  const email = page.getByLabel('Email')
+  const recipientName = page.getByLabel('收件人姓名')
+  const phone = page.getByLabel('手機號碼')
+  const store = page.getByLabel('取貨門市')
+  const submit = page.getByRole('button', { name: '前往測試付款' })
+
+  await expect(submit).toBeEnabled()
+  await email.fill('not-an-email')
+  await phone.fill('123')
+  await submit.click()
+
+  for (const field of [email, recipientName, phone, store]) {
     await expect(field).toHaveAttribute('aria-invalid', 'true')
-    await expect(page.locator(`#${errorId}`)).toHaveAttribute('role', 'alert')
+    await expect(field).toHaveAccessibleDescription(/.+/)
+  }
 
-    await field.evaluate((element: HTMLInputElement | HTMLSelectElement) => {
-      element.setCustomValidity('')
-      element.dispatchEvent(new Event('input', { bubbles: true }))
-    })
+  await email.fill('parent@example.com')
+  await recipientName.fill('王小美')
+  await phone.fill('0912345678')
+  await store.selectOption('123456')
+
+  for (const field of [email, recipientName, phone, store]) {
+    await expect(field).toHaveAttribute('aria-invalid', 'false')
+    await expect(field).not.toHaveAttribute('aria-describedby', /.+/)
   }
 })
 

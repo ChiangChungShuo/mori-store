@@ -1,22 +1,22 @@
 import { expect, test } from '@playwright/test'
 
-const baseUrl = process.env.E2E_BASE_URL
+const hasLiveData = process.env.HAS_LIVE_DATA === '1'
 const email = process.env.E2E_CUSTOMER_EMAIL
 const password = process.env.E2E_CUSTOMER_PASSWORD
 const variantId = process.env.E2E_MEMBER_VARIANT_ID
 
 test.describe('member checkout and order history', () => {
   test.skip(
-    !baseUrl || !email || !password || !variantId,
-    'requires E2E_BASE_URL, E2E_CUSTOMER_EMAIL, E2E_CUSTOMER_PASSWORD and E2E_MEMBER_VARIANT_ID',
+    !hasLiveData || !email || !password || !variantId,
+    'requires HAS_LIVE_DATA=1, customer credentials and E2E_MEMBER_VARIANT_ID',
   )
 
   test('records a signed-in checkout in the member order history', async ({ page }) => {
-    await page.goto(`${baseUrl}/login`)
+    await page.goto('/login')
     await page.getByLabel('Email').fill(email ?? '')
     await page.getByLabel('密碼').fill(password ?? '')
     await page.getByRole('button', { name: '登入' }).click()
-    await expect(page).toHaveURL(new RegExp(`${baseUrl}/account`))
+    await expect(page).toHaveURL(/\/account(?:\/|$)/)
 
     await page.evaluate((id) => {
       window.localStorage.setItem('mori-cart-v1', JSON.stringify([{
@@ -32,7 +32,7 @@ test.describe('member checkout and order history', () => {
       }]))
     }, variantId)
 
-    await page.goto(`${baseUrl}/checkout`)
+    await page.goto('/checkout')
     await page.getByLabel('Email').fill(email ?? '')
     await page.getByLabel('收件人姓名').fill('王小美')
     await page.getByLabel('手機號碼').fill('0912345678')
@@ -45,7 +45,7 @@ test.describe('member checkout and order history', () => {
     const orderNumber = (await page.url()).match(/order-complete\/([^?]+)/)?.[1]
     expect(orderNumber).toBeTruthy()
 
-    await page.goto(`${baseUrl}/account/orders`)
+    await page.goto('/account/orders')
     await expect(page.getByRole('heading', { name: orderNumber ?? '' })).toBeVisible()
   })
 })

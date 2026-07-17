@@ -4,7 +4,7 @@
 
 ## 需求
 
-- 建議 Node.js 22 LTS，最低 Node.js 20.9。專案目前仍可在 Node 20 build，但 `@supabase/supabase-js` 會顯示 Node 20 deprecation warning，因此日常開發使用 Node 22 可避免即將到來的相容性問題。
+- Node.js 22 或更新版本。Repository 的 `engines.node` 與 `.nvmrc` 都以 Node 22 為最低 runtime。
 - pnpm。
 - 一個 Supabase 開發／測試 project，以及可 link 該 project 的帳號。
 
@@ -89,20 +89,24 @@ pnpm exec playwright install chromium
 pnpm vitest run && pnpm lint && pnpm build && pnpm playwright test
 ```
 
-Playwright 會自動啟動 `http://127.0.0.1:3000`，並執行 1440×900 desktop 與 375×812 mobile projects。首頁、商品、購物袋與結帳的響應式驗收需要已完成 migration 與 seed。
+未設定 `E2E_BASE_URL` 時，Playwright 會自動啟動 `http://127.0.0.1:3000`，並只對該 development web server 設定 `MORI_E2E_FIXTURES=1`。Fixtures 是 server-only catalog、運費與 cart snapshots；production runtime 即使收到同名環境變數也不會啟用。這個預設模式不需要 Supabase，會用 populated data 執行 1440×900 desktop 與 375×812 mobile 的首頁、商品、購物袋及結帳驗收。
 
-既有完整購物流程規格還需要把下列值 export 到執行 Playwright 的同一個 shell；請使用測試帳號，不要使用 production 密碼：
+要改測已部署或已自行啟動的 live target，在 `.env.local` 填入下列值；Playwright config 會用 Node 22 原生載入該檔，因此之後仍只需執行同一個驗證 command。設定 `E2E_BASE_URL` 後 Playwright 不會另開 web server。請只使用開發／測試 project 與測試帳號，不要使用 production 密碼：
 
-```bash
-export E2E_BASE_URL=http://127.0.0.1:3000
-export E2E_ADMIN_EMAIL=YOUR_ADMIN_EMAIL
-export E2E_ADMIN_PASSWORD=YOUR_ADMIN_PASSWORD
-export E2E_CUSTOMER_EMAIL=YOUR_CUSTOMER_EMAIL
-export E2E_CUSTOMER_PASSWORD=YOUR_CUSTOMER_PASSWORD
-export E2E_GUEST_VARIANT_ID=YOUR_SEEDED_VARIANT_UUID
-export E2E_MEMBER_VARIANT_ID=YOUR_SEEDED_VARIANT_UUID
-export E2E_PAID_ORDER_NUMBER=YOUR_EXISTING_PAID_ORDER_NUMBER
+```dotenv
+E2E_BASE_URL=https://YOUR_TEST_DEPLOYMENT.example.com
+HAS_LIVE_DATA=1
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+SUPABASE_SECRET_KEY=sb_secret_REPLACE_ME
+E2E_ADMIN_EMAIL=YOUR_ADMIN_EMAIL
+E2E_ADMIN_PASSWORD=YOUR_ADMIN_PASSWORD
+E2E_CUSTOMER_EMAIL=YOUR_CUSTOMER_EMAIL
+E2E_CUSTOMER_PASSWORD=YOUR_CUSTOMER_PASSWORD
+E2E_GUEST_VARIANT_ID=YOUR_SEEDED_VARIANT_UUID
+E2E_MEMBER_VARIANT_ID=YOUR_SEEDED_VARIANT_UUID
 ```
+
+`HAS_LIVE_DATA=1` 是明確的 live-data opt-in；只有 URL 不會讓 data-dependent specs 誤判為可執行。`SUPABASE_SECRET_KEY` 只由 Playwright 的 Node.js test process 用來建立 fulfillment fixture，不會傳進 `page.evaluate`、browser storage 或 client bundle。
 
 在 Dashboard **SQL Editor** 查 seed variant UUID：
 
@@ -112,7 +116,7 @@ from public.product_variants
 where sku = 'MORI-TEE-SAGE-100';
 ```
 
-`E2E_PAID_ORDER_NUMBER` 必須是測試付款成功後、狀態仍為 `paid` 的測試訂單；可從完成頁 URL 或管理後台取得。未提供某組 E2E 變數時，對應的 credential-dependent 規格會顯示 skip，不代表該完整流程已通過。
+Fulfillment spec 每次會用 server-side secret 建立唯一的 paid guest order、order item 與 payment attempt，再透過管理後台完成狀態流程，不需要手動準備或重複消耗既有訂單。因 `order_items` 有 immutable trigger，測試不強制刪除 fixture；開發／測試 project 會保留 `e2e-fulfillment-...@example.com` 與 `e2e-fulfillment-...` provider reference，方便定期辨識與重建 project。未提供某組 live E2E 變數時，對應規格會顯示 skip，不代表該完整流程已通過。
 
 ## 7. 人工驗收清單
 
