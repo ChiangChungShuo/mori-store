@@ -1,0 +1,7 @@
+.superpowers/
+.next/
+node_modules/
+.env.local
+playwright-report/
+test-results/
+coverage/
