@@ -42,11 +42,11 @@ export function createOrderQueries(repository: OrderQueriesRepository) {
     },
 
     getOrderForUser(orderNumber: string, userId: string) {
-      return repository.getOrderForUser(orderNumber.trim(), userId)
+      return repository.getOrderForUser(orderNumber, userId)
     },
 
     lookupGuestOrder(orderNumber: string, email: string) {
-      return repository.lookupGuestOrder(orderNumber.trim(), normalizeOrderEmail(email))
+      return repository.lookupGuestOrder(orderNumber, normalizeOrderEmail(email))
     },
   }
 }
@@ -159,10 +159,10 @@ export async function listOrdersForUser(userId: string) {
 }
 
 export async function getOrderForUser(orderNumber: string, userId: string) {
-  return (await createLiveMemberOrderRepository()).getOrderForUser(orderNumber.trim(), userId)
+  return (await createLiveMemberOrderRepository()).getOrderForUser(orderNumber, userId)
 }
 
 export async function lookupGuestOrder(orderNumber: string, email: string) {
   return (await createLiveGuestOrderRepository())
-    .lookupGuestOrder(orderNumber.trim(), normalizeOrderEmail(email))
+    .lookupGuestOrder(orderNumber, normalizeOrderEmail(email))
 }

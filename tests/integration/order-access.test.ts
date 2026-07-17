@@ -73,9 +73,11 @@ describe('order access integration', () => {
     expect(await lookupGuestOrder('MORI-260717-0001', 'wrong@example.com')).toBeNull()
     expect(await lookupGuestOrder('MORI-260717-0001', ' PARENT@EXAMPLE.COM '))
       .toMatchObject({ orderNumber: 'MORI-260717-0001' })
+    expect(await lookupGuestOrder(' MORI-260717-0001 ', 'parent@example.com')).toBeNull()
     expect(repository.guestLookups).toEqual([
       { orderNumber: 'MORI-260717-0001', email: 'wrong@example.com' },
       { orderNumber: 'MORI-260717-0001', email: 'parent@example.com' },
+      { orderNumber: ' MORI-260717-0001 ', email: 'parent@example.com' },
     ])
   })
 
