@@ -20,6 +20,7 @@ test.describe('admin order fulfillment', () => {
 
     await page.getByLabel('訂單編號、收件人或 Email').fill(paidOrderNumber ?? '')
     await page.getByRole('button', { name: '篩選' }).click()
+    await expect(page).toHaveURL(`${baseUrl}/admin/orders`)
     await page.getByRole('link', { name: paidOrderNumber }).click()
 
     await page.getByRole('button', { name: '開始備貨' }).click()

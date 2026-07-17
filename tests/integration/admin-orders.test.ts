@@ -16,6 +16,7 @@ import type { OrderStatus } from '@/types/store'
 import { calculateCart } from '@/features/cart/totals'
 import {
   createDashboardQueries,
+  taipeiDayRange,
   type DashboardRepository,
 } from '@/features/admin/dashboard-queries'
 
@@ -148,6 +149,14 @@ describe('admin store settings', () => {
     }).success).toBe(false)
   })
 
+  it('rejects null shipping fees and malformed contact emails', () => {
+    expect(settingsSchema.safeParse({
+      shippingFee: null,
+      freeShippingThreshold: null,
+      contactEmail: 'not-an-email',
+    }).success).toBe(false)
+  })
+
   it('treats a blank free-shipping threshold as disabled', () => {
     expect(settingsSchema.parse({
       shippingFee: '60',
@@ -208,14 +217,38 @@ describe('admin order database contract', () => {
     expect(migration).toMatch(/public\.is_admin\(\)/)
     expect(actions).toMatch(/\.rpc\(['"]admin_update_order_status['"]/)
   })
+
+  it('rejects invalid store settings at the RPC boundary', () => {
+    const migration = readFileSync(
+      resolve(process.cwd(), 'supabase/migrations/202607170007_admin_review_fixes.sql'),
+      'utf8',
+    )
+
+    expect(migration).toMatch(/p_shipping_fee\s+integer/i)
+    expect(migration).toMatch(/p_free_shipping_threshold\s+integer/i)
+    expect(migration).toMatch(/p_shipping_fee\s+is\s+null/i)
+    expect(migration).toMatch(/p_free_shipping_threshold\s+is\s+not\s+null[\s\S]*<\s*0/i)
+    expect(migration).toMatch(/p_contact_email[\s\S]*!~\*/i)
+  })
 })
 
 describe('admin dashboard queries', () => {
+  it('uses the exact Asia/Taipei day as a half-open UTC interval', () => {
+    expect(taipeiDayRange(new Date('2026-07-17T15:59:59.999Z'))).toEqual({
+      start: '2026-07-16T16:00:00.000Z',
+      end: '2026-07-17T16:00:00.000Z',
+    })
+    expect(taipeiDayRange(new Date('2026-07-17T16:00:00.000Z'))).toEqual({
+      start: '2026-07-17T16:00:00.000Z',
+      end: '2026-07-18T16:00:00.000Z',
+    })
+  })
+
   it('counts today, paid and preparing backlog, and active stock at most three', async () => {
     const events: string[] = []
     const repository: DashboardRepository = {
-      async countOrdersCreatedSince() {
-        events.push('today')
+      async countOrdersCreatedBetween(start, end) {
+        events.push(`today:${start}:${end}`)
         return 4
       },
       async countFulfillmentBacklog(statuses) {
@@ -240,7 +273,7 @@ describe('admin dashboard queries', () => {
     })
     expect(events).toEqual([
       'admin',
-      'today',
+      'today:2026-07-16T16:00:00.000Z:2026-07-17T16:00:00.000Z',
       'paid+preparing',
       'active-stock<=3',
     ])
@@ -250,14 +283,20 @@ describe('admin dashboard queries', () => {
 describe('admin fulfillment pages', () => {
   it('shows searchable orders, immutable fulfillment details and three dashboard metrics', () => {
     const ordersPage = readFileSync(resolve(process.cwd(), 'src/app/admin/orders/page.tsx'), 'utf8')
+    const orderList = readFileSync(resolve(process.cwd(), 'src/features/admin/order-list.tsx'), 'utf8')
     const detailPage = readFileSync(
       resolve(process.cwd(), 'src/app/admin/orders/[orderNumber]/page.tsx'),
       'utf8',
     )
     const dashboardPage = readFileSync(resolve(process.cwd(), 'src/app/admin/page.tsx'), 'utf8')
 
-    expect(ordersPage).toMatch(/訂單編號、收件人或 Email/)
-    expect(ordersPage).toMatch(/status/)
+    expect(orderList).toMatch(/訂單編號、收件人或 Email/)
+    expect(orderList).toMatch(/useActionState/)
+    expect(orderList).not.toMatch(/method="get"/)
+    expect(ordersPage).not.toMatch(/searchParams|method="get"/)
+    expect(ordersPage).toMatch(/AdminOrderList/)
+    expect(detailPage).toMatch(/formatTaipeiDateTime/)
+    expect(detailPage).toMatch(/formatTaipeiDateTime\(order\.createdAt\)/)
     expect(detailPage).toMatch(/order\.items\.map/)
     expect(detailPage).toMatch(/測試付款/)
     expect(detailPage).toMatch(/取貨門市/)
@@ -265,5 +304,34 @@ describe('admin fulfillment pages', () => {
     expect(dashboardPage).toMatch(/todayOrders/)
     expect(dashboardPage).toMatch(/fulfillmentBacklog/)
     expect(dashboardPage).toMatch(/lowStockVariants/)
+  })
+
+  it('uses the session client for every admin read', () => {
+    const reads = [
+      'src/features/admin/order-actions.ts',
+      'src/features/admin/dashboard-queries.ts',
+      'src/features/admin/settings-actions.ts',
+    ].map((path) => readFileSync(resolve(process.cwd(), path), 'utf8')).join('\n')
+
+    expect(reads).not.toMatch(/createAdminClient/)
+    expect(reads).toMatch(/@\/lib\/supabase\/server/)
+  })
+
+  it('authorizes POST form actions before reading form values', () => {
+    const orderActions = readFileSync(
+      resolve(process.cwd(), 'src/features/admin/order-server-actions.ts'),
+      'utf8',
+    )
+    const settingsActions = readFileSync(
+      resolve(process.cwd(), 'src/features/admin/settings-actions.ts'),
+      'utf8',
+    )
+    const orderPost = orderActions.slice(orderActions.indexOf('export async function filterAdminOrders'))
+    const settingsPost = settingsActions.slice(settingsActions.indexOf('export async function updateStoreSettingsFromForm'))
+
+    expect(orderPost.indexOf('await requireAdmin()')).toBeGreaterThanOrEqual(0)
+    expect(orderPost.indexOf('await requireAdmin()')).toBeLessThan(orderPost.indexOf('formData.get'))
+    expect(settingsPost.indexOf('await requireAdmin()')).toBeGreaterThanOrEqual(0)
+    expect(settingsPost.indexOf('await requireAdmin()')).toBeLessThan(settingsPost.indexOf('formData.get'))
   })
 })

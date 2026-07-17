@@ -5,9 +5,33 @@ export type DashboardMetrics = {
 }
 
 export interface DashboardRepository {
-  countOrdersCreatedSince(startedAt: string): Promise<number>
+  countOrdersCreatedBetween(startedAt: string, endedAt: string): Promise<number>
   countFulfillmentBacklog(statuses: readonly ['paid', 'preparing']): Promise<number>
   countLowStockVariants(maximumStock: number): Promise<number>
+}
+
+const TAIPEI_UTC_OFFSET_MS = 8 * 60 * 60 * 1000
+const DAY_MS = 24 * 60 * 60 * 1000
+const taipeiCalendarFormatter = new Intl.DateTimeFormat('en', {
+  day: '2-digit',
+  month: '2-digit',
+  timeZone: 'Asia/Taipei',
+  year: 'numeric',
+})
+
+export function taipeiDayRange(now: Date) {
+  const parts = Object.fromEntries(
+    taipeiCalendarFormatter.formatToParts(now).map((part) => [part.type, part.value]),
+  )
+  const startMs = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+  ) - TAIPEI_UTC_OFFSET_MS
+  return {
+    start: new Date(startMs).toISOString(),
+    end: new Date(startMs + DAY_MS).toISOString(),
+  }
 }
 
 type DashboardDependencies = {
@@ -20,10 +44,9 @@ export function createDashboardQueries(dependencies: DashboardDependencies) {
   return {
     async getDashboardMetrics(): Promise<DashboardMetrics> {
       await dependencies.requireAdmin()
-      const start = dependencies.now?.() ?? new Date()
-      start.setHours(0, 0, 0, 0)
+      const range = taipeiDayRange(dependencies.now?.() ?? new Date())
       const [todayOrders, fulfillmentBacklog, lowStockVariants] = await Promise.all([
-        dependencies.repository.countOrdersCreatedSince(start.toISOString()),
+        dependencies.repository.countOrdersCreatedBetween(range.start, range.end),
         dependencies.repository.countFulfillmentBacklog(['paid', 'preparing']),
         dependencies.repository.countLowStockVariants(3),
       ])
@@ -39,23 +62,24 @@ function count(result: { count: number | null; error: unknown }) {
 
 function createSupabaseDashboardRepository(): DashboardRepository {
   return {
-    async countOrdersCreatedSince(startedAt) {
-      const { createAdminClient } = await import('@/lib/supabase/admin')
-      return count(await createAdminClient()
+    async countOrdersCreatedBetween(startedAt, endedAt) {
+      const { createClient } = await import('@/lib/supabase/server')
+      return count(await (await createClient())
         .from('orders')
         .select('*', { count: 'exact', head: true })
-        .gte('created_at', startedAt))
+        .gte('created_at', startedAt)
+        .lt('created_at', endedAt))
     },
     async countFulfillmentBacklog(statuses) {
-      const { createAdminClient } = await import('@/lib/supabase/admin')
-      return count(await createAdminClient()
+      const { createClient } = await import('@/lib/supabase/server')
+      return count(await (await createClient())
         .from('orders')
         .select('*', { count: 'exact', head: true })
         .in('status', statuses))
     },
     async countLowStockVariants(maximumStock) {
-      const { createAdminClient } = await import('@/lib/supabase/admin')
-      return count(await createAdminClient()
+      const { createClient } = await import('@/lib/supabase/server')
+      return count(await (await createClient())
         .from('product_variants')
         .select('*', { count: 'exact', head: true })
         .eq('is_active', true)

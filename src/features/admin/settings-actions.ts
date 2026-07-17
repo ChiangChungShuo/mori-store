@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { parseStorefrontSettings } from '@/features/checkout/settings'
 import type { Json } from '@/types/database'
 
 const nonNegativeInteger = z.union([
@@ -54,13 +55,13 @@ function createSupabaseStoreSettingsRepository(): StoreSettingsRepository {
   }
 }
 
-function productionActions() {
+function productionActions(requireAdminOverride?: () => Promise<unknown>) {
   return createAdminSettingsActions({
     repository: createSupabaseStoreSettingsRepository(),
-    requireAdmin: async () => {
+    requireAdmin: requireAdminOverride ?? (async () => {
       const { requireAdmin } = await import('@/lib/auth/require-admin')
       return requireAdmin()
-    },
+    }),
     onChanged: async () => {
       const { revalidatePath } = await import('next/cache')
       revalidatePath('/admin/settings')
@@ -75,7 +76,9 @@ export async function updateStoreSettings(input: unknown) {
 
 export async function updateStoreSettingsFromForm(formData: FormData) {
   'use server'
-  return productionActions().updateStoreSettings({
+  const { requireAdmin } = await import('@/lib/auth/require-admin')
+  await requireAdmin()
+  return productionActions(async () => undefined).updateStoreSettings({
     shippingFee: formData.get('shippingFee'),
     freeShippingThreshold: formData.get('freeShippingThreshold'),
     contactEmail: formData.get('contactEmail'),
@@ -89,23 +92,22 @@ function settingObject(value: Json | undefined) {
 export async function getStoreSettings(): Promise<StoreSettings> {
   const { requireAdmin } = await import('@/lib/auth/require-admin')
   await requireAdmin()
-  const { createAdminClient } = await import('@/lib/supabase/admin')
-  const { data, error } = await createAdminClient()
+  const { createClient } = await import('@/lib/supabase/server')
+  const { data, error } = await (await createClient())
     .from('store_settings')
     .select('key, value')
     .in('key', ['shipping_fee', 'free_shipping_threshold', 'contact_email'])
   if (error) throw error
 
   const settings = new Map((data ?? []).map((setting) => [setting.key, settingObject(setting.value)]))
-  const shippingFee = settings.get('shipping_fee')?.amount
-  const threshold = settings.get('free_shipping_threshold')?.amount
+  const storefrontSettings = parseStorefrontSettings(data ?? [])
   const contactEmail = settings.get('contact_email')?.email
+  if (contactEmail !== undefined && typeof contactEmail !== 'string') {
+    throw new Error('商店聯絡信箱設定無效')
+  }
 
   return {
-    shippingFee: typeof shippingFee === 'number' ? shippingFee : 60,
-    freeShippingThreshold: threshold === null
-      ? null
-      : typeof threshold === 'number' ? threshold : 1500,
-    contactEmail: typeof contactEmail === 'string' ? contactEmail : '',
+    ...storefrontSettings,
+    contactEmail: contactEmail ?? '',
   }
 }

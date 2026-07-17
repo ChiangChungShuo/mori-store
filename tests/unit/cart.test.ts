@@ -1,12 +1,13 @@
 import { createElement } from 'react'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import CartPage from '@/app/(store)/cart/page'
+import { CartPageClient } from '@/features/cart/cart-page-client'
 import { CartProvider, useCart } from '@/features/cart/cart-provider'
 import { CartDrawer } from '@/features/cart/cart-drawer'
 import { cartReducer } from '@/features/cart/reducer'
 import { calculateCart } from '@/features/cart/totals'
 import { parseStoredCartItems, type CartItem } from '@/features/cart/types'
+import { parseStorefrontSettings } from '@/features/checkout/settings'
 
 const tee: CartItem = {
   variantId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
@@ -32,6 +33,8 @@ const pants: CartItem = {
   maxStock: 4,
 }
 
+const storeSettings = { shippingFee: 60, freeShippingThreshold: 1500 }
+
 afterEach(() => {
   cleanup()
   window.localStorage.clear()
@@ -53,6 +56,25 @@ describe('calculateCart', () => {
 
   it('does not charge shipping for an empty cart', () => {
     expect(calculateCart([], 65, 1500)).toEqual({ subtotal: 0, shipping: 0, total: 0 })
+  })
+})
+
+describe('storefront settings', () => {
+  it('reads configured shipping and a disabled free-shipping threshold', () => {
+    expect(parseStorefrontSettings([
+      { key: 'shipping_fee', value: { amount: 85 } },
+      { key: 'free_shipping_threshold', value: { amount: null } },
+    ])).toEqual({ shippingFee: 85, freeShippingThreshold: null })
+  })
+
+  it('rejects missing or malformed settings instead of using fallback prices', () => {
+    expect(() => parseStorefrontSettings([
+      { key: 'shipping_fee', value: { amount: 85 } },
+    ])).toThrow('商店運費設定無效')
+    expect(() => parseStorefrontSettings([
+      { key: 'shipping_fee', value: { amount: -1 } },
+      { key: 'free_shipping_threshold', value: { amount: 1500 } },
+    ])).toThrow('商店運費設定無效')
   })
 })
 
@@ -218,7 +240,7 @@ describe('CartPage refresh', () => {
     vi.stubGlobal('fetch', fetchMock)
     window.localStorage.setItem('mori-cart-v1', JSON.stringify([tee]))
 
-    render(createElement(CartProvider, null, createElement(CartPage)))
+    render(createElement(CartProvider, null, createElement(CartPageClient, { settings: storeSettings })))
 
     expect(await screen.findByText(tee.name)).toBeInTheDocument()
     expect(await screen.findByRole('alert')).toHaveTextContent('無法更新購物袋，請再試一次。')
@@ -245,7 +267,9 @@ describe('CartPage refresh', () => {
     render(createElement(
       CartProvider,
       null,
-      createElement('div', null, createElement(AddLargeStockItem), createElement(CartPage)),
+      createElement('div', null, createElement(
+        AddLargeStockItem,
+      ), createElement(CartPageClient, { settings: storeSettings })),
     ))
 
     await screen.findByText('購物袋還是空的。')
@@ -253,5 +277,23 @@ describe('CartPage refresh', () => {
     await screen.findByRole('alert')
 
     expect(within(screen.getByLabelText('數量')).getAllByRole('option')).toHaveLength(99)
+  })
+
+  it('uses server-provided shipping settings and hides disabled free shipping', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
+    window.localStorage.setItem('mori-cart-v1', JSON.stringify([tee]))
+
+    render(createElement(
+      CartProvider,
+      null,
+      createElement(CartPageClient, {
+        settings: { shippingFee: 85, freeShippingThreshold: null },
+      }),
+    ))
+
+    await screen.findByRole('alert')
+    expect(screen.getByText('NT$85')).toBeInTheDocument()
+    expect(screen.getByText('NT$765')).toBeInTheDocument()
+    expect(screen.queryByText(/滿 .* 免運/)).not.toBeInTheDocument()
   })
 })

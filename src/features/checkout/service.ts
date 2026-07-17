@@ -3,6 +3,7 @@ import { calculateCart } from '@/features/cart/totals'
 import { parseCartRefreshRequest } from '@/features/cart/refresh'
 import { canonicalizeCartVariantId } from '@/features/cart/types'
 import { findTestStore } from '@/features/checkout/stores'
+import { parseStorefrontSettings } from '@/features/checkout/settings'
 import type {
   CheckoutCartItem,
   CheckoutInput,
@@ -296,21 +297,7 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
         .in('key', ['shipping_fee', 'free_shipping_threshold'])
       if (error) throw error
 
-      const settings = new Map((data ?? []).map((setting) => [setting.key, setting.value]))
-      const amount = (key: string, fallback: number, nullable = false) => {
-        const value = settings.get(key)
-        if (!value || Array.isArray(value) || typeof value !== 'object') return fallback
-        const candidate = (value as { amount?: unknown }).amount
-        if (nullable && candidate === null) return null
-        return typeof candidate === 'number' && Number.isInteger(candidate) && candidate >= 0
-          ? candidate
-          : fallback
-      }
-
-      return {
-        shippingFee: amount('shipping_fee', 60) ?? 60,
-        freeShippingThreshold: amount('free_shipping_threshold', 1500, true),
-      }
+      return parseStorefrontSettings(data ?? [])
     },
 
     async insertPaymentAttempt(attempt) {

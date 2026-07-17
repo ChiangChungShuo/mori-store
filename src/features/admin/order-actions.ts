@@ -219,14 +219,14 @@ function toOrderSummary(order: AdminOrderRow): AdminOrderSummary {
 }
 
 function createSupabaseOrderQueryRepository(): AdminOrderQueryRepository {
-  async function adminClient() {
-    const { createAdminClient } = await import('@/lib/supabase/admin')
-    return createAdminClient()
+  async function client() {
+    const { createClient } = await import('@/lib/supabase/server')
+    return createClient()
   }
 
   return {
     async listOrders(filters) {
-      let query = (await adminClient())
+      let query = (await client())
         .from('orders')
         .select('id, order_number, recipient_name, recipient_phone, email, store_chain, store_id, store_name, subtotal, shipping_fee, total, status, created_at')
         .order('created_at', { ascending: false })
@@ -241,7 +241,7 @@ function createSupabaseOrderQueryRepository(): AdminOrderQueryRepository {
     },
 
     async getOrder(orderNumber) {
-      const { data, error } = await (await adminClient())
+      const { data, error } = await (await client())
         .from('orders')
         .select(`
           id, order_number, recipient_name, recipient_phone, email,
@@ -321,4 +321,8 @@ export async function listAdminOrders(filters: Partial<AdminOrderFilters> = {}) 
 
 export async function getAdminOrder(orderNumber: string) {
   return productionQueries().getAdminOrder(orderNumber)
+}
+
+export type AdminOrderListState = AdminOrderFilters & {
+  orders: AdminOrderSummary[]
 }

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { canTransitionOrder } from '@/features/orders/status'
 import { getAdminOrder, updateOrderStatus } from '@/features/admin/order-actions'
 import { formatTwd } from '@/lib/money'
+import { formatTaipeiDateTime } from '@/lib/date-time'
 import type { OrderStatus } from '@/types/store'
 
 export const dynamic = 'force-dynamic'
@@ -41,6 +42,7 @@ export default async function AdminOrderPage({
         <h1>{order.orderNumber}</h1>
       </header>
       <p><strong>目前狀態：{statusLabels[order.status]}</strong></p>
+      <p>成立時間：{formatTaipeiDateTime(order.createdAt)}</p>
       <div className="payment-actions">
         {statusActions.filter(({ status }) => canTransitionOrder(order.status, status)).map(({ status, label }) => (
           <form action={updateOrderStatus.bind(null, order.id, status)} key={status}>
@@ -101,7 +103,7 @@ export default async function AdminOrderPage({
           <dl className="order-result">
             <div><dt>付款狀態</dt><dd>{order.payment.status}</dd></div>
             <div><dt>交易代碼</dt><dd>{order.payment.providerReference ?? '—'}</dd></div>
-            <div><dt>付款時間</dt><dd>{order.payment.paidAt ? new Date(order.payment.paidAt).toLocaleString('zh-TW') : '—'}</dd></div>
+            <div><dt>付款時間</dt><dd>{order.payment.paidAt ? formatTaipeiDateTime(order.payment.paidAt) : '—'}</dd></div>
           </dl>
         ) : <p>沒有測試付款紀錄。</p>}
       </section>

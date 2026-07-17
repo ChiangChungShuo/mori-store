@@ -27,5 +27,7 @@ where slug = 'mori-organic-cotton-tee'
 on conflict (lower(sku)) do nothing;
 
 insert into public.store_settings (key, value)
-values ('shipping_fee', '{"amount": 60}'::jsonb)
+values
+  ('shipping_fee', '{"amount": 60}'::jsonb),
+  ('free_shipping_threshold', '{"amount": 1500}'::jsonb)
 on conflict (key) do update set value = excluded.value;
