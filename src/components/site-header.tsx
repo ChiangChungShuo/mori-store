@@ -7,9 +7,9 @@ export function SiteHeader() {
       <nav aria-label="主要導覽" className="site-nav">
         <Link href="/" className="brand">mori</Link>
         <div className="nav-links">
-          <Link href="#new">新品</Link>
-          <Link href="#ages">依年齡</Link>
-          <Link href="#story">品牌故事</Link>
+          <Link href="/#new">新品</Link>
+          <Link href="/#ages">依年齡</Link>
+          <Link href="/#story">品牌故事</Link>
         </div>
       </nav>
     </header>
