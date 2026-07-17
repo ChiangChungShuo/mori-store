@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useActionState } from 'react'
 import type { AdminOrderListState } from '@/features/admin/order-actions'
+import type { AdminPaymentReviewSummary } from '@/features/admin/order-actions'
 import { filterAdminOrders } from '@/features/admin/order-server-actions'
 import { formatTaipeiDateTime } from '@/lib/date-time'
 import { formatTwd } from '@/lib/money'
@@ -17,11 +18,48 @@ const statusLabels: Record<OrderStatus, string> = {
   cancelled: '已取消',
 }
 
-export function AdminOrderList({ initialState }: { initialState: AdminOrderListState }) {
+export function AdminOrderList({
+  initialState,
+  reviews,
+}: {
+  initialState: AdminOrderListState
+  reviews: AdminPaymentReviewSummary[]
+}) {
   const [state, formAction, pending] = useActionState(filterAdminOrders, initialState)
 
   return (
     <>
+      <section>
+        <h2>需人工處理的付款</h2>
+        {reviews.length === 0 ? <p>目前沒有需人工處理的付款。</p> : (
+          <table className="admin-product-table">
+            <thead>
+              <tr>
+                <th scope="col">付款交易</th>
+                <th scope="col">收件人</th>
+                <th scope="col">Email</th>
+                <th scope="col">金額</th>
+                <th scope="col">處理代碼</th>
+                <th scope="col">發生時間</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reviews.map((payment) => (
+                <tr key={payment.id}>
+                  <th scope="row">
+                    <Link href={`/admin/orders/review/${payment.id}`}>{payment.id}</Link>
+                  </th>
+                  <td>{payment.recipientName}</td>
+                  <td>{payment.email}</td>
+                  <td>{formatTwd(payment.total)}</td>
+                  <td>{payment.reviewCode}</td>
+                  <td>{formatTaipeiDateTime(payment.createdAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
       <form action={formAction} className="product-filters" key={`${state.query}:${state.status}`}>
         <label>
           訂單編號、收件人或 Email

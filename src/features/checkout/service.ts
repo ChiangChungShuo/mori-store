@@ -4,9 +4,11 @@ import { parseCartRefreshRequest } from '@/features/cart/refresh'
 import { canonicalizeCartVariantId } from '@/features/cart/types'
 import { findTestStore } from '@/features/checkout/stores'
 import { parseStorefrontSettings } from '@/features/checkout/settings'
+import { CheckoutAttemptError } from '@/features/checkout/types'
 import type {
   CheckoutCartItem,
   CheckoutInput,
+  PaymentAttemptStatus,
   PaymentResult,
   TestPaymentOutcome,
 } from '@/features/checkout/types'
@@ -56,6 +58,22 @@ type PaymentAttemptAccess = {
   paymentAccessTokenHash: string | null
 }
 
+type StoredPaymentAttemptSummary = {
+  items: PaymentAttemptItem[]
+  subtotal: number
+  shippingFee: number
+  total: number
+  status: PaymentAttemptStatus
+}
+
+export type PaymentCompletion = {
+  status: 'paid'
+  orderNumber: string
+} | {
+  status: 'requires_review'
+  reviewCode: string
+}
+
 export type CompletedOrder = {
   orderNumber: string
   storeChain: CheckoutInput['chain']
@@ -69,6 +87,7 @@ export interface CheckoutRepository {
   getGuestAccessToken(attemptId: string): Promise<string | null>
   setGuestAccessToken(attemptId: string, token: string): Promise<void>
   getPaymentAttemptAccess(attemptId: string): Promise<PaymentAttemptAccess | null>
+  getPaymentAttemptSummary(attemptId: string): Promise<StoredPaymentAttemptSummary | null>
   getVariants(variantIds: string[]): Promise<CheckoutVariant[]>
   getStoreSettings(): Promise<{ shippingFee: number; freeShippingThreshold: number | null }>
   insertPaymentAttempt(attempt: PaymentAttemptInsert): Promise<{ id: string }>
@@ -79,7 +98,7 @@ export interface CheckoutRepository {
   completePayment(
     attemptId: string,
     providerReference: string,
-  ): Promise<{ orderNumber: string }>
+  ): Promise<PaymentCompletion>
   getCompletedOrderForAttempt(attemptId: string): Promise<CompletedOrder | null>
 }
 
@@ -135,7 +154,7 @@ export function createCheckoutService(repository: CheckoutRepository) {
     const store = findTestStore(customer.chain, customer.storeId)
     if (!store) throw new Error('不支援的取貨門市')
     const requestedItems = parseCartRefreshRequest({ items: cart })
-    if (!requestedItems?.length) throw new Error('購物袋內容無效')
+    if (!requestedItems?.length) throw new CheckoutAttemptError('cart_invalid')
 
     const variants = await repository.getVariants(
       requestedItems.map((item) => item.variantId),
@@ -143,8 +162,8 @@ export function createCheckoutService(repository: CheckoutRepository) {
     const variantsById = new Map(variants.map((variant) => [variant.id, variant]))
     const pricedItems = requestedItems.map((item) => {
       const variant = variantsById.get(item.variantId)
-      if (!variant?.isPublished) throw new Error('商品已下架或不存在')
-      if (variant.stock < item.quantity) throw new Error('商品庫存不足')
+      if (!variant?.isPublished) throw new CheckoutAttemptError('catalog_changed')
+      if (variant.stock < item.quantity) throw new CheckoutAttemptError('stock_changed')
 
       return { variant, quantity: item.quantity }
     })
@@ -196,14 +215,39 @@ export function createCheckoutService(repository: CheckoutRepository) {
       return { outcome, redirectUrl: `/checkout?payment=${outcome}` }
     }
 
-    const order = await repository.completePayment(
+    const completion = await repository.completePayment(
       canonicalAttemptId,
       createTestProviderReference(canonicalAttemptId),
     )
+    if (completion.status === 'requires_review') {
+      return {
+        outcome: 'requires_review',
+        reviewCode: completion.reviewCode,
+        message: '付款結果需人工確認，商品資料或庫存已變更。',
+      }
+    }
     return {
       outcome,
-      orderNumber: order.orderNumber,
-      redirectUrl: `/order-complete/${order.orderNumber}?attemptId=${canonicalAttemptId}`,
+      orderNumber: completion.orderNumber,
+      redirectUrl: `/order-complete/${completion.orderNumber}?attemptId=${canonicalAttemptId}`,
+    }
+  }
+
+  async function getAuthorizedPaymentAttempt(attemptId: string) {
+    const canonicalAttemptId = await authorizePaymentAttempt(attemptId)
+    const attempt = await repository.getPaymentAttemptSummary(canonicalAttemptId)
+    if (!attempt) throw new Error('無權存取付款交易')
+    return {
+      ...attempt,
+      items: attempt.items.map((item) => ({
+        variantId: item.variant_id,
+        quantity: item.quantity,
+        unitPrice: item.unit_price,
+        productName: item.product_name,
+        sku: item.sku,
+        color: item.color,
+        size: item.size,
+      })),
     }
   }
 
@@ -217,6 +261,7 @@ export function createCheckoutService(repository: CheckoutRepository) {
     authorizePaymentAttempt,
     createPaymentAttempt,
     completeTestPayment,
+    getAuthorizedPaymentAttempt,
     getAuthorizedCompletedOrder,
   }
 }
@@ -265,6 +310,37 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
         paymentAccessExpiresAt: data.payment_access_expires_at,
         paymentAccessTokenHash: data.payment_access_token_hash,
       } : null
+    },
+
+    async getPaymentAttemptSummary(attemptId) {
+      const { data, error } = await admin
+        .from('payment_attempts')
+        .select('items, subtotal, shipping_fee, total, status')
+        .eq('id', attemptId)
+        .maybeSingle()
+      if (error) throw error
+      if (!data || !Array.isArray(data.items)) return null
+
+      const items = data.items.flatMap((value): PaymentAttemptItem[] => {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return []
+        const item = value as Record<string, unknown>
+        if (typeof item.variant_id !== 'string'
+          || !Number.isInteger(item.quantity)
+          || !Number.isInteger(item.unit_price)
+          || typeof item.product_name !== 'string'
+          || typeof item.sku !== 'string'
+          || typeof item.color !== 'string'
+          || typeof item.size !== 'string') return []
+        return [item as PaymentAttemptItem]
+      })
+      if (items.length !== data.items.length) throw new Error('付款交易資料無效')
+      return {
+        items,
+        subtotal: data.subtotal,
+        shippingFee: data.shipping_fee,
+        total: data.total,
+        status: data.status,
+      }
     },
 
     async getVariants(variantIds) {
@@ -351,7 +427,16 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
         provider_reference: providerReference,
       })
       if (error) throw error
-      return { orderNumber: data.order_number }
+      if (data.status === 'requires_review') {
+        return {
+          status: 'requires_review',
+          reviewCode: data.review_code ?? 'payment_review_required',
+        }
+      }
+      if (data.status !== 'paid' || !data.order_number) {
+        throw new Error('付款交易結果無效')
+      }
+      return { status: 'paid', orderNumber: data.order_number }
     },
 
     async getCompletedOrderForAttempt(attemptId) {
@@ -398,6 +483,11 @@ export async function completeTestPayment(
 export async function authorizePaymentAttempt(attemptId: string) {
   return createCheckoutService(await createLiveRepository())
     .authorizePaymentAttempt(attemptId)
+}
+
+export async function getAuthorizedPaymentAttempt(attemptId: string) {
+  return createCheckoutService(await createLiveRepository())
+    .getAuthorizedPaymentAttempt(attemptId)
 }
 
 export async function getAuthorizedCompletedOrder(

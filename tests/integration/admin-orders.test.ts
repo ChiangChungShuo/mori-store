@@ -120,6 +120,14 @@ describe('admin order queries', () => {
       async getOrder() {
         return null
       },
+      async listPaymentAttemptsRequiringReview() {
+        events.push('list-review')
+        return []
+      },
+      async getPaymentAttemptForReview(attemptId) {
+        events.push(`review:${attemptId}`)
+        return null
+      },
     }
     const queries = createAdminOrderQueries({
       repository,
@@ -129,6 +137,36 @@ describe('admin order queries', () => {
     await queries.listAdminOrders({ query: ' MORI / 小美 / user@test ', status: 'paid' })
 
     expect(events).toEqual(['admin', 'list:MORI / 小美 / user@test:paid'])
+  })
+
+  it('authorizes review list and detail reads for requires_review attempts', async () => {
+    const events: string[] = []
+    const repository: AdminOrderQueryRepository = {
+      async listOrders() { return [] },
+      async getOrder() { return null },
+      async listPaymentAttemptsRequiringReview() {
+        events.push('list-review')
+        return []
+      },
+      async getPaymentAttemptForReview(attemptId) {
+        events.push(`review:${attemptId}`)
+        return null
+      },
+    }
+    const queries = createAdminOrderQueries({
+      repository,
+      requireAdmin: async () => events.push('admin'),
+    })
+
+    await queries.listAdminPaymentReviews()
+    await queries.getAdminPaymentReview(orderId)
+
+    expect(events).toEqual([
+      'admin',
+      'list-review',
+      'admin',
+      `review:${orderId}`,
+    ])
   })
 })
 
@@ -289,6 +327,10 @@ describe('admin fulfillment pages', () => {
       'utf8',
     )
     const dashboardPage = readFileSync(resolve(process.cwd(), 'src/app/admin/page.tsx'), 'utf8')
+    const reviewDetailPage = readFileSync(
+      resolve(process.cwd(), 'src/app/admin/orders/review/[attemptId]/page.tsx'),
+      'utf8',
+    )
 
     expect(orderList).toMatch(/訂單編號、收件人或 Email/)
     expect(orderList).toMatch(/useActionState/)
@@ -304,6 +346,11 @@ describe('admin fulfillment pages', () => {
     expect(dashboardPage).toMatch(/todayOrders/)
     expect(dashboardPage).toMatch(/fulfillmentBacklog/)
     expect(dashboardPage).toMatch(/lowStockVariants/)
+    expect(ordersPage).toMatch(/listAdminPaymentReviews/)
+    expect(orderList).toMatch(/需人工處理的付款/)
+    expect(orderList).toMatch(/reviewCode/)
+    expect(reviewDetailPage).toMatch(/reviewReason/)
+    expect(reviewDetailPage).toMatch(/payment\.items\.map/)
   })
 
   it('uses the session client for every admin read', () => {

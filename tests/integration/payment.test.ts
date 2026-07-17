@@ -8,6 +8,7 @@ import {
   type CheckoutVariant,
   type PaymentAttemptInsert,
 } from '@/features/checkout/service'
+import type { PaymentAttemptStatus } from '@/features/checkout/types'
 
 const teeId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 const pantsId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
@@ -48,13 +49,15 @@ const checkoutInput = {
 class MemoryCheckoutRepository implements CheckoutRepository {
   readonly attempts: Array<PaymentAttemptInsert & {
     id: string
-    status: string
+    status: PaymentAttemptStatus
     orderNumber: string | null
   }> = []
   readonly completionCalls: Array<{ attemptId: string; providerReference: string }> = []
   readonly guestTokens = new Map<string, string>()
   readonly stock = new Map(variants.map((variant) => [variant.id, variant.stock]))
   orderCount = 0
+  requiresReview = false
+  summaryReadCount = 0
   currentUserId: string | null
   private readonly completedOrders = new Map<string, { orderNumber: string }>()
 
@@ -86,6 +89,18 @@ class MemoryCheckoutRepository implements CheckoutRepository {
     } : null
   }
 
+  async getPaymentAttemptSummary(attemptId: string) {
+    this.summaryReadCount += 1
+    const attempt = this.attempts.find((candidate) => candidate.id === attemptId)
+    return attempt ? {
+      items: attempt.items,
+      subtotal: attempt.subtotal,
+      shippingFee: attempt.shippingFee,
+      total: attempt.total,
+      status: attempt.status,
+    } : null
+  }
+
   async getVariants() {
     return this.availableVariants
   }
@@ -108,8 +123,13 @@ class MemoryCheckoutRepository implements CheckoutRepository {
 
   async completePayment(attemptId: string, providerReference: string) {
     this.completionCalls.push({ attemptId, providerReference })
+    if (this.requiresReview) {
+      const attempt = this.attempts.find((candidate) => candidate.id === attemptId)
+      if (attempt) attempt.status = 'requires_review'
+      return { status: 'requires_review' as const, reviewCode: 'stock_changed' }
+    }
     const completed = this.completedOrders.get(providerReference)
-    if (completed) return completed
+    if (completed) return { status: 'paid' as const, ...completed }
 
     const attempt = this.attempts.find((candidate) => candidate.id === attemptId)
     if (!attempt) throw new Error('payment attempt not found')
@@ -121,7 +141,7 @@ class MemoryCheckoutRepository implements CheckoutRepository {
     const order = { orderNumber: `MORI-ORDER-${this.orderCount}` }
     attempt.orderNumber = order.orderNumber
     this.completedOrders.set(providerReference, order)
-    return order
+    return { status: 'paid' as const, ...order }
   }
 
   async getCompletedOrderForAttempt(attemptId: string) {
@@ -296,6 +316,55 @@ describe('checkout payment integration', () => {
       .toBe(repository.completionCalls[1].providerReference)
     expect(repository.orderCount).toBe(1)
     expect(repository.stock.get(teeId)).toBe(4)
+  })
+
+  it('returns only the owned server snapshot for the payment summary', async () => {
+    const repository = new MemoryCheckoutRepository()
+    const service = createCheckoutService(repository)
+    const { attemptId } = await service.createPaymentAttempt(
+      checkoutInput,
+      [{ variantId: teeId, quantity: 2 }],
+    )
+
+    await expect(service.getAuthorizedPaymentAttempt(attemptId)).resolves.toEqual({
+      items: [{
+        variantId: teeId,
+        quantity: 2,
+        unitPrice: 720,
+        productName: '有機棉小樹 T 恤',
+        sku: 'TEE-100',
+        color: '鼠尾草綠',
+        size: '100',
+      }],
+      subtotal: 1440,
+      shippingFee: 60,
+      total: 1500,
+      status: 'pending',
+    })
+    expect(repository.summaryReadCount).toBe(1)
+
+    repository.guestTokens.set(attemptId, 'wrong-token')
+    await expect(service.getAuthorizedPaymentAttempt(attemptId))
+      .rejects.toThrow('無權存取付款交易')
+    expect(repository.summaryReadCount).toBe(1)
+  })
+
+  it('maps the composite RPC review result without creating an order or reducing stock', async () => {
+    const repository = new MemoryCheckoutRepository()
+    repository.requiresReview = true
+    const service = createCheckoutService(repository)
+    const { attemptId } = await service.createPaymentAttempt(
+      checkoutInput,
+      [{ variantId: teeId, quantity: 1 }],
+    )
+
+    await expect(service.completeTestPayment(attemptId, 'success')).resolves.toEqual({
+      outcome: 'requires_review',
+      reviewCode: 'stock_changed',
+      message: '付款結果需人工確認，商品資料或庫存已變更。',
+    })
+    expect(repository.orderCount).toBe(0)
+    expect(repository.stock.get(teeId)).toBe(5)
   })
 
   it('authorizes completed orders only through the matching owned attempt', async () => {

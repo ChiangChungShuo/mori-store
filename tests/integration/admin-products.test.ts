@@ -8,12 +8,14 @@ import {
   type ProductRepository,
 } from '@/features/admin/product-actions'
 import type { ProductInput } from '@/lib/validation/product'
+import { ImageUploader } from '@/features/admin/image-uploader'
 import { ProductForm, ProductPublishForm } from '@/features/admin/product-form'
 import { VariantGrid } from '@/features/admin/variant-grid'
 
 const productId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 const variantId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
 const foreignVariantId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
+const initialVariantVersion = '2026-07-17T10:00:00.000Z'
 
 const product: ProductInput = {
   name: '彩色口袋 Tee',
@@ -26,7 +28,15 @@ const product: ProductInput = {
   sizeGuide: '正常版型',
   isNew: true,
   variants: [
-    { id: variantId, sku: 'TEE-Y-100', color: '黃色', size: '100', price: 590, stock: 3 },
+    {
+      id: variantId,
+      updatedAt: initialVariantVersion,
+      sku: 'TEE-Y-100',
+      color: '黃色',
+      size: '100',
+      price: 590,
+      stock: 3,
+    },
   ],
 }
 
@@ -121,6 +131,39 @@ function setup(
 }
 
 describe('admin product actions', () => {
+  it('rejects a stale edit after payment changes stock without restoring sold inventory', async () => {
+    class VersionedProductRepository extends MemoryProductRepository {
+      stock = 10
+      version = initialVariantVersion
+
+      completePayment() {
+        this.stock = 9
+        this.version = '2026-07-17T10:01:00.000Z'
+      }
+
+      override async updateProduct(id: string, input: ProductInput) {
+        const variant = input.variants[0]
+        if (variant.updatedAt !== this.version) throw new Error('stale_product_variant')
+        await super.updateProduct(id, input)
+        this.stock = variant.stock
+      }
+    }
+
+    const repository = new VersionedProductRepository()
+    const { actions } = setup(repository)
+    const staleForm = {
+      ...product,
+      variants: [{ ...product.variants[0], stock: 10, updatedAt: initialVariantVersion }],
+    }
+    repository.completePayment()
+
+    const result = await actions.updateProduct(productId, { ...staleForm, name: '付款後的新名稱' })
+
+    expect(result).toMatchObject({ ok: false, message: expect.stringContaining('重新載入') })
+    expect(repository.stock).toBe(9)
+    expect(repository.savedProduct).toBeNull()
+  })
+
   it('authorizes before create and update, and saves validated fields', async () => {
     const { actions, repository } = setup()
 
@@ -341,9 +384,37 @@ describe('admin product database contract', () => {
     expect(sql).toMatch(/is_active\s+boolean\s+not null\s+default true/i)
     expect(sql).toMatch(/is_active\s+and/i)
   })
+
+  it('loads and submits the variant updated_at concurrency token', () => {
+    const actions = readFileSync(
+      resolve(process.cwd(), 'src/features/admin/product-actions.ts'),
+      'utf8',
+    )
+
+    expect(actions).toMatch(/product_variants\(id, sku, color, size, price, compare_at_price, stock, updated_at\)/)
+    expect(actions).toMatch(/updatedAt:\s*variant\.updated_at/)
+  })
 })
 
 describe('admin product form', () => {
+  it('shows an actionable image error when Next rejects the Server Action body', async () => {
+    const upload = vi.fn().mockRejectedValue(new Error('Body exceeded 1 MB limit'))
+    const view = render(createElement(ImageUploader, { upload }))
+    const uploader = within(view.container)
+
+    fireEvent.change(uploader.getByLabelText('圖片'), {
+      target: { files: [imageFile('image/png')] },
+    })
+    fireEvent.change(uploader.getByLabelText('圖片替代文字'), {
+      target: { value: '黃色口袋 Tee 正面' },
+    })
+    fireEvent.submit(uploader.getByRole('button', { name: '上傳圖片' }).closest('form')!)
+
+    expect(await uploader.findByRole('alert')).toHaveTextContent('圖片上傳失敗')
+    expect(uploader.getByRole('alert')).toHaveTextContent('5 MB')
+    view.unmount()
+  })
+
   it('adds and removes concrete color-size rows', () => {
     function VariantHarness() {
       const [variants, setVariants] = useState(product.variants)
@@ -377,6 +448,7 @@ describe('admin product form', () => {
     )
     expect(editPage).toMatch(/variantSignature/)
     expect(editPage).toMatch(/<ProductForm key=\{variantSignature\}/)
+    expect(editPage).toMatch(/variant\.updatedAt/)
 
     const onSave = vi.fn().mockResolvedValue({ ok: true, productId })
     const initialSignature = product.variants.map((variant) => variant.id).sort().join(':')
@@ -404,6 +476,7 @@ describe('admin product form', () => {
         product.variants[0],
         {
           id: canonicalVariantId,
+          updatedAt: '2026-07-17T10:02:00.000Z',
           sku: 'TEE-Y-110',
           color: '黃色',
           size: '110',

@@ -82,11 +82,34 @@ describe('productSchema', () => {
   it('accepts stable variant IDs and canonicalizes SKUs to uppercase', () => {
     const result = productSchema.safeParse({
       ...validProduct,
-      variants: [{ ...validProduct.variants[0], id: variantId, sku: ' tee-y-100 ' }],
+      variants: [{
+        ...validProduct.variants[0],
+        id: variantId,
+        updatedAt: '2026-07-17T10:00:00.000Z',
+        sku: ' tee-y-100 ',
+      }],
     })
 
     expect(result.success).toBe(true)
     expect(result.data?.variants[0]).toMatchObject({ id: variantId, sku: 'TEE-Y-100' })
+  })
+
+  it('requires an updated_at concurrency token for existing variants only', () => {
+    const existingWithoutVersion = productSchema.safeParse({
+      ...validProduct,
+      variants: [{ ...validProduct.variants[0], id: variantId }],
+    })
+    const existingWithVersion = productSchema.safeParse({
+      ...validProduct,
+      variants: [{
+        ...validProduct.variants[0],
+        id: variantId,
+        updatedAt: '2026-07-17T10:00:00.000Z',
+      }],
+    })
+
+    expect(existingWithoutVersion.success).toBe(false)
+    expect(existingWithVersion.success).toBe(true)
   })
 
   it('rejects malformed stable variant IDs', () => {
@@ -136,7 +159,7 @@ describe('productSchema', () => {
 })
 
 describe('productImageSchema', () => {
-  it('accepts JPEG, PNG and WebP files up to 5 MB with matching magic bytes', async () => {
+  it('accepts magic-valid JPEG, PNG and WebP files above 1 MB and up to 5 MB', async () => {
     for (const type of ['image/jpeg', 'image/png', 'image/webp']) {
       const file = imageFile(type as 'image/jpeg' | 'image/png' | 'image/webp', 5 * 1024 * 1024)
       expect((await productImageSchema.safeParseAsync({

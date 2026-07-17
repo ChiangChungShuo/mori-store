@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { canTransitionOrder } from '@/features/orders/status'
+import type { Json } from '@/types/database'
 import type { OrderStatus } from '@/types/store'
 
 const orderIdSchema = z.string().uuid()
@@ -60,9 +61,40 @@ export type AdminOrderDetail = AdminOrderSummary & {
   } | null
 }
 
+export type AdminPaymentReviewSummary = {
+  id: string
+  email: string
+  recipientName: string
+  total: number
+  reviewCode: string
+  reviewReason: string
+  createdAt: string
+}
+
+export type AdminPaymentReviewDetail = AdminPaymentReviewSummary & {
+  recipientPhone: string
+  providerReference: string | null
+  storeChain: string
+  storeId: string
+  storeName: string
+  subtotal: number
+  shippingFee: number
+  items: Array<{
+    variantId: string
+    productName: string
+    sku: string
+    color: string
+    size: string
+    unitPrice: number
+    quantity: number
+  }>
+}
+
 export interface AdminOrderQueryRepository {
   listOrders(filters: AdminOrderFilters): Promise<AdminOrderSummary[]>
   getOrder(orderNumber: string): Promise<AdminOrderDetail | null>
+  listPaymentAttemptsRequiringReview(): Promise<AdminPaymentReviewSummary[]>
+  getPaymentAttemptForReview(attemptId: string): Promise<AdminPaymentReviewDetail | null>
 }
 
 type AdminOrderQueryDependencies = {
@@ -90,6 +122,18 @@ export function createAdminOrderQueries(dependencies: AdminOrderQueryDependencie
       const canonicalOrderNumber = orderNumber.trim()
       if (!canonicalOrderNumber) return null
       return dependencies.repository.getOrder(canonicalOrderNumber)
+    },
+
+    async listAdminPaymentReviews() {
+      await dependencies.requireAdmin()
+      return dependencies.repository.listPaymentAttemptsRequiringReview()
+    },
+
+    async getAdminPaymentReview(attemptId: string) {
+      await dependencies.requireAdmin()
+      const id = orderIdSchema.safeParse(attemptId)
+      if (!id.success) return null
+      return dependencies.repository.getPaymentAttemptForReview(id.data)
     },
   }
 }
@@ -206,6 +250,60 @@ type AdminOrderRow = {
   }> | null
 }
 
+type AdminPaymentReviewRow = {
+  id: string
+  email: string
+  recipient_name: string
+  recipient_phone: string
+  provider_reference: string | null
+  review_code: string | null
+  review_reason: string | null
+  store_chain: string
+  store_id: string
+  store_name: string
+  subtotal: number
+  shipping_fee: number
+  total: number
+  items: Json
+  created_at: string
+}
+
+function toPaymentReviewSummary(payment: AdminPaymentReviewRow): AdminPaymentReviewSummary {
+  return {
+    id: payment.id,
+    email: payment.email,
+    recipientName: payment.recipient_name,
+    total: payment.total,
+    reviewCode: payment.review_code ?? 'payment_review_required',
+    reviewReason: payment.review_reason ?? '商品資料或庫存已變更',
+    createdAt: payment.created_at,
+  }
+}
+
+function paymentReviewItems(value: Json): AdminPaymentReviewDetail['items'] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((entry) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return []
+    const item = entry as Record<string, unknown>
+    if (typeof item.variant_id !== 'string'
+      || typeof item.product_name !== 'string'
+      || typeof item.sku !== 'string'
+      || typeof item.color !== 'string'
+      || typeof item.size !== 'string'
+      || !Number.isInteger(item.unit_price)
+      || !Number.isInteger(item.quantity)) return []
+    return [{
+      variantId: item.variant_id,
+      productName: item.product_name,
+      sku: item.sku,
+      color: item.color,
+      size: item.size,
+      unitPrice: item.unit_price as number,
+      quantity: item.quantity as number,
+    }]
+  })
+}
+
 function toOrderSummary(order: AdminOrderRow): AdminOrderSummary {
   return {
     id: order.id,
@@ -281,6 +379,47 @@ function createSupabaseOrderQueryRepository(): AdminOrderQueryRepository {
         } : null,
       }
     },
+
+    async listPaymentAttemptsRequiringReview() {
+      const { data, error } = await (await client())
+        .from('payment_attempts')
+        .select(`
+          id, email, recipient_name, recipient_phone, provider_reference,
+          review_code, review_reason, store_chain, store_id, store_name,
+          subtotal, shipping_fee, total, items, created_at
+        `)
+        .eq('status', 'requires_review')
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return ((data ?? []) as AdminPaymentReviewRow[]).map(toPaymentReviewSummary)
+    },
+
+    async getPaymentAttemptForReview(attemptId) {
+      const { data, error } = await (await client())
+        .from('payment_attempts')
+        .select(`
+          id, email, recipient_name, recipient_phone, provider_reference,
+          review_code, review_reason, store_chain, store_id, store_name,
+          subtotal, shipping_fee, total, items, created_at
+        `)
+        .eq('id', attemptId)
+        .eq('status', 'requires_review')
+        .maybeSingle()
+      if (error) throw error
+      if (!data) return null
+      const payment = data as AdminPaymentReviewRow
+      return {
+        ...toPaymentReviewSummary(payment),
+        recipientPhone: payment.recipient_phone,
+        providerReference: payment.provider_reference,
+        storeChain: payment.store_chain,
+        storeId: payment.store_id,
+        storeName: payment.store_name,
+        subtotal: payment.subtotal,
+        shippingFee: payment.shipping_fee,
+        items: paymentReviewItems(payment.items),
+      }
+    },
   }
 }
 
@@ -321,6 +460,14 @@ export async function listAdminOrders(filters: Partial<AdminOrderFilters> = {}) 
 
 export async function getAdminOrder(orderNumber: string) {
   return productionQueries().getAdminOrder(orderNumber)
+}
+
+export async function listAdminPaymentReviews() {
+  return productionQueries().listAdminPaymentReviews()
+}
+
+export async function getAdminPaymentReview(attemptId: string) {
+  return productionQueries().getAdminPaymentReview(attemptId)
 }
 
 export type AdminOrderListState = AdminOrderFilters & {

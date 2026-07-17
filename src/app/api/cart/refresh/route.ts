@@ -1,5 +1,7 @@
 import { getPublishedCartVariants } from '@/features/catalog/queries'
 import { parseCartRefreshRequest, reconcileCartItems } from '@/features/cart/refresh'
+import { calculateCart } from '@/features/cart/totals'
+import { getStorefrontSettings } from '@/features/checkout/settings'
 
 export async function POST(request: Request) {
   let body: unknown
@@ -15,10 +17,17 @@ export async function POST(request: Request) {
   }
 
   try {
-    const snapshots = await getPublishedCartVariants(
-      items.map((item) => item.variantId),
+    const [snapshots, settings] = await Promise.all([
+      getPublishedCartVariants(items.map((item) => item.variantId)),
+      getStorefrontSettings(),
+    ])
+    const refreshedItems = reconcileCartItems(items, snapshots)
+    const summary = calculateCart(
+      refreshedItems,
+      settings.shippingFee,
+      settings.freeShippingThreshold,
     )
-    return Response.json({ items: reconcileCartItems(items, snapshots) })
+    return Response.json({ items: refreshedItems, summary })
   } catch {
     return Response.json({ error: 'Unable to refresh cart.' }, { status: 503 })
   }

@@ -26,7 +26,7 @@ export default async function EditAdminProductPage({
   const upload = uploadProductImage.bind(null, productId)
   const togglePublished = setProductPublished.bind(null, productId)
   const variantSignature = product.product.variants
-    .map((variant) => variant.id)
+    .map((variant) => `${variant.id}:${variant.updatedAt}`)
     .sort()
     .join(':')
 

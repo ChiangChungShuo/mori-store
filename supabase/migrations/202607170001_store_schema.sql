@@ -1,7 +1,7 @@
 create type public.age_band as enum ('0-2', '3-5', '6-9', '10-12');
 create type public.order_status as enum ('pending_payment', 'paid', 'preparing', 'shipped', 'collected', 'cancelled');
 create type public.store_chain as enum ('seven_eleven', 'family_mart');
-create type public.payment_attempt_status as enum ('pending', 'paid', 'failed', 'cancelled');
+create type public.payment_attempt_status as enum ('pending', 'paid', 'failed', 'cancelled', 'requires_review');
 
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -106,6 +106,8 @@ create table public.payment_attempts (
   total integer not null check (total = subtotal + shipping_fee),
   items jsonb not null check (jsonb_typeof(items) = 'array' and jsonb_array_length(items) > 0),
   status public.payment_attempt_status not null default 'pending',
+  review_code text,
+  review_reason text,
   provider_reference text unique,
   order_id uuid unique references public.orders(id) on delete set null,
   paid_at timestamptz,
@@ -123,7 +125,7 @@ language plpgsql
 set search_path = public
 as $$
 begin
-  new.updated_at = now();
+  new.updated_at = clock_timestamp();
   return new;
 end;
 $$;

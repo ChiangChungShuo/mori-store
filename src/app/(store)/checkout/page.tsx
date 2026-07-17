@@ -1,7 +1,12 @@
 import { redirect } from 'next/navigation'
 import { CheckoutForm } from '@/features/checkout/checkout-form'
 import { createPaymentAttempt } from '@/features/checkout/service'
-import type { CheckoutCartItem } from '@/features/checkout/types'
+import {
+  CheckoutAttemptError,
+  toCheckoutActionState,
+  type CheckoutActionState,
+  type CheckoutCartItem,
+} from '@/features/checkout/types'
 
 type CheckoutPageProps = {
   searchParams: Promise<{ payment?: string }>
@@ -10,23 +15,32 @@ type CheckoutPageProps = {
 export default async function CheckoutPage({ searchParams }: CheckoutPageProps) {
   const { payment } = await searchParams
 
-  async function beginCheckout(formData: FormData) {
+  async function beginCheckout(
+    _previousState: CheckoutActionState,
+    formData: FormData,
+  ): Promise<CheckoutActionState> {
     'use server'
 
     let cart: CheckoutCartItem[] = []
     try {
       cart = JSON.parse(formData.get('cart')?.toString() ?? '[]') as CheckoutCartItem[]
     } catch {
-      throw new Error('購物袋內容無效')
+      return toCheckoutActionState(new CheckoutAttemptError('cart_invalid'))
     }
 
-    const { attemptId } = await createPaymentAttempt({
-      email: formData.get('email')?.toString() ?? '',
-      recipientName: formData.get('recipientName')?.toString() ?? '',
-      phone: formData.get('phone')?.toString() ?? '',
-      chain: formData.get('chain')?.toString() as 'seven_eleven' | 'family_mart',
-      storeId: formData.get('storeId')?.toString() ?? '',
-    }, cart)
+    let attemptId: string
+    try {
+      const attempt = await createPaymentAttempt({
+        email: formData.get('email')?.toString() ?? '',
+        recipientName: formData.get('recipientName')?.toString() ?? '',
+        phone: formData.get('phone')?.toString() ?? '',
+        chain: formData.get('chain')?.toString() as 'seven_eleven' | 'family_mart',
+        storeId: formData.get('storeId')?.toString() ?? '',
+      }, cart)
+      attemptId = attempt.attemptId
+    } catch (error) {
+      return toCheckoutActionState(error)
+    }
 
     redirect(`/checkout/payment/${attemptId}`)
   }

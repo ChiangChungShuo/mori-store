@@ -28,7 +28,7 @@ describe('store schema security invariants', () => {
   })
 
   it('models payment lifecycle states', () => {
-    expect(schema).toMatch(/create type public\.payment_attempt_status as enum \('pending', 'paid', 'failed', 'cancelled'\)/i)
+    expect(schema).toMatch(/create type public\.payment_attempt_status as enum \('pending', 'paid', 'failed', 'cancelled', 'requires_review'\)/i)
     expect(schema).toMatch(/status public\.payment_attempt_status not null default 'pending'/i)
   })
 

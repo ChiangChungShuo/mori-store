@@ -16,9 +16,16 @@ export function ImageUploader({
     event.preventDefault()
     const form = event.currentTarget
     startTransition(async () => {
-      const nextResult = await upload(new FormData(form))
-      setResult(nextResult)
-      if (nextResult.ok) form.reset()
+      try {
+        const nextResult = await upload(new FormData(form))
+        setResult(nextResult)
+        if (nextResult.ok) form.reset()
+      } catch {
+        setResult({
+          ok: false,
+          message: '圖片上傳失敗，請確認檔案不超過 5 MB 後再試一次。',
+        })
+      }
     })
   }
 

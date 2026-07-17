@@ -109,8 +109,12 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
       try {
         await dependencies.repository.updateProduct(id.data, parsed.data)
       } catch (error) {
-        if (databaseErrorMessage(error).includes('variant_not_owned')) {
+        const message = databaseErrorMessage(error)
+        if (message.includes('variant_not_owned')) {
           return { ok: false, message: '商品規格不存在或不屬於此商品' }
+        }
+        if (message.includes('stale_product_variant')) {
+          return { ok: false, message: '商品庫存或規格已更新，請重新載入後再儲存' }
         }
         return { ok: false, message: '目前無法更新商品，請稍後再試' }
       }
@@ -294,7 +298,7 @@ export async function getAdminProduct(productId: string): Promise<AdminProductDe
       id, name, slug, category, age_bands, description, material,
       care_instructions, size_guide, is_new, is_published,
       product_images(id, storage_path, alt_text, position),
-      product_variants(id, sku, color, size, price, compare_at_price, stock)
+      product_variants(id, sku, color, size, price, compare_at_price, stock, updated_at)
     `)
     .eq('id', id.data)
     .eq('product_variants.is_active', true)
@@ -317,6 +321,7 @@ export async function getAdminProduct(productId: string): Promise<AdminProductDe
       isNew: data.is_new,
       variants: data.product_variants.map((variant) => ({
         id: variant.id,
+        updatedAt: variant.updated_at,
         sku: variant.sku,
         color: variant.color,
         size: variant.size,

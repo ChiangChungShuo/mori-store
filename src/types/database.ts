@@ -148,6 +148,8 @@ export type Database = {
           provider_reference: string | null
           recipient_name: string
           recipient_phone: string
+          review_code: string | null
+          review_reason: string | null
           shipping_fee: number
           status: Database['public']['Enums']['payment_attempt_status']
           store_chain: Database['public']['Enums']['store_chain']
@@ -170,6 +172,8 @@ export type Database = {
           provider_reference?: string | null
           recipient_name: string
           recipient_phone: string
+          review_code?: string | null
+          review_reason?: string | null
           shipping_fee: number
           status?: Database['public']['Enums']['payment_attempt_status']
           store_chain: Database['public']['Enums']['store_chain']
@@ -192,6 +196,8 @@ export type Database = {
           provider_reference?: string | null
           recipient_name?: string
           recipient_phone?: string
+          review_code?: string | null
+          review_reason?: string | null
           shipping_fee?: number
           status?: Database['public']['Enums']['payment_attempt_status']
           store_chain?: Database['public']['Enums']['store_chain']
@@ -449,7 +455,7 @@ export type Database = {
       }
       complete_test_payment: {
         Args: { payment_attempt_id: string; provider_reference: string }
-        Returns: Database['public']['Tables']['orders']['Row']
+        Returns: Database['public']['CompositeTypes']['payment_completion_result']
       }
       handle_new_user: { Args: Record<PropertyKey, never>; Returns: unknown }
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean }
@@ -461,10 +467,17 @@ export type Database = {
     Enums: {
       age_band: '0-2' | '3-5' | '6-9' | '10-12'
       order_status: 'pending_payment' | 'paid' | 'preparing' | 'shipped' | 'collected' | 'cancelled'
-      payment_attempt_status: 'pending' | 'paid' | 'failed' | 'cancelled'
+      payment_attempt_status: 'pending' | 'paid' | 'failed' | 'cancelled' | 'requires_review'
       store_chain: 'seven_eleven' | 'family_mart'
     }
-    CompositeTypes: Record<string, never>
+    CompositeTypes: {
+      payment_completion_result: {
+        status: Database['public']['Enums']['payment_attempt_status']
+        order_id: string | null
+        order_number: string | null
+        review_code: string | null
+      }
+    }
   }
 }
 

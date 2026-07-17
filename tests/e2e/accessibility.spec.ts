@@ -43,6 +43,7 @@ async function openCheckoutWithCart(page: Page) {
   await page.reload()
   await expect(page.getByRole('heading', { name: '結帳' })).toBeVisible()
   await expect(page.locator('.cart-drawer summary')).toContainText('購物袋（1）')
+  await expect(page.getByRole('button', { name: '前往測試付款' })).toBeEnabled()
 }
 
 test('tabs through the header with visible focus', async ({ page }) => {

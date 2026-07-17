@@ -4,6 +4,7 @@ const ageBandSchema = z.enum(['0-2', '3-5', '6-9', '10-12'])
 
 const variantSchema = z.object({
   id: z.string().uuid('商品規格編號無效').optional(),
+  updatedAt: z.string().datetime({ offset: true }).optional(),
   sku: z.string().trim().min(1, 'SKU 為必填').transform((sku) => sku.toUpperCase()),
   color: z.string().trim().min(1, '顏色為必填'),
   size: z.string().trim().min(1, '尺寸為必填'),
@@ -32,6 +33,21 @@ export const productSchema = z.object({
   const ids = new Set<string>()
 
   product.variants.forEach((variant, index) => {
+    if (variant.id && !variant.updatedAt) {
+      context.addIssue({
+        code: 'custom',
+        message: '商品規格版本已過期，請重新載入',
+        path: ['variants', index, 'updatedAt'],
+      })
+    }
+    if (!variant.id && variant.updatedAt) {
+      context.addIssue({
+        code: 'custom',
+        message: '新商品規格不可包含版本',
+        path: ['variants', index, 'updatedAt'],
+      })
+    }
+
     if (variant.id && ids.has(variant.id)) {
       context.addIssue({
         code: 'custom',
