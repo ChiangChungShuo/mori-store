@@ -205,6 +205,7 @@ a { color: inherit; }
   color: inherit;
   font: inherit;
 }
+.checkout-form [role="alert"] { margin: 0; overflow-wrap: anywhere; }
 .store-picker { display: grid; gap: 1rem; margin: 0; padding: 1.5rem; border: 2px solid var(--ink); }
 .store-picker legend { padding: 0 0.5rem; font-weight: 800; }
 .payment-actions { display: flex; flex-wrap: wrap; gap: 1rem; }

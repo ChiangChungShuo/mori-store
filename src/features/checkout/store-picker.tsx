@@ -7,6 +7,7 @@ export { TEST_STORES }
 
 type StorePickerProps = {
   chain: TestStore['chain']
+  errors?: Partial<Record<'chain' | 'storeId', string>>
   storeId: string
   onChainChange: (chain: TestStore['chain']) => void
   onStoreChange: (store: TestStore) => void
@@ -14,6 +15,7 @@ type StorePickerProps = {
 
 export function StorePicker({
   chain,
+  errors = {},
   storeId,
   onChainChange,
   onStoreChange,
@@ -27,6 +29,8 @@ export function StorePicker({
       <label>
         超商通路
         <select
+          aria-describedby={errors.chain ? 'checkout-chain-error' : undefined}
+          aria-invalid={Boolean(errors.chain)}
           name="chain"
           required
           value={chain}
@@ -36,9 +40,12 @@ export function StorePicker({
           <option value="family_mart">全家</option>
         </select>
       </label>
+      {errors.chain ? <span id="checkout-chain-error" role="alert">{errors.chain}</span> : null}
       <label>
         取貨門市
         <select
+          aria-describedby={errors.storeId ? 'checkout-store-error' : undefined}
+          aria-invalid={Boolean(errors.storeId)}
           name="storeId"
           required
           value={storeId}
@@ -55,6 +62,7 @@ export function StorePicker({
           ))}
         </select>
       </label>
+      {errors.storeId ? <span id="checkout-store-error" role="alert">{errors.storeId}</span> : null}
       {selectedStore ? <p>{selectedStore.address}</p> : null}
     </fieldset>
   )

@@ -1,5 +1,5 @@
 import { createElement } from 'react'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { CheckoutForm } from '@/features/checkout/checkout-form'
 import { TEST_STORES } from '@/features/checkout/store-picker'
@@ -58,5 +58,30 @@ describe('test store picker', () => {
     expect(screen.getByLabelText('手機號碼')).toBeRequired()
     expect(screen.getByLabelText('超商通路')).toBeRequired()
     expect(screen.getByLabelText('取貨門市')).toBeRequired()
+  })
+
+  it('connects checkout validation errors to their fields', () => {
+    const { container } = render(createElement(
+      CartProvider,
+      null,
+      createElement(CheckoutForm, { action: vi.fn() }),
+    ))
+    const checkout = within(container)
+
+    for (const [label, errorId] of [
+      ['Email', 'checkout-email-error'],
+      ['收件人姓名', 'checkout-recipient-name-error'],
+      ['手機號碼', 'checkout-phone-error'],
+      ['超商通路', 'checkout-chain-error'],
+      ['取貨門市', 'checkout-store-error'],
+    ]) {
+      const field = checkout.getByLabelText(label)
+      fireEvent.invalid(field)
+
+      const error = container.querySelector(`#${errorId}`)
+      expect(error).toHaveAttribute('role', 'alert')
+      expect(field).toHaveAttribute('aria-describedby', errorId)
+      expect(field).toHaveAccessibleName(label)
+    }
   })
 })
