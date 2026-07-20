@@ -1,4 +1,5 @@
 import type { OrderStatus, StoreChain } from '@/types/store'
+import { isE2EMode } from '@/testing/e2e-mode'
 
 export type OrderItem = {
   productName: string
@@ -155,14 +156,36 @@ async function createLiveGuestOrderRepository(): Promise<Pick<OrderQueriesReposi
 }
 
 export async function listOrdersForUser(userId: string) {
+  if (isE2EMode()) {
+    const [{ createE2EOrderRepository }, { getE2EStore }] = await Promise.all([
+      import('@/testing/e2e-order-repository'),
+      import('@/testing/e2e-store'),
+    ])
+    return createE2EOrderRepository(getE2EStore()).listOrdersForUser(userId)
+  }
   return (await createLiveMemberOrderRepository()).listOrdersForUser(userId)
 }
 
 export async function getOrderForUser(orderNumber: string, userId: string) {
+  if (isE2EMode()) {
+    const [{ createE2EOrderRepository }, { getE2EStore }] = await Promise.all([
+      import('@/testing/e2e-order-repository'),
+      import('@/testing/e2e-store'),
+    ])
+    return createE2EOrderRepository(getE2EStore()).getOrderForUser(orderNumber, userId)
+  }
   return (await createLiveMemberOrderRepository()).getOrderForUser(orderNumber, userId)
 }
 
 export async function lookupGuestOrder(orderNumber: string, email: string) {
+  if (isE2EMode()) {
+    const [{ createE2EOrderRepository }, { getE2EStore }] = await Promise.all([
+      import('@/testing/e2e-order-repository'),
+      import('@/testing/e2e-store'),
+    ])
+    return createE2EOrderRepository(getE2EStore())
+      .lookupGuestOrder(orderNumber, normalizeOrderEmail(email))
+  }
   return (await createLiveGuestOrderRepository())
     .lookupGuestOrder(orderNumber, normalizeOrderEmail(email))
 }

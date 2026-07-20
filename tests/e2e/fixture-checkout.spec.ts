@@ -21,6 +21,15 @@ test('completes the local fixture checkout without Supabase', async ({ page }) =
   await expect(page).toHaveURL(/\/order-complete\/MORI-DEMO-/)
   await expect(page.getByRole('heading', { name: '訂單完成' })).toBeVisible()
   await expect(page.getByText('付款成功')).toBeVisible()
+  const orderNumber = new URL(page.url()).pathname.split('/').at(-1)!
   await expect.poll(() => page.evaluate(() => window.localStorage.getItem('mori-cart-v1')))
     .toBe('[]')
+
+  await page.goto('/order-lookup')
+  await page.getByLabel('訂單編號').fill(orderNumber)
+  await page.getByLabel('Email').fill('preview-parent@example.com')
+  await page.getByRole('button', { name: '查詢訂單' }).click()
+
+  await expect(page.getByText(orderNumber)).toBeVisible()
+  await expect(page.getByText('王小美（0912345678）')).toBeVisible()
 })
