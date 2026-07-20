@@ -25,13 +25,13 @@ async function expectNoHorizontalOverflow(page: Page, path: string) {
     .toBeLessThanOrEqual(375)
 }
 
-async function seedCart(page: Page) {
+async function seedCart(page: Page, quantity = fixtureCart[0].quantity) {
   await page.goto('/checkout')
-  await expect(page.getByRole('alert').filter({ hasText: '購物袋沒有可結帳的商品' }))
+  await expect(page.getByRole('alert').filter({ hasText: '購物車沒有可結帳的商品' }))
     .toBeVisible()
   await page.evaluate((cart) => {
     window.localStorage.setItem('mori-cart-v1', JSON.stringify(cart))
-  }, fixtureCart)
+  }, fixtureCart.map((item) => ({ ...item, quantity })))
 }
 
 test.beforeEach(async ({}, testInfo) => {
@@ -56,11 +56,12 @@ test('populated product detail fits the 375 px viewport', async ({ page }) => {
 
 test('populated cart fits the 375 px viewport', async ({ page }) => {
   test.skip(externalTarget && !process.env.E2E_GUEST_VARIANT_ID, 'live cart requires E2E_GUEST_VARIANT_ID')
-  await seedCart(page)
+  await seedCart(page, 1)
   const response = await page.goto('/cart')
   expect(response?.ok(), '/cart must return a successful response').toBe(true)
   await expect(page.locator('.cart-page-list li')).toHaveCount(1)
-  await expect(page.getByLabel('數量')).toHaveValue('2')
+  await page.getByRole('button', { name: '增加 有機棉小樹 T 恤 數量' }).click()
+  await expect(page.getByRole('status', { name: '有機棉小樹 T 恤 數量' })).toHaveText('2')
   await expect.poll(() => page.evaluate(() => window.innerWidth)).toBe(375)
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth))
     .toBeLessThanOrEqual(375)
@@ -73,7 +74,7 @@ test('populated checkout fits the 375 px viewport', async ({ page }) => {
   await page.getByLabel('收件人姓名').fill('王小美')
   await page.getByLabel('手機號碼').fill('0912345678')
   await page.getByLabel('取貨門市').selectOption('123456')
-  await expect(page.locator('.cart-drawer summary')).toContainText('購物袋（2）')
+  await expect(page.locator('.cart-drawer summary')).toContainText('購物車2')
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth))
     .toBeLessThanOrEqual(375)
 })

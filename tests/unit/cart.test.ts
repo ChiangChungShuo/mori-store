@@ -1,5 +1,5 @@
 import { createElement } from 'react'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CartPageClient } from '@/features/cart/cart-page-client'
 import { CartProvider, useCart } from '@/features/cart/cart-provider'
@@ -229,12 +229,45 @@ describe('CartProvider', () => {
     render(createElement(CartProvider, null, createElement(CartDrawer)))
 
     expect(await screen.findByText('有機棉小樹 T 恤')).toBeInTheDocument()
-    expect(screen.getByText('購物袋（1）')).toBeInTheDocument()
+    expect(screen.getAllByText('購物車')).toHaveLength(2)
+    expect(screen.getByLabelText('1 件商品')).toBeInTheDocument()
     expect(screen.getByText('小計 NT$680')).toBeInTheDocument()
   })
 })
 
 describe('CartPage refresh', () => {
+  it('updates quantity, line total, shipping and total through the stepper', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
+    window.localStorage.setItem('mori-cart-v1', JSON.stringify([pants]))
+    render(createElement(CartProvider, null, createElement(CartPageClient, { settings: storeSettings })))
+    await screen.findByText(pants.name)
+
+    fireEvent.click(screen.getByRole('button', { name: `增加 ${pants.name} 數量` }))
+    const quantity = screen.getByRole('status', { name: `${pants.name} 數量` })
+    expect(quantity).toHaveTextContent('2')
+    expect(quantity).toHaveAttribute('aria-live', 'polite')
+    expect(screen.getAllByText('NT$1,760').length).toBeGreaterThan(0)
+    expect(screen.getByText('免運')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: `減少 ${pants.name} 數量` }))
+    expect(screen.getByRole('status', { name: `${pants.name} 數量` })).toHaveTextContent('1')
+  })
+
+  it('shows product imagery, quantity controls and a clear-cart action', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
+    window.localStorage.setItem('mori-cart-v1', JSON.stringify([pants]))
+
+    render(createElement(CartProvider, null, createElement(CartPageClient, { settings: storeSettings })))
+
+    await screen.findByRole('alert')
+    expect(screen.getByRole('img', { name: pants.name })).toHaveAttribute('src', pants.imageUrl)
+    expect(screen.getByRole('button', { name: `減少 ${pants.name} 數量` })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: `增加 ${pants.name} 數量` }))
+    expect(screen.getByLabelText(`${pants.name} 數量`)).toHaveTextContent('2')
+    fireEvent.click(screen.getByRole('button', { name: '清空購物車' }))
+    expect(await screen.findByText('購物車目前是空的。')).toBeInTheDocument()
+  })
+
   it('keeps existing items and offers retry when the server refresh fails', async () => {
     const fetchMock = vi.fn().mockRejectedValue(new Error('network unavailable'))
     vi.stubGlobal('fetch', fetchMock)
@@ -243,40 +276,25 @@ describe('CartPage refresh', () => {
     render(createElement(CartProvider, null, createElement(CartPageClient, { settings: storeSettings })))
 
     expect(await screen.findByText(tee.name)).toBeInTheDocument()
-    expect(await screen.findByRole('alert')).toHaveTextContent('無法更新購物袋，請再試一次。')
+    expect(await screen.findByRole('alert')).toHaveTextContent('無法更新購物車，請再試一次。')
     expect(screen.getByText(tee.name)).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: '重試' }))
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
   })
 
-  it('renders at most 99 quantity options for a large-stock add action', async () => {
+  it('disables quantity increase at the 99 item limit', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
-
-    function AddLargeStockItem() {
-      const { dispatch } = useCart()
-      return createElement('button', {
-        type: 'button',
-        onClick: () => dispatch({
-          type: 'add',
-          item: { ...tee, maxStock: 120 },
-        }),
-      }, '加入大量庫存商品')
-    }
-
-    render(createElement(
-      CartProvider,
-      null,
-      createElement('div', null, createElement(
-        AddLargeStockItem,
-      ), createElement(CartPageClient, { settings: storeSettings })),
-    ))
-
-    await screen.findByText('購物袋還是空的。')
-    fireEvent.click(screen.getByRole('button', { name: '加入大量庫存商品' }))
+    window.localStorage.setItem('mori-cart-v1', JSON.stringify([{
+      ...tee,
+      quantity: 99,
+      maxStock: 99,
+    }]))
+    render(createElement(CartProvider, null, createElement(CartPageClient, { settings: storeSettings })))
     await screen.findByRole('alert')
 
-    expect(within(screen.getByLabelText('數量')).getAllByRole('option')).toHaveLength(99)
+    expect(screen.getByLabelText(`${tee.name} 數量`)).toHaveTextContent('99')
+    expect(screen.getByRole('button', { name: `增加 ${tee.name} 數量` })).toBeDisabled()
   })
 
   it('uses server-provided shipping settings and hides disabled free shipping', async () => {
