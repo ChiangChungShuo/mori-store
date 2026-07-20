@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto'
+import { isE2EMode } from '@/testing/e2e-mode'
 import type { E2EStoreState, E2EUser } from '@/testing/e2e-store'
 
 export type AuthenticatedUser = Pick<E2EUser, 'id' | 'email' | 'role'>
@@ -87,6 +88,8 @@ export function createE2EAuthRepository(store: E2EStoreState, cookieStore: Cooki
 }
 
 async function createServerE2EAuthRepository() {
+  if (!isE2EMode()) throw new Error('Fixture authentication is disabled')
+
   const [{ cookies }, { getE2EStore }] = await Promise.all([
     import('next/headers'),
     import('@/testing/e2e-store'),

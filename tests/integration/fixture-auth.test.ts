@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createE2EAuthRepository,
   getE2ECurrentUser,
@@ -7,11 +7,29 @@ import {
   signUpE2E,
   type CookieAdapter,
 } from '@/testing/e2e-auth-repository'
-import { createE2EStore } from '@/testing/e2e-store'
+import { createE2EStore, getE2EStore } from '@/testing/e2e-store'
+import {
+  signIn as signInAction,
+  signOut as signOutAction,
+  signUp as signUpAction,
+  type AuthActionState,
+} from '@/features/auth/actions'
+import { createPaymentAttempt } from '@/features/checkout/service'
+import { requireAdmin } from '@/lib/auth/require-admin'
 import { requireUser } from '@/lib/auth/require-user'
 
 const serverCookieValues = vi.hoisted(() => new Map<string, string>())
-const redirect = vi.hoisted(() => vi.fn())
+const navigation = vi.hoisted(() => {
+  const sentinel = new Error('NEXT_REDIRECT_SENTINEL')
+  return {
+    sentinel,
+    redirect: vi.fn((destination: string) => {
+      void destination
+      throw sentinel
+    }),
+  }
+})
+const createClient = vi.hoisted(() => vi.fn())
 
 vi.mock('next/headers', () => ({
   cookies: async () => ({
@@ -26,9 +44,20 @@ vi.mock('next/headers', () => ({
       serverCookieValues.delete(name)
     },
   }),
+  headers: async () => ({ get: () => 'http://localhost:3000' }),
 }))
 
-vi.mock('next/navigation', () => ({ redirect }))
+vi.mock('next/navigation', () => ({ redirect: navigation.redirect }))
+vi.mock('@/lib/supabase/server', () => ({ createClient }))
+
+beforeEach(() => {
+  const store = getE2EStore()
+  store.sessions.clear()
+  store.attempts.clear()
+  serverCookieValues.clear()
+  navigation.redirect.mockClear()
+  createClient.mockReset()
+})
 
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -51,6 +80,31 @@ function createCookieJar() {
     },
   }
   return { adapter, values, writes }
+}
+
+function enableFixtureMode() {
+  vi.stubEnv('NODE_ENV', 'development')
+  vi.stubEnv('MORI_E2E_FIXTURES', '1')
+}
+
+function credentialsForm(email: string, password: string, next?: string) {
+  const formData = new FormData()
+  formData.set('email', email)
+  formData.set('password', password)
+  if (next) formData.set('next', next)
+  return formData
+}
+
+async function invokeAuthAction(
+  action: ((formData: FormData) => Promise<AuthActionState>) | (
+    (previousState: AuthActionState, formData: FormData) => Promise<AuthActionState>
+  ),
+  formData: FormData,
+) {
+  if (action.length === 2) {
+    return action({ ok: false }, formData)
+  }
+  return action(formData)
 }
 
 describe('fixture authentication', () => {
@@ -88,6 +142,7 @@ describe('fixture authentication', () => {
   })
 
   it('exposes server operations for fixture actions and guards', async () => {
+    enableFixtureMode()
     const email = `member-${crypto.randomUUID()}@example.com`
 
     await expect(signUpE2E(email, 'parent123')).resolves.toBe('created')
@@ -101,13 +156,168 @@ describe('fixture authentication', () => {
     await expect(getE2ECurrentUser()).resolves.toBeNull()
   })
 
-  it('preserves the requested fixture pathname when authentication is required', async () => {
-    vi.stubEnv('MORI_E2E_FIXTURES', '1')
+  it.each([
+    ['production', 'production', '1'],
+    ['off mode', 'development', undefined],
+  ])('fails closed in %s before creating an owner session', async (_, nodeEnv, fixtureFlag) => {
+    vi.stubEnv('NODE_ENV', nodeEnv)
+    vi.stubEnv('MORI_E2E_FIXTURES', fixtureFlag)
+    const store = getE2EStore()
+    store.sessions.clear()
     serverCookieValues.clear()
-    redirect.mockClear()
 
-    await requireUser('/account/orders')
+    const disabledOperations = [
+      () => getE2ECurrentUser(),
+      () => signInE2E('admin@mori.tw', 'mori123456'),
+      () => signUpE2E('blocked@example.com', 'parent123'),
+      () => signOutE2E(),
+    ]
+    for (const operation of disabledOperations) {
+      await expect(operation()).rejects.toThrow('Fixture authentication is disabled')
+    }
+    expect(store.sessions.size).toBe(0)
+    expect(serverCookieValues.size).toBe(0)
+  })
 
-    expect(redirect).toHaveBeenCalledWith('/login?next=%2Faccount%2Forders')
+  it('preserves the requested fixture pathname when authentication is required', async () => {
+    enableFixtureMode()
+
+    await expect(requireUser('/account/orders')).rejects.toBe(navigation.sentinel)
+
+    expect(navigation.redirect).toHaveBeenCalledWith('/login?next=%2Faccount%2Forders')
+  })
+
+  it('routes fixture owner and customer sign-ins without constructing Supabase', async () => {
+    enableFixtureMode()
+    createClient.mockRejectedValue(new Error('Supabase must not be constructed in fixture mode'))
+
+    await expect(invokeAuthAction(
+      signInAction,
+      credentialsForm('admin@mori.tw', 'mori123456'),
+    )).rejects.toBe(navigation.sentinel)
+    expect(navigation.redirect).toHaveBeenLastCalledWith('/admin')
+
+    const email = `member-${crypto.randomUUID()}@example.com`
+    await signUpE2E(email, 'parent123')
+    navigation.redirect.mockClear()
+    await expect(invokeAuthAction(
+      signInAction,
+      credentialsForm(email, 'parent123', '/account/orders'),
+    )).rejects.toBe(navigation.sentinel)
+    expect(navigation.redirect).toHaveBeenLastCalledWith('/account/orders')
+
+    navigation.redirect.mockClear()
+    await expect(invokeAuthAction(
+      signInAction,
+      credentialsForm(email, 'parent123'),
+    )).rejects.toBe(navigation.sentinel)
+    expect(navigation.redirect).toHaveBeenLastCalledWith('/account')
+    expect(createClient).not.toHaveBeenCalled()
+  })
+
+  it('returns fixture signup success and duplicate copy without verification wording', async () => {
+    enableFixtureMode()
+    const email = `member-${crypto.randomUUID()}@example.com`
+    const formData = credentialsForm(email, 'parent123')
+
+    await expect(invokeAuthAction(signUpAction, formData)).resolves.toEqual({
+      ok: true,
+      message: '註冊成功，現在可以使用相同帳密登入。',
+    })
+    await expect(invokeAuthAction(signUpAction, formData)).resolves.toEqual({
+      ok: false,
+      message: '這個 Email 已經註冊，請直接登入。',
+    })
+  })
+
+  it('clears the fixture session before sign-out redirects home', async () => {
+    enableFixtureMode()
+    await signInE2E('admin@mori.tw', 'mori123456')
+
+    await expect(signOutAction()).rejects.toBe(navigation.sentinel)
+
+    expect(navigation.redirect).toHaveBeenCalledWith('/')
+    await expect(getE2ECurrentUser()).resolves.toBeNull()
+  })
+
+  it('requires an owner fixture session for admin access', async () => {
+    enableFixtureMode()
+
+    await expect(requireAdmin()).rejects.toBe(navigation.sentinel)
+    expect(navigation.redirect).toHaveBeenLastCalledWith('/login?next=%2Fadmin')
+
+    const email = `member-${crypto.randomUUID()}@example.com`
+    await signUpE2E(email, 'parent123')
+    await signInE2E(email, 'parent123')
+    navigation.redirect.mockClear()
+    await expect(requireAdmin()).rejects.toBe(navigation.sentinel)
+    expect(navigation.redirect).toHaveBeenLastCalledWith('/403')
+
+    await signOutE2E()
+    await signInE2E('admin@mori.tw', 'mori123456')
+    await expect(requireAdmin()).resolves.toMatchObject({ id: 'admin', role: 'admin' })
+  })
+
+  it('attaches fixture checkout attempts to members while guests remain anonymous', async () => {
+    enableFixtureMode()
+    const store = getE2EStore()
+    const input = {
+      email: 'parent@example.com',
+      recipientName: '王小美',
+      phone: '0912345678',
+      chain: 'seven_eleven' as const,
+      storeId: '123456',
+    }
+    const cart = [{ variantId: '00000000-0000-4000-8000-000000000001', quantity: 1 }]
+
+    const guestAttempt = await createPaymentAttempt(input, cart)
+    expect(store.attempts.get(guestAttempt.attemptId)?.userId).toBeNull()
+
+    const email = `member-${crypto.randomUUID()}@example.com`
+    await signUpE2E(email, 'parent123')
+    const member = await signInE2E(email, 'parent123')
+    const memberAttempt = await createPaymentAttempt(input, cart)
+    expect(store.attempts.get(memberAttempt.attemptId)?.userId).toBe(member?.id)
+  })
+
+  it('keeps production sign-in authoritative to Supabase', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('MORI_E2E_FIXTURES', '1')
+    const signInWithPassword = vi.fn().mockResolvedValue({ error: new Error('invalid login') })
+    createClient.mockResolvedValue({ auth: { signInWithPassword } })
+
+    await expect(invokeAuthAction(
+      signInAction,
+      credentialsForm('admin@mori.tw', 'mori123456'),
+    )).resolves.toEqual({ ok: false, message: 'Email 或密碼不正確，請再試一次。' })
+    expect(signInWithPassword).toHaveBeenCalledWith({
+      email: 'admin@mori.tw',
+      password: 'mori123456',
+    })
+    expect(getE2EStore().sessions.size).toBe(0)
+    expect(serverCookieValues.size).toBe(0)
+  })
+
+  it('keeps production admin authorization authoritative to the profile role', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('MORI_E2E_FIXTURES', '1')
+    const liveUser = { id: 'live-user' }
+    const getUser = vi.fn().mockResolvedValue({ data: { user: liveUser }, error: null })
+    const profileQuery = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: { role: 'admin' }, error: null }),
+    }
+    profileQuery.select.mockReturnValue(profileQuery)
+    profileQuery.eq.mockReturnValue(profileQuery)
+    const from = vi.fn().mockReturnValue(profileQuery)
+    createClient
+      .mockResolvedValueOnce({ auth: { getUser } })
+      .mockResolvedValueOnce({ from })
+
+    await expect(requireAdmin()).resolves.toBe(liveUser)
+    expect(from).toHaveBeenCalledWith('profiles')
+    expect(profileQuery.eq).toHaveBeenCalledWith('id', 'live-user')
+    expect(serverCookieValues.size).toBe(0)
   })
 })
