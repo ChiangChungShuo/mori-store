@@ -13,6 +13,7 @@ import type {
   TestPaymentOutcome,
 } from '@/features/checkout/types'
 import { checkoutSchema } from '@/lib/validation/checkout'
+import { isE2EMode } from '@/testing/e2e-mode'
 import type { Json, TablesInsert } from '@/types/database'
 
 export type CheckoutVariant = {
@@ -468,25 +469,33 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
   }
 }
 
+async function createCheckoutRepository() {
+  if (isE2EMode()) {
+    const { createFixtureCheckoutRepository } = await import('@/testing/e2e-checkout-repository')
+    return createFixtureCheckoutRepository()
+  }
+  return createLiveRepository()
+}
+
 export async function createPaymentAttempt(input: CheckoutInput, cart: CheckoutCartItem[]) {
-  return createCheckoutService(await createLiveRepository()).createPaymentAttempt(input, cart)
+  return createCheckoutService(await createCheckoutRepository()).createPaymentAttempt(input, cart)
 }
 
 export async function completeTestPayment(
   attemptId: string,
   outcome: TestPaymentOutcome,
 ) {
-  return createCheckoutService(await createLiveRepository())
+  return createCheckoutService(await createCheckoutRepository())
     .completeTestPayment(attemptId, outcome)
 }
 
 export async function authorizePaymentAttempt(attemptId: string) {
-  return createCheckoutService(await createLiveRepository())
+  return createCheckoutService(await createCheckoutRepository())
     .authorizePaymentAttempt(attemptId)
 }
 
 export async function getAuthorizedPaymentAttempt(attemptId: string) {
-  return createCheckoutService(await createLiveRepository())
+  return createCheckoutService(await createCheckoutRepository())
     .getAuthorizedPaymentAttempt(attemptId)
 }
 
@@ -494,6 +503,6 @@ export async function getAuthorizedCompletedOrder(
   attemptId: string,
   orderNumber: string,
 ) {
-  return createCheckoutService(await createLiveRepository())
+  return createCheckoutService(await createCheckoutRepository())
     .getAuthorizedCompletedOrder(attemptId, orderNumber)
 }
