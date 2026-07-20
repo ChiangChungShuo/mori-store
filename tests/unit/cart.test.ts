@@ -1,5 +1,5 @@
 import { createElement } from 'react'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CartPageClient } from '@/features/cart/cart-page-client'
 import { CartProvider, useCart } from '@/features/cart/cart-provider'
@@ -246,11 +246,18 @@ describe('CartPage refresh', () => {
     const quantity = screen.getByRole('status', { name: `${pants.name} 數量` })
     expect(quantity).toHaveTextContent('2')
     expect(quantity).toHaveAttribute('aria-live', 'polite')
-    expect(screen.getAllByText('NT$1,760').length).toBeGreaterThan(0)
-    expect(screen.getByText('免運')).toBeInTheDocument()
+    expect(screen.getByText('NT$1,760', { selector: '.cart-line-total' })).toBeInTheDocument()
+    const summary = screen.getByRole('complementary', { name: '訂單摘要' })
+    expect(within(summary).getByText('商品小計').closest('p')).toHaveTextContent('商品小計NT$1,760')
+    expect(within(summary).getByText('運費').closest('p')).toHaveTextContent('運費免運')
+    expect(summary.querySelector('.cart-total')).toHaveTextContent('合計NT$1,760')
 
     fireEvent.click(screen.getByRole('button', { name: `減少 ${pants.name} 數量` }))
     expect(screen.getByRole('status', { name: `${pants.name} 數量` })).toHaveTextContent('1')
+    expect(screen.getByText('NT$880', { selector: '.cart-line-total' })).toBeInTheDocument()
+    expect(within(summary).getByText('商品小計').closest('p')).toHaveTextContent('商品小計NT$880')
+    expect(within(summary).getByText('運費').closest('p')).toHaveTextContent('運費NT$60')
+    expect(summary.querySelector('.cart-total')).toHaveTextContent('合計NT$940')
   })
 
   it('shows product imagery, quantity controls and a clear-cart action', async () => {

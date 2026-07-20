@@ -13,23 +13,37 @@ export default async function StoreHomePage() {
   return (
     <main>
       <section className="hero" aria-labelledby="hero-title">
-        <p>play, grow, repeat</p>
-        <h1 id="hero-title">每天都想穿上的童裝</h1>
-        <p>舒服活動、自在探索，陪孩子把日常過成冒險。</p>
-        <Link href="#new" className="button">看看新品</Link>
+        <div className="hero-copy">
+          <p className="eyebrow">mori summer edit · 2026</p>
+          <h1 id="hero-title">小小日常，<br />自在長大。</h1>
+          <p>替 0–12 歲孩子挑選柔軟、好活動、每天都願意穿的衣服。</p>
+          <div className="hero-actions">
+            <Link href="#new" className="button">選購本週新品</Link>
+            <Link href="/products" className="text-link">瀏覽所有商品 →</Link>
+          </div>
+        </div>
+        <div className="hero-image" role="img" aria-label="兩位穿著舒適童裝的孩子在庭院散步" />
       </section>
 
       <section id="ages" className="section" aria-labelledby="ages-title">
-        <h2 id="ages-title">依年齡找衣服</h2>
+        <header className="section-heading">
+          <div><p className="eyebrow">shop by age</p><h2 id="ages-title">照著成長階段挑</h2></div>
+          <p>從剛學會走路，到開始有自己的穿搭主張。</p>
+        </header>
         <div className="age-links">
           {ageBands.map((ageBand) => (
-            <Link href={`/products?age=${ageBand}`} key={ageBand}>{ageBand} 歲</Link>
+            <Link href={`/products?age=${ageBand}`} key={ageBand}>
+              <strong>{ageBand}</strong><span>歲</span>
+            </Link>
           ))}
         </div>
       </section>
 
       <section id="new" className="section" aria-labelledby="new-title">
-        <h2 id="new-title">剛剛上架</h2>
+        <header className="section-heading">
+          <div><p className="eyebrow">new arrivals</p><h2 id="new-title">本週新到貨</h2></div>
+          <Link href="/products" className="text-link">查看全部 →</Link>
+        </header>
         {newProducts.length === 0 ? (
           <p>商品準備中，第一批新品很快見面。</p>
         ) : (
@@ -37,19 +51,29 @@ export default async function StoreHomePage() {
             {newProducts.map((product) => <ProductCard product={product} key={product.id} />)}
           </div>
         )}
-        <p className="section-action"><Link href="/products">查看全部商品</Link></p>
       </section>
 
       <section className="section category-feature" aria-labelledby="category-title">
-        <p>category</p>
-        <h2 id="category-title">把好動的日子穿得更輕鬆</h2>
-        <p>柔軟上衣、耐穿下著與方便搭配的日常單品。</p>
+        <div className="category-copy">
+          <p className="eyebrow">mori selection</p>
+          <h2 id="category-title">會跑、會跳，<br />也好好整理。</h2>
+          <p>柔軟上衣、耐穿下著與不費力就能搭好的日常單品。</p>
+          <Link href="/products" className="button button-light">挑選日常衣櫥</Link>
+        </div>
+        <div className="category-tags" aria-label="選品原則">
+          <span>柔軟親膚</span><span>自在活動</span><span>耐洗耐穿</span>
+        </div>
       </section>
 
       <section id="story" className="section brand-story" aria-labelledby="story-title">
-        <p>our story</p>
-        <h2 id="story-title">給孩子自在長大的空間</h2>
-        <p>mori 相信每件衣服都該跟上孩子的步伐，舒服、耐穿，也保有玩心。</p>
+        <p className="eyebrow">our point of view</p>
+        <h2 id="story-title">衣服不該限制孩子怎麼玩。</h2>
+        <p>mori 從布料、版型到洗滌方式仔細挑選，讓大人少一點煩惱，孩子多一點自在。</p>
+        <dl className="story-values">
+          <div><dt>01</dt><dd>舒服，是每天願意穿的第一件事。</dd></div>
+          <div><dt>02</dt><dd>耐穿，才能陪著孩子真正生活。</dd></div>
+          <div><dt>03</dt><dd>簡單搭配，把時間留給更重要的事。</dd></div>
+        </dl>
       </section>
     </main>
   )

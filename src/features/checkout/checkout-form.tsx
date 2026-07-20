@@ -164,15 +164,15 @@ export function CheckoutForm({ action }: CheckoutFormProps) {
         <div role="alert">
           <p>{state.message}</p>
           {state.refreshCart ? (
-            <button type="button" onClick={retryRefresh}>更新購物袋</button>
+            <button className="button button-secondary" type="button" onClick={retryRefresh}>更新購物車</button>
           ) : null}
         </div>
       ) : null}
       {effectiveRefreshStatus === 'loading' ? <p aria-live="polite">正在確認最新商品與庫存…</p> : null}
       {effectiveRefreshStatus === 'error' ? (
         <div role="alert">
-          <p>無法更新購物袋，請再試一次。</p>
-          <button type="button" onClick={retryRefresh}>重試</button>
+          <p>無法更新購物車，請再試一次。</p>
+          <button className="button button-secondary" type="button" onClick={retryRefresh}>重試</button>
         </div>
       ) : null}
       {effectiveRefreshStatus === 'success' && summary && cart.length > 0 ? (
@@ -199,7 +199,7 @@ export function CheckoutForm({ action }: CheckoutFormProps) {
       >
         {pending ? '建立付款交易中…' : '前往測試付款'}
       </button>
-      {hydrated && cart.length === 0 ? <p role="alert">購物袋沒有可結帳的商品。</p> : null}
+      {hydrated && cart.length === 0 ? <p role="alert">購物車沒有可結帳的商品。</p> : null}
     </form>
   )
 }
