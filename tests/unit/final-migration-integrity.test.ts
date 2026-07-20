@@ -22,6 +22,14 @@ const historicalAttempts = JSON.parse(readFileSync(
   'utf8',
 )) as Array<Record<string, string | null>>
 
+type ParsedUpdateStatement = {
+  relation: { relname: string }
+  targetList: Array<{
+    ResTarget: { name: string; val: Record<string, unknown> }
+  }>
+  whereClause: Record<string, unknown>
+}
+
 function evaluateBackfillExpression(
   node: Record<string, unknown>,
   row: Record<string, string | null>,
@@ -95,14 +103,16 @@ describe('c4ad95a forward migration', () => {
   })
 
   it('preserves historical paid attempts and isolates inconsistent completion fields', () => {
-    const parsed = parseSync(forwardMigration)
+    const parsed = parseSync(forwardMigration) as {
+      stmts: Array<{ stmt: { UpdateStmt?: ParsedUpdateStatement } }>
+    }
     const backfill = parsed.stmts
       .map((statement) => statement.stmt.UpdateStmt)
       .find((update) => update?.relation.relname === 'payment_attempts')
-    const targets = new Map(backfill?.targetList.map((target) => [
+    const targets = new Map<string, Record<string, unknown>>(backfill?.targetList.map((target) => [
       target.ResTarget.name,
-      target.ResTarget.val as Record<string, unknown>,
-    ]))
+      target.ResTarget.val,
+    ]) ?? [])
 
     expect(backfill?.whereClause).toMatchObject({
       NullTest: { nulltesttype: 'IS_NULL' },

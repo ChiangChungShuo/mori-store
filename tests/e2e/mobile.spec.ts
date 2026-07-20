@@ -56,12 +56,20 @@ test('populated product detail fits the 375 px viewport', async ({ page }) => {
 
 test('populated cart fits the 375 px viewport', async ({ page }) => {
   test.skip(externalTarget && !process.env.E2E_GUEST_VARIANT_ID, 'live cart requires E2E_GUEST_VARIANT_ID')
-  await seedCart(page, 1)
-  const response = await page.goto('/cart')
+  await page.goto('/cart')
+  await page.evaluate((cart) => {
+    window.localStorage.setItem('mori-cart-v1', JSON.stringify(cart))
+  }, fixtureCart.map((item) => ({ ...item, quantity: 1 })))
+  const response = await page.reload()
   expect(response?.ok(), '/cart must return a successful response').toBe(true)
   await expect(page.locator('.cart-page-list li')).toHaveCount(1)
   await page.getByRole('button', { name: '增加 有機棉小樹 T 恤 數量' }).click()
   await expect(page.getByRole('status', { name: '有機棉小樹 T 恤 數量' })).toHaveText('2')
+  const stepperHasEqualCells = await page.locator('.quantity-stepper').evaluate((stepper) => {
+    const widths = [...stepper.children].map((child) => child.getBoundingClientRect().width)
+    return Math.max(...widths) - Math.min(...widths) < 1
+  })
+  expect(stepperHasEqualCells).toBe(true)
   await expect.poll(() => page.evaluate(() => window.innerWidth)).toBe(375)
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth))
     .toBeLessThanOrEqual(375)

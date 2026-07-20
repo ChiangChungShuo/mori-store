@@ -35,14 +35,14 @@ async function expectVisibleFocus(target: Locator) {
 
 async function openCheckoutWithCart(page: Page) {
   await page.goto('/checkout')
-  await expect(page.getByRole('alert').filter({ hasText: '購物袋沒有可結帳的商品' }))
+  await expect(page.getByRole('alert').filter({ hasText: '購物車沒有可結帳的商品' }))
     .toBeVisible()
   await page.evaluate((cart) => {
     window.localStorage.setItem('mori-cart-v1', JSON.stringify(cart))
   }, checkoutCart)
   await page.reload()
   await expect(page.getByRole('heading', { name: '結帳' })).toBeVisible()
-  await expect(page.locator('.cart-drawer summary')).toContainText('購物袋（1）')
+  await expect(page.locator('.cart-drawer summary')).toContainText('購物車1')
   await expect(page.getByRole('button', { name: '前往測試付款' })).toBeEnabled()
 }
 
@@ -119,7 +119,7 @@ test('tabs through seeded product controls with visible focus', async ({ page })
   await expectVisibleFocus(size)
   await size.press('Space')
 
-  const addToCart = page.getByRole('button', { name: '加入購物袋' })
+  const addToCart = page.getByRole('button', { name: '加入購物車' })
   await tabTo(page, addToCart)
   await expectVisibleFocus(addToCart)
 })

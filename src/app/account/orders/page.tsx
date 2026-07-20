@@ -18,7 +18,7 @@ export default async function OrdersPage() {
           {orders.map((order) => (
             <div key={order.orderNumber}>
               <OrderCard order={order} />
-              <Link href={`/account/orders/${order.orderNumber}`}>查看訂單明細</Link>
+              <Link href={`/account/orders/${order.orderNumber}`}>{order.orderNumber}</Link>
             </div>
           ))}
         </div>

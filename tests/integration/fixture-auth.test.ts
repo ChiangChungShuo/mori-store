@@ -96,14 +96,9 @@ function credentialsForm(email: string, password: string, next?: string) {
 }
 
 async function invokeAuthAction(
-  action: ((formData: FormData) => Promise<AuthActionState>) | (
-    (previousState: AuthActionState, formData: FormData) => Promise<AuthActionState>
-  ),
+  action: (formData: FormData) => Promise<AuthActionState>,
   formData: FormData,
 ) {
-  if (action.length === 2) {
-    return action({ ok: false }, formData)
-  }
   return action(formData)
 }
 

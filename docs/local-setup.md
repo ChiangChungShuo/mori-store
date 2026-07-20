@@ -2,6 +2,21 @@
 
 本指南使用連到 Supabase hosted project 的開發流程。請只連專用的開發／測試 project，不要在 production project 執行 seed 或測試付款。
 
+## 不需 Supabase 的本機展示模式
+
+只想先在這台電腦查看完整商城、會員與老闆後台時，不需要建立 Supabase 專案：
+
+```bash
+pnpm install
+MORI_E2E_FIXTURES=1 pnpm dev
+```
+
+1. 開啟 `http://127.0.0.1:3000/login?next=/admin`。
+2. 使用 `admin@mori.tw` / `mori123456` 登入。
+3. 在 `/admin/orders` 查看顧客完成測試付款後建立的訂單。
+
+顧客可在 `/signup` 自行註冊並完成測試下單。本機帳號與新訂單只保存在記憶體，開發伺服器重新啟動後會重置；正式環境不會啟用展示資料，仍使用 Supabase。
+
 ## 需求
 
 - Node.js 22 或更新版本。Repository 的 `engines.node` 與 `.nvmrc` 都以 Node 22 為最低 runtime。

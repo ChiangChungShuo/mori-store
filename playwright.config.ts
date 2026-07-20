@@ -6,12 +6,16 @@ const localEnvPath = resolve(process.cwd(), '.env.local')
 if (existsSync(localEnvPath)) process.loadEnvFile(localEnvPath)
 
 const externalBaseURL = process.env.E2E_BASE_URL
-const localBaseURL = 'http://127.0.0.1:3000'
+const localPort = process.env.PLAYWRIGHT_LOCAL_PORT ?? '3000'
+const localBaseURL = `http://127.0.0.1:${localPort}`
+const localDevCommand = process.env.PLAYWRIGHT_DEV_COMMAND
+  ?? `pnpm dev --hostname 127.0.0.1 --port ${localPort}`
 
 export default defineConfig({
   testDir: './tests/e2e',
+  workers: externalBaseURL ? undefined : 1,
   webServer: externalBaseURL ? undefined : {
-    command: 'pnpm dev --hostname 127.0.0.1',
+    command: localDevCommand,
     url: localBaseURL,
     reuseExistingServer: true,
     env: { MORI_E2E_FIXTURES: '1' },

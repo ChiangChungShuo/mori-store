@@ -16,7 +16,7 @@ pnpm dev
 
 開啟 [http://localhost:3000](http://localhost:3000)。
 
-環境變數、第一位管理員、範例商品與 E2E 準備方式請見[本機設定指南](docs/local-setup.md)。測試付款只會模擬成功、失敗或取消，不會連到真實金流，也不會扣款。
+若目前沒有 Supabase，可直接用 `MORI_E2E_FIXTURES=1 pnpm dev` 開啟完整本機展示流程。環境變數、本機老闆帳號、第一位正式管理員、範例商品與 E2E 準備方式請見[本機設定指南](docs/local-setup.md)。測試付款只會模擬成功、失敗或取消，不會連到真實金流，也不會扣款。
 
 ## 驗證
 
