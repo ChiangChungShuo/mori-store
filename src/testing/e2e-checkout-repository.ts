@@ -8,7 +8,7 @@ import type {
   PaymentAttemptInsert,
 } from '@/features/checkout/service'
 import type { PaymentAttemptStatus } from '@/features/checkout/types'
-import { E2E_PRODUCT, E2E_STOREFRONT_SETTINGS } from '@/testing/e2e-storefront-fixtures'
+import { getE2EVariants, E2E_STOREFRONT_SETTINGS } from '@/testing/e2e-storefront-fixtures'
 
 type FixtureAttempt = PaymentAttemptInsert & {
   id: string
@@ -72,18 +72,7 @@ export function createFixtureCheckoutRepository(): CheckoutRepository {
     },
 
     async getVariants(variantIds) {
-      return E2E_PRODUCT.variants
-        .filter((variant) => variantIds.includes(variant.id))
-        .map((variant) => ({
-          id: variant.id,
-          productName: E2E_PRODUCT.name,
-          sku: variant.sku,
-          color: variant.color,
-          size: variant.size,
-          price: variant.price,
-          stock: variant.stock,
-          isPublished: true,
-        }))
+      return getE2EVariants(variantIds)
     },
 
     async getStoreSettings() {

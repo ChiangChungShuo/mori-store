@@ -1,11 +1,11 @@
 import { createElement } from 'react'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SiteHeader } from '@/components/site-header'
 import { CartProvider } from '@/features/cart/cart-provider'
 import { ProductCard } from '@/features/catalog/product-card'
 import { ProductFilters } from '@/features/catalog/product-filters'
-import { parseProductFilters } from '@/features/catalog/queries'
+import { listProducts, parseProductFilters } from '@/features/catalog/queries'
 import { VariantPicker } from '@/features/catalog/variant-picker'
 
 const product = {
@@ -31,6 +31,22 @@ const product = {
 afterEach(() => {
   cleanup()
   window.localStorage.clear()
+  vi.unstubAllEnvs()
+})
+
+describe('fixture catalog', () => {
+  it('offers eight fixture products across every age band and category', async () => {
+    vi.stubEnv('MORI_E2E_FIXTURES', '1')
+
+    const products = await listProducts({})
+
+    expect(products).toHaveLength(8)
+    expect(new Set(products.flatMap((catalogProduct) => catalogProduct.ageBands)))
+      .toEqual(new Set(['0-2', '3-5', '6-9', '10-12']))
+    expect([...new Set(products.map((catalogProduct) => catalogProduct.category))])
+      .toEqual(expect.arrayContaining(['上衣', '褲裝', '洋裝', '外套', '幼兒服']))
+    expect(products.every((catalogProduct) => catalogProduct.imageUrl?.startsWith('/images/products/'))).toBe(true)
+  })
 })
 
 describe('parseProductFilters', () => {

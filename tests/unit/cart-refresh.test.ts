@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { POST } from '@/app/api/cart/refresh/route'
 import * as cartRefresh from '@/features/cart/refresh'
 import { reconcileCartItems, type CartVariantSnapshot } from '@/features/cart/refresh'
@@ -10,6 +10,10 @@ import {
 
 const firstUuid = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 const secondUuid = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+
+afterEach(() => {
+  vi.unstubAllEnvs()
+})
 
 const staleTee: CartItem = {
   variantId: 'variant-sage-100',
@@ -79,6 +83,26 @@ describe('reconcileCartItems', () => {
 })
 
 describe('parseCartRefreshRequest', () => {
+  it('refreshes variants belonging to different fixture products', async () => {
+    vi.stubEnv('MORI_E2E_FIXTURES', '1')
+
+    const response = await POST(new Request('http://localhost/api/cart/refresh', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        items: [
+          { variantId: '00000000-0000-4000-8000-000000000001', quantity: 1 },
+          { variantId: '00000000-0000-4000-8000-000000000101', quantity: 1 },
+        ],
+      }),
+    }))
+
+    const result = await response.json()
+    expect(result.items.map((item: CartItem) => item.name)).toEqual([
+      '有機棉小樹 T 恤', '雲朵包屁衣',
+    ])
+  })
+
   it('uses the cart-wide item limit and UUID canonicalizer', () => {
     expect(MAX_CART_ITEMS).toBe(50)
     expect(canonicalizeCartVariantId(firstUuid.toUpperCase())).toBe(firstUuid)
