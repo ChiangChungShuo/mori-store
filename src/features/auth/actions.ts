@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { safeNextPath } from '@/lib/auth/protection'
 import { createClient } from '@/lib/supabase/server'
+import { isE2EMode } from '@/testing/e2e-mode'
 
 export type AuthActionState = {
   ok: boolean
@@ -47,6 +48,13 @@ export async function signIn(formData: FormData): Promise<AuthActionState> {
     return credentials.state
   }
 
+  if (isE2EMode()) {
+    const { signInE2E } = await import('@/testing/e2e-auth-repository')
+    const user = await signInE2E(credentials.data.email, credentials.data.password)
+    if (!user) return { ok: false, message: 'Email 或密碼不正確，請再試一次。' }
+    redirect(user.role === 'admin' ? '/admin' : credentials.nextPath)
+  }
+
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithPassword(credentials.data)
 
@@ -62,6 +70,15 @@ export async function signUp(formData: FormData): Promise<AuthActionState> {
 
   if ('state' in credentials) {
     return credentials.state
+  }
+
+  if (isE2EMode()) {
+    const { signUpE2E } = await import('@/testing/e2e-auth-repository')
+    const result = await signUpE2E(credentials.data.email, credentials.data.password)
+    if (result === 'duplicate') {
+      return { ok: false, message: '這個 Email 已經註冊，請直接登入。' }
+    }
+    return { ok: true, message: '註冊成功，現在可以使用相同帳密登入。' }
   }
 
   const origin = (await headers()).get('origin')
@@ -82,6 +99,11 @@ export async function signUp(formData: FormData): Promise<AuthActionState> {
 }
 
 export async function signOut(): Promise<never> {
+  if (isE2EMode()) {
+    const { signOutE2E } = await import('@/testing/e2e-auth-repository')
+    await signOutE2E()
+    redirect('/')
+  }
   const supabase = await createClient()
   await supabase.auth.signOut()
   redirect('/')

@@ -471,8 +471,16 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
 
 async function createCheckoutRepository() {
   if (isE2EMode()) {
-    const { createFixtureCheckoutRepository } = await import('@/testing/e2e-checkout-repository')
-    return createFixtureCheckoutRepository()
+    const [{ createFixtureCheckoutRepository }, { getE2ECurrentUser }] = await Promise.all([
+      import('@/testing/e2e-checkout-repository'),
+      import('@/testing/e2e-auth-repository'),
+    ])
+    return {
+      ...createFixtureCheckoutRepository(),
+      async getCurrentUserId() {
+        return (await getE2ECurrentUser())?.id ?? null
+      },
+    }
   }
   return createLiveRepository()
 }
