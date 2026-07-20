@@ -33,3 +33,10 @@ Base: `229640d`
 - Fixture accounts and orders intentionally reset when the development server restarts.
 - `MORI_E2E_FIXTURES=1` remains guarded by non-production mode; production continues to resolve Supabase repositories.
 - Full browser verification used an isolated port 3108 and did not stop or replace the user's port 3000 server.
+
+## Reviewer follow-up
+
+- Added owner-detail assertions that bind the purchased 「有機棉小樹 T 恤」 row to quantity `2` and verify 商品小計 `NT$1,360`, 運費 `NT$60`, 訂單總計 `NT$1,420` inside the 訂購商品 section.
+- The first assertion run failed because the nested Playwright `has` locator was scoped outside its candidate row; the failure snapshot confirmed that the persisted item, quantity and totals were already correct. The locator was reduced to the row accessible name plus exact cells and paired `dt`/`dd` assertions; no production change was required.
+- Isolated Turbopack acceptance on Node 22 and port 3108: desktop and 375 px mobile, 2 passed.
+- Focused ESLint, `tsc --noEmit` and `git diff --check`: pass.

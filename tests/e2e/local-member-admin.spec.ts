@@ -56,6 +56,21 @@ test('registered customer pays and owner sees the same order', async ({ browser 
   await expect(ownerPage.getByText('王小美', { exact: true }).first()).toBeVisible()
   await expect(ownerPage.getByText('7-ELEVEN')).toBeVisible()
   await expect(ownerPage.getByText('已付款', { exact: true })).toBeVisible()
+  const itemsSection = ownerPage.locator('section').filter({
+    has: ownerPage.getByRole('heading', { name: '訂購商品' }),
+  })
+  const itemRow = itemsSection.getByRole('row', { name: /^有機棉小樹 T 恤 / })
+  await expect(itemRow.getByRole('rowheader', { name: '有機棉小樹 T 恤' })).toBeVisible()
+  await expect(itemRow.getByRole('cell', { name: '2', exact: true })).toBeVisible()
+  for (const [label, amount] of [
+    ['商品小計', 'NT$1,360'],
+    ['運費', 'NT$60'],
+    ['訂單總計', 'NT$1,420'],
+  ]) {
+    const totalRow = itemsSection.locator('dl.order-result > div').filter({ hasText: label })
+    await expect(totalRow.locator('dt')).toHaveText(label)
+    await expect(totalRow.locator('dd')).toHaveText(amount)
+  }
   expect(await ownerPage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 
   await customer.close()
