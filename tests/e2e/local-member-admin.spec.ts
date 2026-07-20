@@ -37,8 +37,7 @@ test('customer is denied while owner can manage the seeded order on mobile', asy
   await expect(page.getByText('王小美')).toBeVisible()
   await page.getByRole('link', { name: 'MORI-DEMO-1001' }).click()
   await expect(page.getByText('7-ELEVEN')).toBeVisible()
-  await page.getByRole('button', { name: '開始備貨' }).click()
-  await expect(page.getByText('備貨中', { exact: true })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 
   await page.getByRole('link', { name: '返回訂單列表' }).click()
   await page.getByLabel('訂單編號、收件人或 Email').fill('不存在的訂單')

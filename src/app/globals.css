@@ -351,7 +351,8 @@ button:disabled { cursor: not-allowed; }
 .admin-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem 1.5rem; padding: 0.9rem max(1rem, calc((100% - 72rem) / 2)); border-bottom: 1px solid var(--line); background: var(--white); }
 .admin-nav a { color: var(--forest); font-size: 0.78rem; font-weight: 800; }
 .admin-table-scroll { width: 100%; overflow-x: auto; margin-block: 1.25rem 2.5rem; }
-.admin-product-table { width: 100%; min-width: 42rem; border-collapse: collapse; background: var(--white); font-size: 0.82rem; }
+.admin-product-table { width: 100%; border-collapse: collapse; background: var(--white); font-size: 0.82rem; }
+.admin-table-scroll .admin-product-table { min-width: 42rem; }
 .admin-product-table th, .admin-product-table td { padding: 0.9rem 1rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
 .admin-product-table thead { background: var(--forest); color: var(--white); font-size: 0.72rem; letter-spacing: 0.05em; }
 .admin-product-table tbody th { color: var(--forest); }

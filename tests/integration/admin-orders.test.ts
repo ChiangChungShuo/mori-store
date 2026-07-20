@@ -444,6 +444,13 @@ describe('admin fulfillment pages', () => {
     expect(detailPage).toMatch(/family_mart: '全家'/)
   })
 
+  it('keeps wide admin tables inside their own scroll container', () => {
+    const styles = readFileSync(resolve(process.cwd(), 'src/app/globals.css'), 'utf8')
+
+    expect(styles).not.toMatch(/^\.admin-product-table\s*\{[^}]*min-width/m)
+    expect(styles).toMatch(/\.admin-table-scroll \.admin-product-table\s*\{[^}]*min-width:\s*42rem/)
+  })
+
   it('uses the session client for every admin read', () => {
     const reads = [
       'src/features/admin/order-actions.ts',
