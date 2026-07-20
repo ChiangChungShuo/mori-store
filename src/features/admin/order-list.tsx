@@ -32,7 +32,7 @@ export function AdminOrderList({
       <section>
         <h2>需人工處理的付款</h2>
         {reviews.length === 0 ? <p>目前沒有需人工處理的付款。</p> : (
-          <table className="admin-product-table">
+          <div className="admin-table-scroll"><table className="admin-product-table">
             <thead>
               <tr>
                 <th scope="col">付款交易</th>
@@ -57,7 +57,7 @@ export function AdminOrderList({
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </section>
       <form action={formAction} className="product-filters" key={`${state.query}:${state.status}`}>
@@ -80,9 +80,9 @@ export function AdminOrderList({
         </div>
       </form>
       {state.orders.length === 0 ? (
-        <p>沒有符合條件的訂單。</p>
+        <p className="empty-state">尚未有訂單，請先從商城完成一筆測試付款。 <Link href="/products">前往商品列表</Link></p>
       ) : (
-        <table className="admin-product-table">
+        <div className="admin-table-scroll"><table className="admin-product-table admin-order-table">
           <thead>
             <tr>
               <th scope="col">訂單編號</th>
@@ -96,16 +96,16 @@ export function AdminOrderList({
           <tbody>
             {state.orders.map((order) => (
               <tr key={order.id}>
-                <th scope="row"><Link href={`/admin/orders/${order.orderNumber}`}>{order.orderNumber}</Link></th>
-                <td>{order.recipientName}</td>
-                <td>{order.email}</td>
-                <td>{formatTwd(order.total)}</td>
-                <td>{statusLabels[order.status]}</td>
-                <td>{formatTaipeiDateTime(order.createdAt)}</td>
+                <th data-label="訂單編號" scope="row"><Link href={`/admin/orders/${order.orderNumber}`}>{order.orderNumber}</Link></th>
+                <td data-label="收件人">{order.recipientName}</td>
+                <td data-label="Email">{order.email}</td>
+                <td data-label="金額">{formatTwd(order.total)}</td>
+                <td data-label="狀態"><span className="status-badge" data-status={order.status}>{statusLabels[order.status]}</span></td>
+                <td data-label="成立時間">{formatTaipeiDateTime(order.createdAt)}</td>
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
     </>
   )

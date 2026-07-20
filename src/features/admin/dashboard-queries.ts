@@ -88,10 +88,43 @@ function createSupabaseDashboardRepository(): DashboardRepository {
   }
 }
 
-export async function getDashboardMetrics() {
-  const { requireAdmin } = await import('@/lib/auth/require-admin')
+async function resolvedDashboardQueries() {
+  const [{ requireAdmin }, { isE2EMode }] = await Promise.all([
+    import('@/lib/auth/require-admin'),
+    import('@/testing/e2e-mode'),
+  ])
+  if (isE2EMode()) {
+    const [{ getE2EStore }, { E2E_PRODUCTS }] = await Promise.all([
+      import('@/testing/e2e-store'),
+      import('@/testing/e2e-storefront-fixtures'),
+    ])
+    const store = getE2EStore()
+    return createDashboardQueries({
+      requireAdmin,
+      repository: {
+        async countOrdersCreatedBetween(startedAt, endedAt) {
+          return [...store.orders.values()].filter(
+            (order) => order.createdAt >= startedAt && order.createdAt < endedAt,
+          ).length
+        },
+        async countFulfillmentBacklog(statuses) {
+          return [...store.orders.values()].filter((order) => statuses.includes(
+            order.status as 'paid' | 'preparing',
+          )).length
+        },
+        async countLowStockVariants(maximumStock) {
+          return E2E_PRODUCTS.flatMap((product) => product.variants)
+            .filter((variant) => variant.stock <= maximumStock).length
+        },
+      },
+    })
+  }
   return createDashboardQueries({
     repository: createSupabaseDashboardRepository(),
     requireAdmin,
-  }).getDashboardMetrics()
+  })
+}
+
+export async function getDashboardMetrics() {
+  return (await resolvedDashboardQueries()).getDashboardMetrics()
 }

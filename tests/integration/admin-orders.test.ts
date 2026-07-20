@@ -1,11 +1,14 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createAdminOrderActions,
   createAdminOrderQueries,
+  getAdminOrder,
+  listAdminOrders,
   type AdminOrderRepository,
   type AdminOrderQueryRepository,
+  updateOrderStatus,
 } from '@/features/admin/order-actions'
 import {
   createAdminSettingsActions,
@@ -16,11 +19,39 @@ import type { OrderStatus } from '@/types/store'
 import { calculateCart } from '@/features/cart/totals'
 import {
   createDashboardQueries,
+  getDashboardMetrics,
   taipeiDayRange,
   type DashboardRepository,
 } from '@/features/admin/dashboard-queries'
+import { createE2EStore, getE2EStore } from '@/testing/e2e-store'
+
+const adminGate = vi.hoisted(() => ({ requireAdmin: vi.fn(async () => undefined) }))
+const liveSupabase = vi.hoisted(() => ({ createClient: vi.fn() }))
+const nextCache = vi.hoisted(() => ({ revalidatePath: vi.fn() }))
+
+vi.mock('@/lib/auth/require-admin', () => adminGate)
+vi.mock('@/lib/supabase/server', () => liveSupabase)
+vi.mock('next/cache', () => nextCache)
 
 const orderId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+
+afterEach(() => {
+  vi.unstubAllEnvs()
+  vi.clearAllMocks()
+  adminGate.requireAdmin.mockResolvedValue(undefined)
+})
+
+function useFreshFixtureStore() {
+  const source = createE2EStore()
+  const store = getE2EStore()
+  store.users = source.users
+  store.sessions = source.sessions
+  store.attempts = source.attempts
+  store.orders = source.orders
+  vi.stubEnv('NODE_ENV', 'test')
+  vi.stubEnv('MORI_E2E_FIXTURES', '1')
+  return store
+}
 
 class MemoryOrderRepository implements AdminOrderRepository {
   readonly events: string[] = []
@@ -167,6 +198,55 @@ describe('admin order queries', () => {
       'admin',
       `review:${orderId}`,
     ])
+  })
+})
+
+describe('fixture admin order resolvers', () => {
+  it('filters seeded orders and returns their full owner detail', async () => {
+    useFreshFixtureStore()
+
+    await expect(listAdminOrders({ query: '王小美', status: 'paid' })).resolves.toEqual([
+      expect.objectContaining({ orderNumber: 'MORI-DEMO-1001', recipientName: '王小美' }),
+    ])
+    await expect(getAdminOrder('MORI-DEMO-1001')).resolves.toEqual(expect.objectContaining({
+      recipientName: '王小美',
+      storeChain: 'seven_eleven',
+      items: expect.arrayContaining([expect.objectContaining({ quantity: 1 })]),
+    }))
+    expect(adminGate.requireAdmin).toHaveBeenCalledTimes(2)
+    expect(liveSupabase.createClient).not.toHaveBeenCalled()
+  })
+
+  it('updates a seeded order through the valid fulfillment sequence', async () => {
+    const store = useFreshFixtureStore()
+    const order = store.orders.get('MORI-DEMO-1001')!
+
+    await updateOrderStatus(order.id, 'preparing')
+
+    await expect(getAdminOrder(order.orderNumber)).resolves.toEqual(expect.objectContaining({
+      status: 'preparing',
+    }))
+    expect(nextCache.revalidatePath).toHaveBeenCalledWith('/admin')
+    expect(liveSupabase.createClient).not.toHaveBeenCalled()
+  })
+
+  it('denies an admin read before consulting the fixture repository', async () => {
+    useFreshFixtureStore()
+    const denied = new Error('owner required')
+    adminGate.requireAdmin.mockRejectedValueOnce(denied)
+
+    await expect(listAdminOrders()).rejects.toBe(denied)
+    expect(liveSupabase.createClient).not.toHaveBeenCalled()
+  })
+
+  it('counts the fixture fulfillment backlog without using Supabase', async () => {
+    useFreshFixtureStore()
+
+    await expect(getDashboardMetrics()).resolves.toEqual(expect.objectContaining({
+      fulfillmentBacklog: 1,
+    }))
+    expect(adminGate.requireAdmin).toHaveBeenCalledOnce()
+    expect(liveSupabase.createClient).not.toHaveBeenCalled()
   })
 })
 
@@ -327,6 +407,7 @@ describe('admin fulfillment pages', () => {
       'utf8',
     )
     const dashboardPage = readFileSync(resolve(process.cwd(), 'src/app/admin/page.tsx'), 'utf8')
+    const adminLayout = readFileSync(resolve(process.cwd(), 'src/app/admin/layout.tsx'), 'utf8')
     const reviewDetailPage = readFileSync(
       resolve(process.cwd(), 'src/app/admin/orders/review/[attemptId]/page.tsx'),
       'utf8',
@@ -351,6 +432,16 @@ describe('admin fulfillment pages', () => {
     expect(orderList).toMatch(/reviewCode/)
     expect(reviewDetailPage).toMatch(/reviewReason/)
     expect(reviewDetailPage).toMatch(/payment\.items\.map/)
+    expect(adminLayout).toMatch(/商店總覽/)
+    expect(adminLayout).toMatch(/訂單管理/)
+    expect(adminLayout).toMatch(/商品管理/)
+    expect(adminLayout).toMatch(/返回商城/)
+    expect(orderList).toMatch(/admin-table-scroll/)
+    expect(orderList).toMatch(/className="status-badge" data-status=/)
+    expect(orderList).toMatch(/data-label="訂單編號"/)
+    expect(orderList).toMatch(/尚未有訂單，請先從商城完成一筆測試付款。/)
+    expect(detailPage).toMatch(/seven_eleven: '7-ELEVEN'/)
+    expect(detailPage).toMatch(/family_mart: '全家'/)
   })
 
   it('uses the session client for every admin read', () => {

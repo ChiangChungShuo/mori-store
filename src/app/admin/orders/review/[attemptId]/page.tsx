@@ -6,6 +6,11 @@ import { formatTwd } from '@/lib/money'
 
 export const dynamic = 'force-dynamic'
 
+const storeChainLabels: Record<string, string> = {
+  seven_eleven: '7-ELEVEN',
+  family_mart: '全家',
+}
+
 export default async function AdminPaymentReviewPage({
   params,
 }: {
@@ -36,7 +41,7 @@ export default async function AdminPaymentReviewPage({
           <div><dt>收件人</dt><dd>{payment.recipientName}</dd></div>
           <div><dt>手機</dt><dd>{payment.recipientPhone}</dd></div>
           <div><dt>Email</dt><dd>{payment.email}</dd></div>
-          <div><dt>門市</dt><dd>{payment.storeChain}／{payment.storeName}（{payment.storeId}）</dd></div>
+          <div><dt>門市</dt><dd>{storeChainLabels[payment.storeChain] ?? payment.storeChain}／{payment.storeName}（{payment.storeId}）</dd></div>
         </dl>
       </section>
 

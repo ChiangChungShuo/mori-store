@@ -25,6 +25,11 @@ const statusActions: Array<{ status: OrderStatus; label: string }> = [
   { status: 'cancelled', label: '取消訂單' },
 ]
 
+const storeChainLabels: Record<string, string> = {
+  seven_eleven: '7-ELEVEN',
+  family_mart: '全家',
+}
+
 export default async function AdminOrderPage({
   params,
 }: {
@@ -41,7 +46,7 @@ export default async function AdminOrderPage({
         <p>admin / orders / detail</p>
         <h1>{order.orderNumber}</h1>
       </header>
-      <p><strong>目前狀態：{statusLabels[order.status]}</strong></p>
+      <p><strong>目前狀態：</strong> <span className="status-badge" data-status={order.status}>{statusLabels[order.status]}</span></p>
       <p>成立時間：{formatTaipeiDateTime(order.createdAt)}</p>
       <div className="payment-actions">
         {statusActions.filter(({ status }) => canTransitionOrder(order.status, status)).map(({ status, label }) => (
@@ -63,14 +68,14 @@ export default async function AdminOrderPage({
       <section>
         <h2>取貨門市</h2>
         <dl className="order-result">
-          <div><dt>通路</dt><dd>{order.storeChain}</dd></div>
+          <div><dt>通路</dt><dd>{storeChainLabels[order.storeChain] ?? order.storeChain}</dd></div>
           <div><dt>門市</dt><dd>{order.storeName}（{order.storeId}）</dd></div>
         </dl>
       </section>
 
       <section>
         <h2>訂購商品</h2>
-        <table className="admin-product-table">
+        <div className="admin-table-scroll"><table className="admin-product-table">
           <thead>
             <tr>
               <th scope="col">商品</th>
@@ -89,7 +94,7 @@ export default async function AdminOrderPage({
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
         <dl className="order-result">
           <div><dt>商品小計</dt><dd>{formatTwd(order.subtotal)}</dd></div>
           <div><dt>運費</dt><dd>{formatTwd(order.shippingFee)}</dd></div>

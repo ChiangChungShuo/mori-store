@@ -423,13 +423,26 @@ function createSupabaseOrderQueryRepository(): AdminOrderQueryRepository {
   }
 }
 
-function productionActions() {
+async function createFixtureOrderRepository() {
+  const [{ createE2EOrderRepository }, { getE2EStore }] = await Promise.all([
+    import('@/testing/e2e-order-repository'),
+    import('@/testing/e2e-store'),
+  ])
+  return createE2EOrderRepository(getE2EStore())
+}
+
+async function resolvedActions() {
+  const [{ requireAdmin }, { isE2EMode }] = await Promise.all([
+    import('@/lib/auth/require-admin'),
+    import('@/testing/e2e-mode'),
+  ])
+  const repository = isE2EMode()
+    ? await createFixtureOrderRepository()
+    : createSupabaseOrderRepository()
+
   return createAdminOrderActions({
-    repository: createSupabaseOrderRepository(),
-    requireAdmin: async () => {
-      const { requireAdmin } = await import('@/lib/auth/require-admin')
-      return requireAdmin()
-    },
+    repository,
+    requireAdmin,
     onChanged: async () => {
       const { revalidatePath } = await import('next/cache')
       revalidatePath('/admin')
@@ -441,33 +454,38 @@ function productionActions() {
 
 export async function updateOrderStatus(orderId: string, nextStatus: OrderStatus) {
   'use server'
-  return productionActions().updateOrderStatus(orderId, nextStatus)
+  return (await resolvedActions()).updateOrderStatus(orderId, nextStatus)
 }
 
-function productionQueries() {
+async function resolvedQueries() {
+  const [{ requireAdmin }, { isE2EMode }] = await Promise.all([
+    import('@/lib/auth/require-admin'),
+    import('@/testing/e2e-mode'),
+  ])
+  const repository = isE2EMode()
+    ? await createFixtureOrderRepository()
+    : createSupabaseOrderQueryRepository()
+
   return createAdminOrderQueries({
-    repository: createSupabaseOrderQueryRepository(),
-    requireAdmin: async () => {
-      const { requireAdmin } = await import('@/lib/auth/require-admin')
-      return requireAdmin()
-    },
+    repository,
+    requireAdmin,
   })
 }
 
 export async function listAdminOrders(filters: Partial<AdminOrderFilters> = {}) {
-  return productionQueries().listAdminOrders(filters)
+  return (await resolvedQueries()).listAdminOrders(filters)
 }
 
 export async function getAdminOrder(orderNumber: string) {
-  return productionQueries().getAdminOrder(orderNumber)
+  return (await resolvedQueries()).getAdminOrder(orderNumber)
 }
 
 export async function listAdminPaymentReviews() {
-  return productionQueries().listAdminPaymentReviews()
+  return (await resolvedQueries()).listAdminPaymentReviews()
 }
 
 export async function getAdminPaymentReview(attemptId: string) {
-  return productionQueries().getAdminPaymentReview(attemptId)
+  return (await resolvedQueries()).getAdminPaymentReview(attemptId)
 }
 
 export type AdminOrderListState = AdminOrderFilters & {

@@ -348,6 +348,17 @@ button:disabled { cursor: not-allowed; }
 .demo-account strong { color: var(--forest); }
 .demo-account small { margin-top: 0.45rem; color: var(--muted); }
 
+.admin-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem 1.5rem; padding: 0.9rem max(1rem, calc((100% - 72rem) / 2)); border-bottom: 1px solid var(--line); background: var(--white); }
+.admin-nav a { color: var(--forest); font-size: 0.78rem; font-weight: 800; }
+.admin-table-scroll { width: 100%; overflow-x: auto; margin-block: 1.25rem 2.5rem; }
+.admin-product-table { width: 100%; min-width: 42rem; border-collapse: collapse; background: var(--white); font-size: 0.82rem; }
+.admin-product-table th, .admin-product-table td { padding: 0.9rem 1rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.admin-product-table thead { background: var(--forest); color: var(--white); font-size: 0.72rem; letter-spacing: 0.05em; }
+.admin-product-table tbody th { color: var(--forest); }
+.status-badge { display: inline-flex; padding: 0.22rem 0.55rem; background: var(--oat); color: var(--forest); font-size: 0.7rem; font-weight: 800; white-space: nowrap; }
+.status-badge[data-status="paid"], .status-badge[data-status="collected"] { background: #dce8d8; }
+.status-badge[data-status="cancelled"] { background: #eee1dd; color: #8a342c; }
+
 .product-filters {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -581,6 +592,12 @@ button:disabled { cursor: not-allowed; }
   .auth-card { width: min(100% - 2rem, 28rem); margin-block: 2.75rem; }
   .auth-story { padding: 3rem 1.25rem; }
   .size-track { margin-top: 2rem; }
+  .admin-order-table { min-width: 0; background: transparent; }
+  .admin-order-table thead { display: none; }
+  .admin-order-table, .admin-order-table tbody, .admin-order-table tr, .admin-order-table th, .admin-order-table td { display: block; width: 100%; }
+  .admin-order-table tr { margin-bottom: 1rem; border: 1px solid var(--line); background: var(--white); padding: 0.8rem 1rem; }
+  .admin-order-table th, .admin-order-table td { display: grid; grid-template-columns: 5.2rem minmax(0, 1fr); gap: 0.6rem; padding: 0.4rem 0; border: 0; overflow-wrap: anywhere; }
+  .admin-order-table th::before, .admin-order-table td::before { color: var(--muted); content: attr(data-label); font-size: 0.7rem; font-weight: 700; }
 }
 
 @media (prefers-reduced-motion: reduce) {
