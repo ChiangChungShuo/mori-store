@@ -77,13 +77,21 @@ test('keeps auth controls labeled, reachable and form-first on mobile', async ({
 
     await expect(email).toBeVisible()
     await expect(password).toHaveAttribute('type', 'password')
-    await toggle.focus()
+    await tabTo(page, toggle)
     await expectVisibleFocus(toggle)
     await expect(toggle).toHaveCSS('min-height', '44px')
-    await toggle.click()
+    await toggle.press('Space')
+    const hiddenToggle = page.getByRole('button', { name: '隱藏密碼' })
+    await expectVisibleFocus(hiddenToggle)
     await expect(password).toHaveAttribute('type', 'text')
     expect(await page.locator('.auth-shell').evaluate((shell) => (
       shell.firstElementChild?.classList.contains('auth-card')
+    ))).toBe(true)
+    expect(await page.evaluate(() => (
+      document.documentElement.scrollWidth <= document.documentElement.clientWidth
+    ))).toBe(true)
+    expect(await page.locator('.auth-shell').evaluate((shell) => (
+      shell.scrollWidth <= shell.clientWidth
     ))).toBe(true)
 
     const formBox = await form.boundingBox()

@@ -1,13 +1,21 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AuthForm } from '@/features/auth/auth-form'
 
-vi.mock('@/features/auth/actions', () => ({
+const authActionMocks = vi.hoisted(() => ({
   signIn: vi.fn(),
   signUp: vi.fn(),
 }))
 
-afterEach(cleanup)
+vi.mock('@/features/auth/actions', () => ({
+  signIn: authActionMocks.signIn,
+  signUp: authActionMocks.signUp,
+}))
+
+afterEach(() => {
+  cleanup()
+  vi.clearAllMocks()
+})
 
 describe('member auth form', () => {
   it('shows the complete sign-in card, password control and local owner guidance', () => {
@@ -28,8 +36,79 @@ describe('member auth form', () => {
 
     expect(screen.getByRole('heading', { name: '建立你的 mori 帳號' })).toBeInTheDocument()
     expect(screen.getByText('至少 8 個字元')).toBeInTheDocument()
+    expect(screen.getByLabelText('密碼')).toHaveAttribute('aria-describedby', 'password-help')
     expect(screen.queryByText('本機老闆示範帳號')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: '前往登入' })).toHaveAttribute('href', '/login')
+  })
+
+  it('keeps password help and error associated after sign-up validation fails', async () => {
+    authActionMocks.signUp.mockResolvedValueOnce({
+      ok: false,
+      fieldErrors: { password: ['密碼至少需要 8 個字元。'] },
+    })
+    render(<AuthForm mode="sign-up" />)
+
+    fireEvent.submit(screen.getByRole('button', { name: '建立會員帳號' }).closest('form')!)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('密碼'))
+        .toHaveAttribute('aria-describedby', 'password-help password-error')
+    })
+  })
+
+  it('associates only the password error after sign-in validation fails', async () => {
+    authActionMocks.signIn.mockResolvedValueOnce({
+      ok: false,
+      fieldErrors: { password: ['密碼至少需要 8 個字元。'] },
+    })
+    render(<AuthForm mode="sign-in" />)
+
+    fireEvent.submit(screen.getByRole('button', { name: '登入' }).closest('form')!)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('密碼')).toHaveAttribute('aria-describedby', 'password-error')
+    })
+  })
+
+  it('disables and relabels the submit button while authentication is pending', async () => {
+    let resolveAction!: (state: { ok: boolean }) => void
+    authActionMocks.signIn.mockReturnValueOnce(new Promise((resolve) => {
+      resolveAction = resolve
+    }))
+    render(<AuthForm mode="sign-in" />)
+
+    fireEvent.submit(screen.getByRole('button', { name: '登入' }).closest('form')!)
+
+    const pendingButton = await screen.findByRole('button', { name: '處理中…' })
+    expect(pendingButton).toBeDisabled()
+    expect(pendingButton).toHaveClass('button', 'button-wide')
+
+    await act(async () => resolveAction({ ok: false }))
+    await waitFor(() => expect(screen.getByRole('button', { name: '登入' })).toBeEnabled())
+  })
+
+  it('hides local owner credentials on live sign-in', () => {
+    render(<AuthForm mode="sign-in" />)
+
+    expect(screen.queryByText('本機老闆示範帳號')).not.toBeInTheDocument()
+  })
+
+  it('preserves a safe next path through sign-in and the registration link', () => {
+    const { container } = render(<AuthForm mode="sign-in" nextPath="/account/orders" />)
+
+    expect(container.querySelector('input[type="hidden"][name="next"]'))
+      .toHaveValue('/account/orders')
+    expect(screen.getByRole('link', { name: '建立會員帳號' }))
+      .toHaveAttribute('href', '/signup?next=%2Faccount%2Forders')
+  })
+
+  it('preserves a safe next path through sign-up and the login link', () => {
+    const { container } = render(<AuthForm mode="sign-up" nextPath="/account/orders" />)
+
+    expect(container.querySelector('input[type="hidden"][name="next"]'))
+      .toHaveValue('/account/orders')
+    expect(screen.getByRole('link', { name: '前往登入' }))
+      .toHaveAttribute('href', '/login?next=%2Faccount%2Forders')
   })
 
   it('keeps the form first in the DOM for the mobile reading order', () => {

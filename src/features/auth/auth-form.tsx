@@ -22,6 +22,10 @@ export function AuthForm({ mode, nextPath, fixtureMode = false }: AuthFormProps)
   )
   const alternateHref = nextPath ? `/signup?next=${encodeURIComponent(nextPath)}` : '/signup'
   const loginHref = nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : '/login'
+  const passwordDescription = [
+    !isSignIn && 'password-help',
+    state.fieldErrors?.password && 'password-error',
+  ].filter(Boolean).join(' ') || undefined
 
   return (
     <main className="auth-shell">
@@ -38,7 +42,7 @@ export function AuthForm({ mode, nextPath, fixtureMode = false }: AuthFormProps)
         <div className="auth-field">
           <label htmlFor="password">密碼</label>
           <div className="password-field">
-            <input id="password" name="password" type={showPassword ? 'text' : 'password'} minLength={8} autoComplete={isSignIn ? 'current-password' : 'new-password'} aria-describedby={state.fieldErrors?.password ? 'password-error' : isSignIn ? undefined : 'password-help'} />
+            <input id="password" name="password" type={showPassword ? 'text' : 'password'} minLength={8} autoComplete={isSignIn ? 'current-password' : 'new-password'} aria-describedby={passwordDescription} />
             <button type="button" aria-label={showPassword ? '隱藏密碼' : '顯示密碼'} onClick={() => setShowPassword((shown) => !shown)}>{showPassword ? '隱藏' : '顯示'}</button>
           </div>
           {!isSignIn && <p className="field-help" id="password-help">至少 8 個字元</p>}
