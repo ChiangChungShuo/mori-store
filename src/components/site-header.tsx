@@ -11,6 +11,10 @@ export function SiteHeader() {
           <Link href="/#ages">依年齡</Link>
           <Link href="/#story">品牌故事</Link>
         </div>
+        <div className="nav-actions">
+          <Link href="/login">會員登入</Link>
+          <Link href="/admin">老闆後台</Link>
+        </div>
       </nav>
     </header>
   )

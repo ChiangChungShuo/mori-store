@@ -54,12 +54,47 @@ test('tabs through the header with visible focus', async ({ page }) => {
     page.getByRole('link', { name: '新品', exact: true }),
     page.getByRole('link', { name: '依年齡', exact: true }),
     page.getByRole('link', { name: '品牌故事', exact: true }),
+    page.getByRole('link', { name: '會員登入', exact: true }),
+    page.getByRole('link', { name: '老闆後台', exact: true }),
     page.locator('.cart-drawer summary'),
   ]
 
   for (const target of focusOrder) {
     await page.keyboard.press('Tab')
     await expectVisibleFocus(target)
+  }
+})
+
+test('keeps auth controls labeled, reachable and form-first on mobile', async ({ page }) => {
+  for (const path of ['/login', '/signup']) {
+    await page.goto(path)
+
+    const form = page.locator('.auth-card')
+    const story = page.locator('.auth-story')
+    const email = page.getByLabel('Email')
+    const password = page.getByLabel('密碼', { exact: true })
+    const toggle = page.getByRole('button', { name: '顯示密碼' })
+
+    await expect(email).toBeVisible()
+    await expect(password).toHaveAttribute('type', 'password')
+    await toggle.focus()
+    await expectVisibleFocus(toggle)
+    await expect(toggle).toHaveCSS('min-height', '44px')
+    await toggle.click()
+    await expect(password).toHaveAttribute('type', 'text')
+    expect(await page.locator('.auth-shell').evaluate((shell) => (
+      shell.firstElementChild?.classList.contains('auth-card')
+    ))).toBe(true)
+
+    const formBox = await form.boundingBox()
+    const storyBox = await story.boundingBox()
+    expect(formBox).not.toBeNull()
+    expect(storyBox).not.toBeNull()
+    if (page.viewportSize()!.width <= 928) {
+      expect(formBox!.y).toBeLessThan(storyBox!.y)
+    } else {
+      expect(storyBox!.x).toBeLessThan(formBox!.x)
+    }
   }
 })
 
