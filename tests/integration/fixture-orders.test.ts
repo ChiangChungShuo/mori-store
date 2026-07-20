@@ -3,7 +3,11 @@ import {
   createCheckoutService,
   createTestProviderReference,
 } from '@/features/checkout/service'
-import { listOrdersForUser } from '@/features/orders/queries'
+import {
+  getOrderForUser,
+  listOrdersForUser,
+  lookupGuestOrder,
+} from '@/features/orders/queries'
 import { createFixtureCheckoutRepository } from '@/testing/e2e-checkout-repository'
 import { createE2EOrderRepository } from '@/testing/e2e-order-repository'
 import { createE2EStore, getE2EStore, type E2EOrder } from '@/testing/e2e-store'
@@ -11,20 +15,19 @@ import { createE2EStore, getE2EStore, type E2EOrder } from '@/testing/e2e-store'
 const liveRepository = vi.hoisted(() => ({
   createClient: vi.fn(),
 }))
+const liveGuestRepository = vi.hoisted(() => ({
+  createAdminClient: vi.fn(),
+}))
 
 vi.mock('@/lib/supabase/server', () => liveRepository)
+vi.mock('@/lib/supabase/admin', () => liveGuestRepository)
 
-const originalNodeEnv = process.env.NODE_ENV
-const originalFixtureMode = process.env.MORI_E2E_FIXTURES
 const routingOrderNumber = 'MORI-DEMO-ROUTING'
 
 afterEach(() => {
   vi.clearAllMocks()
+  vi.unstubAllEnvs()
   getE2EStore().orders.delete(routingOrderNumber)
-  if (originalNodeEnv === undefined) delete process.env.NODE_ENV
-  else process.env.NODE_ENV = originalNodeEnv
-  if (originalFixtureMode === undefined) delete process.env.MORI_E2E_FIXTURES
-  else process.env.MORI_E2E_FIXTURES = originalFixtureMode
 })
 
 describe('shared fixture orders', () => {
@@ -45,13 +48,17 @@ describe('shared fixture orders', () => {
     const result = await checkout.completeTestPayment(attemptId, 'success')
     const replay = await checkout.completeTestPayment(attemptId, 'success')
     const orders = createE2EOrderRepository(store)
+    if (!('orderNumber' in result) || !result.orderNumber) {
+      throw new Error('expected a completed fixture order')
+    }
+    const orderNumber = result.orderNumber
 
     expect(replay).toEqual(result)
     expect(store.orders).toHaveLength(2)
-    const order = store.orders.get(result.orderNumber!)
+    const order = store.orders.get(orderNumber)
     expect(order).toEqual({
       id: expect.any(String),
-      orderNumber: result.orderNumber,
+      orderNumber,
       userId: 'customer-a',
       email: 'parent@example.com',
       recipientName: '王小美',
@@ -81,7 +88,7 @@ describe('shared fixture orders', () => {
       },
     })
     await expect(orders.listOrdersForUser('customer-a')).resolves.toEqual([{
-      orderNumber: result.orderNumber,
+      orderNumber,
       email: 'parent@example.com',
       recipientName: '王小美',
       recipientPhone: '0912345678',
@@ -102,14 +109,19 @@ describe('shared fixture orders', () => {
         quantity: 2,
       }],
     }])
-    await expect(orders.listOrders({ query: result.orderNumber!, status: '' })).resolves.toEqual([
-      expect.objectContaining({ orderNumber: result.orderNumber }),
+    await expect(orders.listOrders({ query: orderNumber, status: '' })).resolves.toEqual([
+      expect.objectContaining({ orderNumber }),
     ])
-    await expect(orders.getOrder(result.orderNumber!)).resolves.toEqual(expect.objectContaining({
+    await expect(orders.getOrder(orderNumber)).resolves.toEqual(expect.objectContaining({
       recipientName: '王小美',
       storeChain: 'seven_eleven',
       items: expect.arrayContaining([expect.objectContaining({ quantity: 2 })]),
     }))
+    expect((await orders.getOrder(orderNumber))?.payment).toEqual({
+      status: 'paid',
+      providerReference: createTestProviderReference(attemptId),
+      paidAt: order?.createdAt,
+    })
   })
 
   it('keeps member and guest order ownership separate', async () => {
@@ -144,12 +156,17 @@ describe('shared fixture orders', () => {
     }
     getE2EStore().orders.set(fixtureOrder.orderNumber, fixtureOrder)
 
-    process.env.NODE_ENV = 'test'
-    process.env.MORI_E2E_FIXTURES = '1'
+    vi.stubEnv('NODE_ENV', 'test')
+    vi.stubEnv('MORI_E2E_FIXTURES', '1')
     await expect(listOrdersForUser('routing-customer')).resolves.toEqual([
       expect.objectContaining({ orderNumber: fixtureOrder.orderNumber }),
     ])
+    await expect(getOrderForUser(fixtureOrder.orderNumber, 'routing-customer'))
+      .resolves.toEqual(expect.objectContaining({ orderNumber: fixtureOrder.orderNumber }))
+    await expect(lookupGuestOrder('MORI-DEMO-1001', ' PARENT@EXAMPLE.COM '))
+      .resolves.toEqual(expect.objectContaining({ orderNumber: 'MORI-DEMO-1001' }))
     expect(liveRepository.createClient).not.toHaveBeenCalled()
+    expect(liveGuestRepository.createAdminClient).not.toHaveBeenCalled()
 
     const orderQuery = {
       select: vi.fn(),
@@ -159,9 +176,25 @@ describe('shared fixture orders', () => {
     orderQuery.select.mockReturnValue(orderQuery)
     orderQuery.eq.mockReturnValue(orderQuery)
     liveRepository.createClient.mockResolvedValue({ from: () => orderQuery })
-    process.env.NODE_ENV = 'production'
+    vi.stubEnv('NODE_ENV', 'production')
 
     await expect(listOrdersForUser('routing-customer')).resolves.toEqual([])
     expect(liveRepository.createClient).toHaveBeenCalledOnce()
+
+    const guestOrderQuery = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      is: vi.fn(),
+      maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+    }
+    guestOrderQuery.select.mockReturnValue(guestOrderQuery)
+    guestOrderQuery.eq.mockReturnValue(guestOrderQuery)
+    guestOrderQuery.is.mockReturnValue(guestOrderQuery)
+    liveGuestRepository.createAdminClient.mockReturnValue({ from: () => guestOrderQuery })
+
+    await expect(lookupGuestOrder('MORI-DEMO-1001', ' PARENT@EXAMPLE.COM '))
+      .resolves.toBeNull()
+    expect(liveGuestRepository.createAdminClient).toHaveBeenCalledOnce()
+    expect(guestOrderQuery.eq).toHaveBeenNthCalledWith(2, 'email', 'parent@example.com')
   })
 })
