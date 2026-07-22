@@ -102,12 +102,46 @@ test('customer is denied while owner can manage the seeded order on mobile', asy
   await page.getByLabel('密碼', { exact: true }).fill('mori123456')
   await page.getByRole('button', { name: '登入' }).click()
   await expect(page).toHaveURL('/admin')
-  const ownerNavigation = page.getByRole('navigation', { name: '商店後台導覽' })
-  for (const name of ['商店總覽', '訂單管理', '商品管理', '返回商城']) {
-    await expect(ownerNavigation.getByRole('link', { name })).toBeVisible()
+  const trigger = page.getByRole('button', { name: '開啟選單' })
+  if (testInfo.project.name === 'mobile') {
+    await expect(trigger).toBeVisible()
+    await trigger.click()
+    const menu = page.getByRole('dialog', { name: '商店後台導覽' })
+    for (const name of ['商店總覽', '訂單管理', '商品管理與庫存', '商品分類', '會員管理', '行銷推廣', '報表分析', '商店設定', '返回商城']) {
+      await expect(menu.getByRole('link', { name, exact: true })).toBeVisible()
+    }
+    await expect(menu.getByText('mori 老闆', { exact: true })).toBeVisible()
+    await expect(menu.getByRole('button', { name: '登出' })).toBeVisible()
+    await menu.getByRole('button', { name: '關閉選單' }).click()
+    await expect(trigger).toBeFocused()
+    await expect(page.locator('.admin-mobile-brand')).toHaveCSS('width', '52px')
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375)
+  } else {
+    await expect(page.locator('.admin-sidebar')).toBeVisible()
+    await expect(page.locator('.admin-brand')).toHaveCSS('width', '72px')
+    await expect(trigger).toBeHidden()
+    const ownerNavigation = page.getByRole('navigation', { name: '商店後台導覽' })
+    for (const name of ['商店總覽', '訂單管理', '商品管理與庫存', '返回商城']) {
+      await expect(ownerNavigation.getByRole('link', { name, exact: true })).toBeVisible()
+    }
+    await expect(page.locator('.admin-sidebar')).toHaveCSS('position', 'fixed')
+
+    await page.setViewportSize({ width: 768, height: 900 })
+    await expect(page.locator('.admin-mobile-header')).toBeHidden()
+    await expect(page.locator('.admin-sidebar')).toHaveCSS('position', 'static')
+    await expect(page.locator('.admin-sidebar')).toHaveCSS('width', '768px')
+    await expect(page.locator('.admin-workspace')).toHaveCSS('margin-left', '0px')
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(768)
   }
 
-  await page.getByRole('link', { name: '訂單管理' }).click()
+  if (testInfo.project.name === 'mobile') {
+    await trigger.click()
+    const menu = page.getByRole('dialog', { name: '商店後台導覽' })
+    await menu.getByRole('link', { name: '訂單管理', exact: true }).click()
+    await expect(menu).toBeHidden()
+  } else {
+    await page.getByRole('navigation', { name: '商店後台導覽' }).getByRole('link', { name: '訂單管理', exact: true }).click()
+  }
   await page.getByLabel('訂單編號、收件人或 Email').fill('王小美')
   await page.getByLabel('狀態').selectOption('paid')
   await page.getByRole('button', { name: '篩選' }).click()
