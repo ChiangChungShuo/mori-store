@@ -103,4 +103,21 @@ describe('MobileMenu', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false')
     expect(trigger).toHaveFocus()
   })
+
+  it('uses a custom lifecycle breakpoint without changing the default', () => {
+    const matchMedia = vi.fn(() => ({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }) as unknown as MediaQueryList)
+    vi.stubGlobal('matchMedia', matchMedia)
+
+    render(
+      <MobileMenu ariaLabel="主要導覽" breakpoint="36rem" heading="選單" id="store-menu">
+        <Link href="/products">所有商品</Link>
+      </MobileMenu>,
+    )
+
+    expect(matchMedia).toHaveBeenCalledWith('(max-width: 36rem)')
+  })
 })

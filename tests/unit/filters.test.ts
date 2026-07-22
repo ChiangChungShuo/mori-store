@@ -1,6 +1,6 @@
 import { createElement } from 'react'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SiteHeader } from '@/components/site-header'
 import { CartProvider } from '@/features/cart/cart-provider'
 import { ProductCard } from '@/features/catalog/product-card'
@@ -32,6 +32,7 @@ afterEach(() => {
   cleanup()
   window.localStorage.clear()
   vi.unstubAllEnvs()
+  vi.unstubAllGlobals()
 })
 
 describe('fixture catalog', () => {
@@ -81,12 +82,35 @@ describe('ProductFilters', () => {
 })
 
 describe('store navigation', () => {
+  beforeEach(() => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })))
+  })
+
   it('keeps homepage section links valid from catalog routes', () => {
     render(createElement(SiteHeader))
 
     expect(screen.getByRole('link', { name: '新品' })).toHaveAttribute('href', '/#new')
     expect(screen.getByRole('link', { name: '依年齡' })).toHaveAttribute('href', '/#ages')
     expect(screen.getByRole('link', { name: '品牌故事' })).toHaveAttribute('href', '/#story')
+  })
+
+  it('shows member destinations after login', () => {
+    render(createElement(SiteHeader, { isSignedIn: true }))
+
+    expect(screen.getAllByRole('link', { name: '會員中心' })).not.toHaveLength(0)
+    expect(screen.getAllByRole('link', { name: '我的訂單' })).not.toHaveLength(0)
+    expect(screen.getAllByRole('button', { name: '登出' })).not.toHaveLength(0)
+  })
+
+  it('sends guests through login before member orders', () => {
+    render(createElement(SiteHeader))
+
+    expect(screen.getAllByRole('link', { name: '會員訂單' })[0]).toHaveAttribute('href', '/login?next=/account/orders')
+    expect(screen.getAllByRole('link', { name: '訪客查單' })[0]).toHaveAttribute('href', '/order-lookup')
   })
 })
 

@@ -81,6 +81,11 @@ test('opens and closes the storefront navigation at 375 px', async ({ page }) =>
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await expect(trigger.locator('i').first()).toHaveCSS('transition-duration', '0s')
   await expect(dialog.locator('.mobile-menu-panel')).toHaveCSS('animation-duration', '0s')
+  await page.setViewportSize({ width: 577, height: 812 })
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false')
+  await expect(dialog).not.toBeVisible()
+  await page.setViewportSize({ width: 375, height: 812 })
+  await trigger.click()
   await page.keyboard.press('Escape')
   await expect(trigger).toHaveAttribute('aria-expanded', 'false')
   await expect(trigger).toBeFocused()
@@ -89,6 +94,14 @@ test('opens and closes the storefront navigation at 375 px', async ({ page }) =>
   await expect(dialog).not.toBeVisible()
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth))
     .toBeLessThanOrEqual(375)
+
+  await cartTrigger.click()
+  const cartPanel = page.locator('.cart-drawer-panel')
+  await expect(cartPanel).toBeVisible()
+  const cartPanelBox = await cartPanel.boundingBox()
+  expect(cartPanelBox).not.toBeNull()
+  expect(cartPanelBox!.y).toBeGreaterThanOrEqual(0)
+  expect(cartPanelBox!.y + cartPanelBox!.height).toBeLessThanOrEqual(812)
 })
 
 test('populated product detail fits the 375 px viewport', async ({ page }) => {

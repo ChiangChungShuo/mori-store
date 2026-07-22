@@ -1,0 +1,23 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { describe, expect, it } from 'vitest'
+
+describe('storefront header source contract', () => {
+  it('wires auth and current categories into the header', () => {
+    const layout = readFileSync(resolve(process.cwd(), 'src/app/(store)/layout.tsx'), 'utf8')
+
+    expect(layout).toContain('getCurrentUser')
+    expect(layout).toContain('listProductCategories')
+    expect(layout).toMatch(/<SiteHeader categories=\{categories\} isSignedIn=\{Boolean\(user\)\}/)
+  })
+
+  it('keeps the approved desktop controls and storefront breakpoint', () => {
+    const header = readFileSync(resolve(process.cwd(), 'src/components/site-header.tsx'), 'utf8')
+
+    expect(header).toContain('WishlistHeaderLink')
+    expect(header).toContain('nav-category-menu')
+    expect(header).toContain('account-menu')
+    expect(header).toContain('header-search')
+    expect(header).toMatch(/<MobileMenu[^>]+breakpoint="36rem"/)
+  })
+})

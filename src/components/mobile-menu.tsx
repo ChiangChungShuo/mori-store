@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 
-export function MobileMenu({ ariaLabel, children, heading, id }: {
+export function MobileMenu({ ariaLabel, breakpoint = '58rem', children, heading, id }: {
   ariaLabel: string
+  breakpoint?: string
   children: ReactNode
   heading: string
   id: string
@@ -13,7 +14,7 @@ export function MobileMenu({ ariaLabel, children, heading, id }: {
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    const mobileViewport = window.matchMedia('(max-width: 58rem)')
+    const mobileViewport = window.matchMedia(`(max-width: ${breakpoint})`)
 
     function handleViewportChange(event: MediaQueryListEvent) {
       if (!event.matches && dialogRef.current?.open) dialogRef.current.close()
@@ -21,7 +22,7 @@ export function MobileMenu({ ariaLabel, children, heading, id }: {
 
     mobileViewport.addEventListener('change', handleViewportChange)
     return () => mobileViewport.removeEventListener('change', handleViewportChange)
-  }, [])
+  }, [breakpoint])
 
   function openMenu() {
     dialogRef.current?.showModal()
