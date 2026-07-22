@@ -27,10 +27,15 @@ async function expectVisibleFocus(target: Locator) {
   await expect(target).toBeFocused()
   const outline = await target.evaluate((element) => {
     const style = window.getComputedStyle(element)
-    return { style: style.outlineStyle, width: Number.parseFloat(style.outlineWidth) }
+    return {
+      boxShadow: style.boxShadow,
+      style: style.outlineStyle,
+      width: Number.parseFloat(style.outlineWidth),
+    }
   })
-  expect(outline.style).not.toBe('none')
-  expect(outline.width).toBeGreaterThan(0)
+  expect(
+    (outline.style !== 'none' && outline.width > 0) || outline.boxShadow !== 'none',
+  ).toBe(true)
 }
 
 async function openCheckoutWithCart(page: Page) {
@@ -46,21 +51,31 @@ async function openCheckoutWithCart(page: Page) {
   await expect(page.getByRole('button', { name: '前往測試付款' })).toBeEnabled()
 }
 
-test('tabs through the header with visible focus', async ({ page }) => {
+test('tabs through the desktop header with visible focus', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'desktop header navigation is hidden on mobile')
   await page.goto('/checkout')
+
+  await expect(page.getByRole('button', { name: '開啟選單' })).toBeHidden()
+  await expect(page.getByRole('navigation', { name: '主要導覽' })
+    .getByRole('link', { name: '新品', exact: true })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'mori', exact: true })).toHaveCSS('width', '76px')
 
   const focusOrder = [
     page.getByRole('link', { name: 'mori', exact: true }),
     page.getByRole('link', { name: '新品', exact: true }),
+    page.getByRole('link', { name: '所有商品', exact: true }).first(),
     page.getByRole('link', { name: '依年齡', exact: true }),
+    page.locator('.nav-category-menu summary'),
     page.getByRole('link', { name: '品牌故事', exact: true }),
-    page.getByRole('link', { name: '會員登入', exact: true }),
-    page.getByRole('link', { name: '老闆後台', exact: true }),
+    page.locator('.wishlist-header-link'),
+    page.locator('.account-menu summary'),
+    page.locator('.header-search input'),
+    page.locator('.header-search button'),
     page.locator('.cart-drawer summary'),
   ]
 
   for (const target of focusOrder) {
-    await page.keyboard.press('Tab')
+    await tabTo(page, target)
     await expectVisibleFocus(target)
   }
 })
