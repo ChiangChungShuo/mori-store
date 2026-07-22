@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 
-export function MobileMenu({ ariaLabel, breakpoint = '58rem', children, heading, id }: {
+export function MobileMenu({ ariaLabel, breakpoint = '58rem', children, heading, id, side = 'right' }: {
   ariaLabel: string
   breakpoint?: string
   children: ReactNode
   heading: string
   id: string
+  side?: 'left' | 'right'
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -53,6 +54,7 @@ export function MobileMenu({ ariaLabel, breakpoint = '58rem', children, heading,
       <dialog
         aria-label={ariaLabel}
         className="mobile-menu-dialog"
+        data-side={side}
         id={id}
         onCancel={(event) => { event.preventDefault(); closeMenu() }}
         onClick={handleDialogClick}

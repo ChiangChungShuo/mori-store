@@ -750,6 +750,18 @@ button:disabled { cursor: not-allowed; }
   to { transform: translateX(0); }
 }
 
+.mobile-menu-dialog[data-side="left"] .mobile-menu-panel {
+  margin-right: auto;
+  margin-left: 0;
+  box-shadow: 1rem 0 2.5rem rgb(20 32 23 / 24%);
+  animation-name: mobile-menu-panel-in-left;
+}
+
+@keyframes mobile-menu-panel-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
 @media (max-width: 58rem) {
   .mobile-menu { display: block; }
 }

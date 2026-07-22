@@ -120,4 +120,23 @@ describe('MobileMenu', () => {
 
     expect(matchMedia).toHaveBeenCalledWith('(max-width: 36rem)')
   })
+
+  it('exposes the requested drawer side without changing the default', () => {
+    const { unmount } = render(
+      <MobileMenu ariaLabel="主要導覽" heading="選單" id="left-menu" side="left">
+        <Link href="/products">所有商品</Link>
+      </MobileMenu>,
+    )
+    expect(screen.getByLabelText('主要導覽', { selector: 'dialog' }))
+      .toHaveAttribute('data-side', 'left')
+
+    unmount()
+    render(
+      <MobileMenu ariaLabel="後備導覽" heading="選單" id="default-menu">
+        <Link href="/products">所有商品</Link>
+      </MobileMenu>,
+    )
+    expect(screen.getByLabelText('後備導覽', { selector: 'dialog' }))
+      .toHaveAttribute('data-side', 'right')
+  })
 })
