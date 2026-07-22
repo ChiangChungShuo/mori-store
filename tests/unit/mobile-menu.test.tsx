@@ -1,9 +1,12 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import Link from 'next/link'
-import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MobileMenu } from '@/components/mobile-menu'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+})
 
 beforeAll(() => {
   HTMLDialogElement.prototype.showModal = function showModal() {
@@ -13,6 +16,19 @@ beforeAll(() => {
     this.removeAttribute('open')
     this.dispatchEvent(new Event('close'))
   }
+})
+
+beforeEach(() => {
+  vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
+    matches: true,
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }) as MediaQueryList))
 })
 
 function renderMenu() {
@@ -55,6 +71,36 @@ describe('MobileMenu', () => {
     fireEvent.click(trigger)
     fireEvent.click(dialog)
     expect(dialog).not.toHaveAttribute('open')
+    expect(trigger).toHaveFocus()
+  })
+
+  it('closes when the viewport changes to the desktop breakpoint', () => {
+    let changeListener: EventListener | undefined
+    const matchMedia = vi.fn((query: string) => ({
+      matches: true,
+      media: query,
+      onchange: null,
+      addEventListener: (_type: string, listener: EventListenerOrEventListenerObject) => {
+        changeListener = listener as EventListener
+      },
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }) as MediaQueryList)
+    vi.stubGlobal('matchMedia', matchMedia)
+
+    const { dialog, trigger } = renderMenu()
+    fireEvent.click(trigger)
+    expect(dialog).toHaveAttribute('open')
+    expect(matchMedia).toHaveBeenCalledWith('(max-width: 58rem)')
+
+    act(() => {
+      changeListener?.(Object.assign(new Event('change'), { matches: false }))
+    })
+
+    expect(dialog).not.toHaveAttribute('open')
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
     expect(trigger).toHaveFocus()
   })
 })

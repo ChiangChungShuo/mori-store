@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, type MouseEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 
 export function MobileMenu({ ariaLabel, children, heading, id }: {
   ariaLabel: string
@@ -11,6 +11,17 @@ export function MobileMenu({ ariaLabel, children, heading, id }: {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    const mobileViewport = window.matchMedia('(max-width: 58rem)')
+
+    function handleViewportChange(event: MediaQueryListEvent) {
+      if (!event.matches && dialogRef.current?.open) dialogRef.current.close()
+    }
+
+    mobileViewport.addEventListener('change', handleViewportChange)
+    return () => mobileViewport.removeEventListener('change', handleViewportChange)
+  }, [])
 
   function openMenu() {
     dialogRef.current?.showModal()
