@@ -296,6 +296,8 @@ describe('fixture authentication', () => {
   it('keeps production admin authorization authoritative to the profile role', async () => {
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('MORI_E2E_FIXTURES', '1')
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://example.supabase.co')
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'publishable-key')
     const liveUser = { id: 'live-user' }
     const getUser = vi.fn().mockResolvedValue({ data: { user: liveUser }, error: null })
     const profileQuery = {

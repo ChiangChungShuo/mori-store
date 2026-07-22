@@ -1,5 +1,5 @@
 import { createElement } from 'react'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SiteHeader } from '@/components/site-header'
 import { CartProvider } from '@/features/cart/cart-provider'
@@ -83,6 +83,13 @@ describe('ProductFilters', () => {
 
 describe('store navigation', () => {
   beforeEach(() => {
+    HTMLDialogElement.prototype.showModal = function showModal() {
+      this.setAttribute('open', '')
+    }
+    HTMLDialogElement.prototype.close = function close() {
+      this.removeAttribute('open')
+      this.dispatchEvent(new Event('close'))
+    }
     vi.stubGlobal('matchMedia', vi.fn(() => ({
       matches: true,
       addEventListener: vi.fn(),
@@ -99,18 +106,27 @@ describe('store navigation', () => {
   })
 
   it('shows member destinations after login', () => {
-    render(createElement(SiteHeader, { isSignedIn: true }))
+    render(createElement(SiteHeader, { categories: ['配件'], isSignedIn: true }))
+    fireEvent.click(screen.getByRole('button', { name: '開啟選單' }))
+    const drawer = within(screen.getByRole('dialog', { name: '主要導覽' }))
 
-    expect(screen.getAllByRole('link', { name: '會員中心' })).not.toHaveLength(0)
-    expect(screen.getAllByRole('link', { name: '我的訂單' })).not.toHaveLength(0)
-    expect(screen.getAllByRole('button', { name: '登出' })).not.toHaveLength(0)
+    expect(drawer.getByRole('link', { name: '配件' })).toHaveAttribute('href', '/products?category=%E9%85%8D%E4%BB%B6')
+    expect(drawer.getByRole('link', { name: '會員中心' })).toHaveAttribute('href', '/account')
+    expect(drawer.getByRole('link', { name: '我的訂單' })).toHaveAttribute('href', '/account/orders')
+    expect(drawer.getByRole('button', { name: '登出' })).toBeInTheDocument()
+    expect(drawer.queryByRole('link', { name: '會員登入' })).not.toBeInTheDocument()
   })
 
   it('sends guests through login before member orders', () => {
-    render(createElement(SiteHeader))
+    render(createElement(SiteHeader, { categories: ['洋裝'] }))
+    fireEvent.click(screen.getByRole('button', { name: '開啟選單' }))
+    const drawer = within(screen.getByRole('dialog', { name: '主要導覽' }))
 
-    expect(screen.getAllByRole('link', { name: '會員訂單' })[0]).toHaveAttribute('href', '/login?next=/account/orders')
-    expect(screen.getAllByRole('link', { name: '訪客查單' })[0]).toHaveAttribute('href', '/order-lookup')
+    expect(drawer.getByRole('link', { name: '洋裝' })).toHaveAttribute('href', '/products?category=%E6%B4%8B%E8%A3%9D')
+    expect(drawer.getByRole('link', { name: '會員登入' })).toHaveAttribute('href', '/login')
+    expect(drawer.getByRole('link', { name: '會員訂單' })).toHaveAttribute('href', '/login?next=/account/orders')
+    expect(drawer.getByRole('link', { name: '訪客查單' })).toHaveAttribute('href', '/order-lookup')
+    expect(drawer.queryByRole('link', { name: '會員中心' })).not.toBeInTheDocument()
   })
 })
 
