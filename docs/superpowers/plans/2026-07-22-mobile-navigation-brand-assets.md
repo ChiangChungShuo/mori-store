@@ -395,11 +395,17 @@ Within `@media (max-width: 36rem)`:
 .site-nav > .mobile-menu { display: block; grid-column: 1; grid-row: 1; }
 .site-nav > .brand { grid-column: 2; grid-row: 1; width: 4rem; justify-self: center; }
 .site-nav > .nav-links, .site-nav > .nav-actions { display: none; }
+.cart-drawer { top: 3.5rem; right: 1rem; bottom: auto; }
+.cart-drawer > summary { width: 2.75rem; min-height: 2.75rem; justify-content: center; padding: 0; }
+.cart-drawer > summary .cart-icon { width: 1.25rem; height: 1.25rem; }
+.cart-drawer > summary .cart-count { position: absolute; top: -0.25rem; right: -0.25rem; width: 1.25rem; height: 1.25rem; }
+.cart-drawer > summary { font-size: 0; }
+.cart-drawer > summary .cart-count { font-size: 0.58rem; }
 .store-mobile-menu-links { display: grid; }
 .store-mobile-menu-links a { min-height: 3rem; border-bottom: 1px solid var(--line); padding: 0.75rem 0; text-decoration: none; }
 ```
 
-Do not reposition or restyle the existing cart drawer beyond resolving an actual overlap found by the browser test.
+Keep the existing cart panel, totals, and checkout behavior unchanged; only move its closed mobile trigger into the top row's right-hand position.
 
 - [ ] **Step 5: Run storefront tests and verify GREEN**
 
