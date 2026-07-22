@@ -72,6 +72,8 @@ button:disabled { cursor: not-allowed; }
   letter-spacing: 0.28em;
   text-transform: uppercase;
 }
+.brand-logo-lockup { display: block; width: 100%; }
+.brand-logo-image { display: block; width: 100%; height: auto; border-radius: 50%; }
 .nav-links {
   grid-column: 1;
   grid-row: 1;
