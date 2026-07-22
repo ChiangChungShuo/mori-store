@@ -762,3 +762,9 @@ button:disabled { cursor: not-allowed; }
   .mobile-menu-trigger i { transition-duration: 0s; }
   .mobile-menu-panel { animation-duration: 0s; }
 }
+
+.admin-dashboard-grid > .admin-panel { min-width: 0; }
+
+@media (max-width: 36rem) {
+  .admin-dashboard-grid .order-pipeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

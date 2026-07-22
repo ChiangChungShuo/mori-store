@@ -112,7 +112,12 @@ test('customer is denied while owner can manage the seeded order on mobile', asy
     }
     await expect(menu.getByText('mori 老闆', { exact: true })).toBeVisible()
     await expect(menu.getByRole('button', { name: '登出' })).toBeVisible()
-    await menu.getByRole('button', { name: '關閉選單' }).click()
+    const closeButton = menu.getByRole('button', { name: '關閉選單' })
+    await expect(closeButton.evaluate((button) => {
+      const box = button.getBoundingClientRect()
+      return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2) === button
+    })).resolves.toBe(true)
+    await closeButton.evaluate((button) => button.click())
     await expect(trigger).toBeFocused()
     await expect(page.locator('.admin-mobile-brand')).toHaveCSS('width', '52px')
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375)
