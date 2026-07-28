@@ -6,8 +6,19 @@ export type E2EUser = {
   id: string
   email: string
   role: 'customer' | 'admin'
+  phone: string | null
+  termsAcceptedAt: string | null
   passwordSalt: string
   passwordHash: string
+}
+
+export type E2EPendingSignup = {
+  email: string
+  phone: string
+  termsAcceptedAt: string
+  code: '123456'
+  requestedAt: string
+  verifiedAt: string | null
 }
 
 export type E2ESession = {
@@ -55,6 +66,7 @@ export type E2EOrder = {
 
 export type E2EStoreState = {
   users: Map<string, E2EUser>
+  pendingSignups: Map<string, E2EPendingSignup>
   sessions: Map<string, E2ESession>
   attempts: Map<string, E2EAttempt>
   orders: Map<string, E2EOrder>
@@ -64,6 +76,8 @@ const ADMIN_USER: E2EUser = {
   id: 'admin',
   email: 'admin@mori.tw',
   role: 'admin',
+  phone: null,
+  termsAcceptedAt: null,
   passwordSalt: 'mori-demo-admin',
   passwordHash: '244e97e542a826a86f8381b04b4deaa662786495e4ec1b7be1a44dd275aafcef',
 }
@@ -107,6 +121,7 @@ const fixtureGlobal = globalThis as typeof globalThis & {
 export function createE2EStore(): E2EStoreState {
   return {
     users: new Map([[ADMIN_USER.id, { ...ADMIN_USER }]]),
+    pendingSignups: new Map(),
     sessions: new Map(),
     attempts: new Map(),
     orders: new Map([[SEED_ORDER.orderNumber, structuredClone(SEED_ORDER)]]),

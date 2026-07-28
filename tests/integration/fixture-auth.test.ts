@@ -1,10 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  completeSignupE2E,
   createE2EAuthRepository,
   getE2ECurrentUser,
+  requestSignupOtpE2E,
   signInE2E,
   signOutE2E,
   signUpE2E,
+  verifySignupOtpE2E,
   type CookieAdapter,
 } from '@/testing/e2e-auth-repository'
 import { createE2EStore, getE2EStore } from '@/testing/e2e-store'
@@ -103,6 +106,39 @@ async function invokeAuthAction(
 }
 
 describe('fixture authentication', () => {
+  it('requires the fixed Email OTP before creating a contact member', async () => {
+    enableFixtureMode()
+    const email = `otp-${crypto.randomUUID()}@example.com`
+    const acceptedAt = new Date().toISOString()
+
+    await expect(requestSignupOtpE2E(email, '0912345678', acceptedAt)).resolves.toBe('sent')
+    await expect(completeSignupE2E(email, 'parent123')).resolves.toBeNull()
+    await expect(verifySignupOtpE2E(email, '000000')).resolves.toBe('invalid')
+    await expect(verifySignupOtpE2E(email, '123456')).resolves.toBe('verified')
+
+    const user = await completeSignupE2E(email, 'parent123')
+    expect(user?.email).toBe(email)
+    expect(getE2EStore().users.get(user!.id)).toMatchObject({
+      phone: '0912345678',
+      termsAcceptedAt: acceptedAt,
+    })
+    await expect(getE2ECurrentUser()).resolves.toMatchObject({ email })
+  })
+
+  it('rejects expired fixture OTP and duplicate Email requests', async () => {
+    enableFixtureMode()
+    const email = `expired-${crypto.randomUUID()}@example.com`
+
+    await expect(requestSignupOtpE2E(email, '0912345678', new Date().toISOString()))
+      .resolves.toBe('sent')
+    getE2EStore().pendingSignups.get(email)!.requestedAt = new Date(Date.now() - 11 * 60_000)
+      .toISOString()
+
+    await expect(verifySignupOtpE2E(email, '123456')).resolves.toBe('expired')
+    await expect(requestSignupOtpE2E('admin@mori.tw', '0912345678', new Date().toISOString()))
+      .resolves.toBe('duplicate')
+  })
+
   it('registers and authenticates a customer without storing a plain password in sessions', async () => {
     const store = createE2EStore()
     const cookies = createCookieJar()

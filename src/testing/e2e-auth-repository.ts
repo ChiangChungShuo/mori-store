@@ -32,6 +32,66 @@ function publicUser(user: E2EUser): AuthenticatedUser {
 
 export function createE2EAuthRepository(store: E2EStoreState, cookieStore: CookieAdapter) {
   return {
+    async requestSignupOtp(email: string, phone: string, termsAcceptedAt: string) {
+      const canonicalEmail = normalizedEmail(email)
+      if ([...store.users.values()].some((user) => user.email === canonicalEmail)) {
+        return 'duplicate' as const
+      }
+
+      store.pendingSignups.set(canonicalEmail, {
+        email: canonicalEmail,
+        phone,
+        termsAcceptedAt,
+        code: '123456',
+        requestedAt: new Date().toISOString(),
+        verifiedAt: null,
+      })
+      return 'sent' as const
+    },
+
+    async verifySignupOtp(email: string, token: string) {
+      const pending = store.pendingSignups.get(normalizedEmail(email))
+      if (!pending) return 'invalid' as const
+      if (Date.now() - new Date(pending.requestedAt).getTime() > 10 * 60_000) {
+        return 'expired' as const
+      }
+      if (token !== pending.code) return 'invalid' as const
+
+      pending.verifiedAt = new Date().toISOString()
+      return 'verified' as const
+    },
+
+    async completeSignup(email: string, password: string) {
+      const canonicalEmail = normalizedEmail(email)
+      const pending = store.pendingSignups.get(canonicalEmail)
+      if (!pending?.verifiedAt) return null
+      if ([...store.users.values()].some((user) => user.email === canonicalEmail)) return null
+
+      const salt = randomBytes(16).toString('hex')
+      const user: E2EUser = {
+        id: randomUUID(),
+        email: canonicalEmail,
+        role: 'customer',
+        phone: pending.phone,
+        termsAcceptedAt: pending.termsAcceptedAt,
+        passwordSalt: salt,
+        passwordHash: passwordHash(password, salt).toString('hex'),
+      }
+      store.users.set(user.id, user)
+      store.pendingSignups.delete(canonicalEmail)
+
+      const sessionId = randomUUID()
+      store.sessions.set(sessionId, { userId: user.id, createdAt: new Date().toISOString() })
+      cookieStore.set(E2E_SESSION_COOKIE, sessionId, {
+        httpOnly: true,
+        maxAge: 60 * 60 * 8,
+        path: '/',
+        sameSite: 'lax',
+        secure: false,
+      })
+      return publicUser(user)
+    },
+
     async signUp(email: string, password: string) {
       const canonicalEmail = normalizedEmail(email)
       if ([...store.users.values()].some((user) => user.email === canonicalEmail)) {
@@ -43,6 +103,8 @@ export function createE2EAuthRepository(store: E2EStoreState, cookieStore: Cooki
         id: randomUUID(),
         email: canonicalEmail,
         role: 'customer',
+        phone: null,
+        termsAcceptedAt: null,
         passwordSalt: salt,
         passwordHash: passwordHash(password, salt).toString('hex'),
       }
@@ -124,6 +186,28 @@ export async function signUpE2E(
   password: string,
 ): Promise<'created' | 'duplicate'> {
   return (await createServerE2EAuthRepository()).signUp(email, password)
+}
+
+export async function requestSignupOtpE2E(
+  email: string,
+  phone: string,
+  termsAcceptedAt: string,
+): Promise<'sent' | 'duplicate'> {
+  return (await createServerE2EAuthRepository()).requestSignupOtp(email, phone, termsAcceptedAt)
+}
+
+export async function verifySignupOtpE2E(
+  email: string,
+  token: string,
+): Promise<'verified' | 'invalid' | 'expired'> {
+  return (await createServerE2EAuthRepository()).verifySignupOtp(email, token)
+}
+
+export async function completeSignupE2E(
+  email: string,
+  password: string,
+): Promise<AuthenticatedUser | null> {
+  return (await createServerE2EAuthRepository()).completeSignup(email, password)
 }
 
 export async function signOutE2E(): Promise<void> {
