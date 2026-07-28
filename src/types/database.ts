@@ -366,21 +366,27 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          phone: string | null
           role: string
+          terms_accepted_at: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           display_name?: string | null
           id: string
+          phone?: string | null
           role?: string
+          terms_accepted_at?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           display_name?: string | null
           id?: string
+          phone?: string | null
           role?: string
+          terms_accepted_at?: string | null
           updated_at?: string
         }
         Relationships: [
