@@ -285,6 +285,37 @@ export function createCheckoutService(
         completion.reviewCode === 'stock_unavailable' ? 'stock_changed' : 'catalog_changed',
       )
     }
+
+    // Fire-and-forget order confirmation email. Never let a mail failure roll
+    // back an order that already completed. Skips entirely without an API key,
+    // so tests and unconfigured environments have no side effects.
+    if (attempt.email && process.env.RESEND_API_KEY) {
+      try {
+        const { sendOrderConfirmationEmail } = await import('@/lib/email/order-confirmation')
+        await sendOrderConfirmationEmail({
+          orderNumber: completion.orderNumber,
+          email: attempt.email,
+          recipientName: attempt.recipientName,
+          items: attempt.items.map((item) => ({
+            productName: item.product_name,
+            color: item.color,
+            size: item.size,
+            quantity: item.quantity,
+            unitPrice: item.unit_price,
+          })),
+          subtotal: attempt.subtotal,
+          shippingFee: attempt.shippingFee,
+          total: attempt.total,
+          storeChain: attempt.storeChain,
+          storeName: attempt.storeName,
+          storeId: attempt.storeId,
+          paymentMethod: attempt.paymentMethod,
+        })
+      } catch (error) {
+        console.error('[email] order confirmation failed', error)
+      }
+    }
+
     return {
       outcome: 'submitted',
       orderNumber: completion.orderNumber,
