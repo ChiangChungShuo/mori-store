@@ -1,9 +1,11 @@
+create extension if not exists pgcrypto with schema extensions;
+
 alter table public.payment_attempts
 add column payment_access_token_hash text;
 
 -- Existing guest attempts become inaccessible rather than receiving a usable browser token.
 update public.payment_attempts
-set payment_access_token_hash = encode(gen_random_bytes(32), 'hex')
+set payment_access_token_hash = encode(extensions.gen_random_bytes(32), 'hex')
 where user_id is null and payment_access_token_hash is null;
 
 alter table public.payment_attempts

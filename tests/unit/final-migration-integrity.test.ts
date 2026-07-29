@@ -58,6 +58,10 @@ function evaluateBackfillExpression(
     const values = expression.args.map((arg) => Boolean(evaluateBackfillExpression(arg, row)))
     return expression.boolop === 'AND_EXPR' ? values.every(Boolean) : values.some(Boolean)
   }
+  if ('TypeCast' in node) {
+    const cast = node.TypeCast as { arg: Record<string, unknown> }
+    return evaluateBackfillExpression(cast.arg, row)
+  }
   if ('CaseExpr' in node) {
     const expression = node.CaseExpr as {
       args: Array<{ CaseWhen: { expr: Record<string, unknown>; result: Record<string, unknown> } }>

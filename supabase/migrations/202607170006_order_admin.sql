@@ -11,6 +11,7 @@ set search_path = public
 as $$
 declare
   current_status public.order_status;
+  transition_allowed boolean;
 begin
   if not public.is_admin() then
     raise exception 'admin_required';
@@ -27,13 +28,15 @@ begin
   if current_status <> p_expected_status then
     raise exception 'order_status_changed';
   end if;
-  if not case current_status
+
+  transition_allowed := case current_status
     when 'pending_payment' then p_next_status in ('paid', 'cancelled')
     when 'paid' then p_next_status in ('preparing', 'cancelled')
     when 'preparing' then p_next_status in ('shipped', 'cancelled')
     when 'shipped' then p_next_status = 'collected'
     else false
-  end then
+  end;
+  if not transition_allowed then
     raise exception 'invalid_order_status_transition';
   end if;
 

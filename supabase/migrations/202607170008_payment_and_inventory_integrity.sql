@@ -36,7 +36,7 @@ set status = case
         and provider_reference is null
         and paid_at is null then 'pending'
       else 'requires_review'
-    end,
+    end::public.payment_attempt_status,
   review_code = case
       when order_id is not null
         and provider_reference is not null
