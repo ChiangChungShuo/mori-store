@@ -162,6 +162,7 @@ export function createFixtureCheckoutRepository(
       const order = orderNumber ? store.orders.get(orderNumber) : null
       return order ? {
         orderNumber: order.orderNumber,
+        email: order.email,
         storeChain: order.storeChain,
         storeId: order.storeId,
         storeName: order.storeName,

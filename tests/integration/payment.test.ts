@@ -150,6 +150,7 @@ class MemoryCheckoutRepository implements CheckoutRepository {
     const attempt = this.attempts.find((candidate) => candidate.id === attemptId)
     return attempt?.orderNumber ? {
       orderNumber: attempt.orderNumber,
+      email: attempt.email,
       storeChain: attempt.storeChain,
       storeId: attempt.storeId,
       storeName: attempt.storeName,

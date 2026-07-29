@@ -92,6 +92,7 @@ export type PaymentCompletion = {
 
 export type CompletedOrder = {
   orderNumber: string
+  email: string
   storeChain: CheckoutInput['chain']
   storeId: string
   storeName: string
@@ -525,7 +526,7 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
       const { data, error } = await admin
         .from('payment_attempts')
         .select(`
-          orders!inner(order_number, store_chain, store_id, store_name, status, payment_method, total)
+          orders!inner(order_number, email, store_chain, store_id, store_name, status, payment_method, total)
         `)
         .eq('id', attemptId)
         .maybeSingle()
@@ -534,6 +535,7 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
 
       const order = data.orders as unknown as {
         order_number: string
+        email: string
         store_chain: CheckoutInput['chain']
         store_id: string
         store_name: string
@@ -543,6 +545,7 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
       }
       return {
         orderNumber: order.order_number,
+        email: order.email,
         storeChain: order.store_chain,
         storeId: order.store_id,
         storeName: order.store_name,

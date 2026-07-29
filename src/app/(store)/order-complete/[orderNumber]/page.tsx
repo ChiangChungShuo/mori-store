@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { getBankTransferInfo } from '@/features/checkout/bank-transfer'
 import { formatTwd } from '@/lib/money'
 import { BankTransferForm } from '@/features/orders/bank-transfer-form'
-import { submitBankTransferLastFive } from '@/features/orders/bank-transfer-actions'
+import { submitGuestBankTransferLastFive } from '@/features/orders/bank-transfer-actions'
 
 type OrderCompletePageProps = {
   params: Promise<{ orderNumber: string }>
@@ -68,7 +68,7 @@ export default async function OrderCompletePage({ params, searchParams }: OrderC
         {!bank.isConfigured ? <p className="bank-transfer-warning">目前為示範資料，正式上線前需由店家設定真實收款帳號。</p> : null}
         {order.status === 'pending_payment' ? (
           <BankTransferForm
-            action={submitBankTransferLastFive.bind(null, order.orderNumber)}
+            action={submitGuestBankTransferLastFive.bind(null, order.orderNumber, order.email)}
             initialValue=""
           />
         ) : null}
