@@ -24,15 +24,16 @@ export default async function AdminLayout({ children }: Readonly<{ children: Rea
   return (
     <div className="admin-shell">
       <header className="admin-mobile-header">
-        <Link aria-label="MORIMUR BABY 商店後台" className="admin-mobile-brand" href="/admin">
-          <BrandLogo subtitle="store room" />
-        </Link>
-        <span>商店後台</span>
-        <MobileMenu ariaLabel="商店後台導覽" breakpoint="36rem" heading="商店管理" id="admin-mobile-menu">
+        <MobileMenu ariaLabel="商店後台導覽" breakpoint="36rem" heading="商店管理" id="admin-mobile-menu" side="left">
           <div className="admin-mobile-owner"><strong>mori 老闆</strong><small>商店管理員</small></div>
           <nav className="admin-mobile-nav" aria-label="手機版商店後台導覽"><AdminNavigationLinks /></nav>
           <form action={signOut}><button type="submit">登出</button></form>
         </MobileMenu>
+        <Link aria-label="MORIMUR BABY 商店後台" className="admin-mobile-brand" href="/admin">
+          <BrandLogo subtitle="store room" />
+        </Link>
+        <Link aria-label="商店後台首頁" className="admin-mobile-account" href="/admin">
+        </Link>
       </header>
       <aside className="admin-sidebar">
         <Link aria-label="MORIMUR BABY 商店後台" className="admin-brand" href="/admin"><BrandLogo subtitle="store room" /></Link>

@@ -1,11 +1,13 @@
 import { createElement } from 'react'
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { existsSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SiteHeader } from '@/components/site-header'
 import { CartProvider } from '@/features/cart/cart-provider'
 import { ProductCard } from '@/features/catalog/product-card'
 import { ProductFilters } from '@/features/catalog/product-filters'
-import { listProducts, parseProductFilters } from '@/features/catalog/queries'
+import { applyCatalogFilters, listProducts, parseProductFilters } from '@/features/catalog/queries'
 import { VariantPicker } from '@/features/catalog/variant-picker'
 
 const product = {
@@ -48,11 +50,24 @@ describe('fixture catalog', () => {
       .toEqual(expect.arrayContaining(['上衣', '褲裝', '洋裝', '外套', '幼兒服']))
     expect(products.every((catalogProduct) => catalogProduct.imageUrl?.startsWith('/images/products/'))).toBe(true)
   })
+
+  it('finds a product by a partial color name', () => {
+    expect(applyCatalogFilters([
+      product,
+      { ...product, id: 'product-2', name: '自在長褲', variants: [{ ...product.variants[0], color: '深海軍藍' }] },
+    ], { q: '藍' }).map((item) => item.name)).toEqual(['自在長褲'])
+  })
+
+  it('removes fully sold-out products when only in-stock is selected', () => {
+    const soldOut = { ...product, variants: product.variants.map((variant) => ({ ...variant, stock: 0 })) }
+    expect(applyCatalogFilters([soldOut, product], { inStock: true })).toEqual([product])
+  })
 })
 
 describe('parseProductFilters', () => {
   it('keeps only the fixed 0-12 age bands and supported stock value', () => {
-    expect(parseProductFilters({ age: '6-9', color: '鼠尾草綠', inStock: 'true' })).toEqual({
+    expect(parseProductFilters({ q: '  洋裝  ', age: '6-9', color: '鼠尾草綠', inStock: 'true' })).toEqual({
+      q: '洋裝',
       age: '6-9',
       color: '鼠尾草綠',
       inStock: true,
@@ -71,10 +86,11 @@ describe('parseProductFilters', () => {
 describe('ProductFilters', () => {
   it('renders a GET form whose values come from the current URL filters', () => {
     render(createElement(ProductFilters, {
-      filters: { age: '6-9', size: '120', inStock: true },
+      filters: { q: '外套', age: '6-9', size: '120', inStock: true },
     }))
 
     expect(screen.getByRole('form', { name: '篩選商品' })).toHaveAttribute('method', 'get')
+    expect(screen.getByLabelText('搜尋商品')).toHaveValue('外套')
     expect(screen.getByLabelText('年齡')).toHaveValue('6-9')
     expect(screen.getByLabelText('尺寸')).toHaveValue('120')
     expect(screen.getByLabelText('只顯示有庫存')).toBeChecked()
@@ -83,13 +99,6 @@ describe('ProductFilters', () => {
 
 describe('store navigation', () => {
   beforeEach(() => {
-    HTMLDialogElement.prototype.showModal = function showModal() {
-      this.setAttribute('open', '')
-    }
-    HTMLDialogElement.prototype.close = function close() {
-      this.removeAttribute('open')
-      this.dispatchEvent(new Event('close'))
-    }
     vi.stubGlobal('matchMedia', vi.fn(() => ({
       matches: true,
       addEventListener: vi.fn(),
@@ -106,27 +115,19 @@ describe('store navigation', () => {
   })
 
   it('shows member destinations after login', () => {
-    render(createElement(SiteHeader, { categories: ['配件'], isSignedIn: true }))
-    fireEvent.click(screen.getByRole('button', { name: '開啟選單' }))
-    const drawer = within(screen.getByRole('dialog', { name: '主要導覽' }))
+    render(createElement(SiteHeader, { isSignedIn: true }))
 
-    expect(drawer.getByRole('link', { name: '配件' })).toHaveAttribute('href', '/products?category=%E9%85%8D%E4%BB%B6')
-    expect(drawer.getByRole('link', { name: '會員中心' })).toHaveAttribute('href', '/account')
-    expect(drawer.getByRole('link', { name: '我的訂單' })).toHaveAttribute('href', '/account/orders')
-    expect(drawer.getByRole('button', { name: '登出' })).toBeInTheDocument()
-    expect(drawer.queryByRole('link', { name: '會員登入' })).not.toBeInTheDocument()
+    expect(screen.getByLabelText('會員選單')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '會員中心' })).toHaveAttribute('href', '/account')
+    expect(screen.getByRole('link', { name: '我的訂單' })).toHaveAttribute('href', '/account/orders')
+    expect(screen.getByRole('button', { name: '登出' })).toBeInTheDocument()
   })
 
   it('sends guests through login before member orders', () => {
-    render(createElement(SiteHeader, { categories: ['洋裝'] }))
-    fireEvent.click(screen.getByRole('button', { name: '開啟選單' }))
-    const drawer = within(screen.getByRole('dialog', { name: '主要導覽' }))
+    render(createElement(SiteHeader))
 
-    expect(drawer.getByRole('link', { name: '洋裝' })).toHaveAttribute('href', '/products?category=%E6%B4%8B%E8%A3%9D')
-    expect(drawer.getByRole('link', { name: '會員登入' })).toHaveAttribute('href', '/login')
-    expect(drawer.getByRole('link', { name: '會員訂單' })).toHaveAttribute('href', '/login?next=/account/orders')
-    expect(drawer.getByRole('link', { name: '訪客查單' })).toHaveAttribute('href', '/order-lookup')
-    expect(drawer.queryByRole('link', { name: '會員中心' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '會員訂單' })).toHaveAttribute('href', '/login?next=/account/orders')
+    expect(screen.getByRole('link', { name: '訪客查單' })).toHaveAttribute('href', '/order-lookup')
   })
 })
 
@@ -137,27 +138,129 @@ describe('ProductCard', () => {
     expect(screen.getByText('2 種顏色')).toBeInTheDocument()
     expect(screen.getByText('尺寸 100–120')).toBeInTheDocument()
     expect(screen.getByText('NT$680 起')).toBeInTheDocument()
+    expect(screen.getByText('查看商品')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '查看 有機棉小樹 T 恤' })).toHaveAttribute(
       'href',
       '/products/mori-organic-cotton-tee',
     )
   })
+
+  it('shows sold-out and scheduled product states', () => {
+    const soldOutProduct = { ...product, variants: product.variants.map((variant) => ({ ...variant, stock: 0 })) }
+    const { rerender } = render(createElement(ProductCard, {
+      product: soldOutProduct,
+    }))
+    expect(screen.getByText('售完')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: `查看 ${product.name}` })).toHaveAttribute('href', `/products/${product.slug}`)
+    expect(screen.getByRole('link', { name: product.name })).toHaveAttribute('href', `/products/${product.slug}`)
+
+    rerender(createElement(ProductCard, {
+      product: { ...product, availableAt: '2099-01-01T00:00:00.000Z' },
+    }))
+    expect(screen.getByText('即將上架')).toBeInTheDocument()
+    expect(screen.getByText(/預計.*開賣/).closest('.product-image-link')).not.toBeNull()
+    expect(screen.queryByText(/預計.*開賣/)?.closest('.product-card-body')).toBeNull()
+  })
+})
+
+describe('product detail scheduled sale notice', () => {
+  it('places the compact notice below the product name rather than below the gallery', () => {
+    const page = readFileSync(resolve(process.cwd(), 'src/app/(store)/products/[slug]/page.tsx'), 'utf8')
+    const imageColumn = page.match(/<div className="product-detail-image">([\s\S]*?)<div className="product-detail-copy">/)?.[1] ?? ''
+    const copyColumn = page.match(/<div className="product-detail-copy">([\s\S]*?)<div className="product-price-row">/)?.[1] ?? ''
+
+    expect(imageColumn).not.toContain('product-detail-availability')
+    expect(copyColumn).toContain('product-detail-availability')
+    expect(copyColumn).toContain('商品將於')
+  })
+})
+
+describe('storefront metadata and owner shortcuts', () => {
+  it('uses the mori logo system across storefront, member area, admin, and favicon', () => {
+    for (const file of [
+      'src/components/site-header.tsx',
+      'src/components/site-footer.tsx',
+      'src/app/account/layout.tsx',
+      'src/app/admin/layout.tsx',
+    ]) {
+      expect(readFileSync(resolve(process.cwd(), file), 'utf8')).toContain('BrandLogo')
+    }
+    expect(existsSync(resolve(process.cwd(), 'src/app/icon.png'))).toBe(true)
+    expect(readFileSync(resolve(process.cwd(), 'src/components/brand-logo.tsx'), 'utf8'))
+      .toContain('/brand/morimur-baby-logo.png')
+  })
+
+  it('loads editable metadata and conditionally installs Google Analytics', () => {
+    const rootLayout = readFileSync(resolve(process.cwd(), 'src/app/layout.tsx'), 'utf8')
+    const storeLayout = readFileSync(resolve(process.cwd(), 'src/app/(store)/layout.tsx'), 'utf8')
+    const productPage = readFileSync(resolve(process.cwd(), 'src/app/(store)/products/[slug]/page.tsx'), 'utf8')
+
+    expect(rootLayout).toContain('generateMetadata')
+    expect(rootLayout).toContain('siteTitle')
+    expect(storeLayout).toContain('GoogleAnalytics')
+    expect(storeLayout).toContain('googleAnalyticsId')
+    expect(productPage).toMatch(/keywords:\s*productKeywords/)
+  })
+
+  it('offers direct owner shortcuts and a real storefront preview editor', () => {
+    const dashboard = readFileSync(resolve(process.cwd(), 'src/app/admin/page.tsx'), 'utf8')
+    const settings = readFileSync(resolve(process.cwd(), 'src/app/admin/settings/page.tsx'), 'utf8')
+
+    expect(dashboard).toContain('admin-quick-actions')
+    expect(dashboard).toContain('新增商品')
+    expect(dashboard).toContain('回覆訂單留言')
+    expect(settings).toContain('BannerSettingsEditor')
+  })
 })
 
 describe('VariantPicker', () => {
+  it('presents scheduled availability as a clear coming-soon notice', () => {
+    render(createElement(CartProvider, null, createElement(VariantPicker, {
+      product: { ...product, availableAt: '2099-01-01T00:00:00.000Z' },
+    })))
+
+    expect(screen.getByRole('button', { name: '尚未開放購買' })).toBeDisabled()
+  })
+
+  it('lets a shopper request a restock notice for a sold-out product', () => {
+    const soldOutProduct = { ...product, variants: product.variants.map((variant) => ({ ...variant, stock: 0 })) }
+    render(createElement(CartProvider, null, createElement(VariantPicker, { product: soldOutProduct })))
+
+    fireEvent.click(screen.getByRole('button', { name: '貨到通知我' }))
+
+    expect(screen.getByRole('button', { name: '已登記到貨通知' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: '商品已售完' })).not.toBeInTheDocument()
+  })
+
   it('derives sizes from the selected color and disables unavailable variants', () => {
     render(createElement(CartProvider, null, createElement(VariantPicker, { product })))
 
     expect(screen.queryByRole('button', { name: '尺寸 110' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: '尺寸 120（缺貨）' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: '加入購物袋' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '加入購物車' })).toBeDisabled()
 
     fireEvent.click(screen.getByRole('button', { name: '顏色 珊瑚粉' }))
     expect(screen.getByRole('button', { name: '尺寸 110' })).toBeEnabled()
     expect(screen.queryByRole('button', { name: '尺寸 100' })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: '尺寸 110' }))
-    expect(screen.getByRole('button', { name: '加入購物袋' })).toBeEnabled()
-    expect(screen.getByRole('status')).toHaveTextContent('庫存 3 件')
+    expect(screen.getByRole('button', { name: '加入購物車' })).toBeEnabled()
+    expect(screen.getByRole('status')).toHaveTextContent('尺寸已選擇，可以加入購物車')
+  })
+
+  it('confirms the add action and announces it to the cart', () => {
+    const onCartAdded = vi.fn()
+    window.addEventListener('mori:cart-added', onCartAdded)
+
+    render(createElement(CartProvider, null, createElement(VariantPicker, { product })))
+    fireEvent.click(screen.getByRole('button', { name: '尺寸 100' }))
+    fireEvent.click(screen.getByRole('button', { name: '加入購物車' }))
+
+    expect(screen.getByRole('button', { name: '已加入購物車' })).toHaveAttribute(
+      'data-cart-state',
+      'added',
+    )
+    expect(onCartAdded).toHaveBeenCalledTimes(1)
+    window.removeEventListener('mori:cart-added', onCartAdded)
   })
 })

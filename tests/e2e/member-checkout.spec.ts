@@ -36,8 +36,9 @@ test.describe('member checkout and order history', () => {
     await page.getByLabel('Email').fill(email ?? '')
     await page.getByLabel('收件人姓名').fill('王小美')
     await page.getByLabel('手機號碼').fill('0912345678')
-    await page.getByLabel('超商通路').selectOption('seven_eleven')
-    await page.getByLabel('取貨門市').selectOption('123456')
+    await page.getByRole('radio', { name: '7-ELEVEN', exact: true }).check()
+    await page.getByLabel('取貨門市名稱').fill('台北門市')
+    await page.getByLabel('門市店號').fill('123456')
     await page.getByRole('button', { name: '前往測試付款' }).click()
     await page.getByRole('button', { name: '模擬付款成功' }).click()
 

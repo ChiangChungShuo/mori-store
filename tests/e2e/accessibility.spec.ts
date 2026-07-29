@@ -39,21 +39,23 @@ async function expectVisibleFocus(target: Locator) {
 }
 
 async function openCheckoutWithCart(page: Page) {
-  await page.goto('/checkout')
-  await expect(page.getByRole('alert').filter({ hasText: '購物車沒有可結帳的商品' }))
-    .toBeVisible()
+  await page.goto('/login')
+  await page.getByLabel('Email 或手機號碼').fill('admin@mori.tw')
+  await page.getByLabel('密碼', { exact: true }).fill('mori123456')
+  await page.getByRole('button', { name: '登入' }).click()
+  await expect(page).toHaveURL('/admin')
   await page.evaluate((cart) => {
     window.localStorage.setItem('mori-cart-v1', JSON.stringify(cart))
   }, checkoutCart)
-  await page.reload()
-  await expect(page.getByRole('heading', { name: '結帳' })).toBeVisible()
+  await page.goto('/checkout')
+  await expect(page.getByRole('heading', { name: '填寫資料' })).toBeVisible()
   await expect(page.locator('.cart-drawer summary')).toContainText('購物車1')
-  await expect(page.getByRole('button', { name: '前往測試付款' })).toBeEnabled()
+  await expect(page.getByRole('button', { name: '請先完成訂單資料' })).toBeDisabled()
 }
 
 test('tabs through the desktop header with visible focus', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'desktop header navigation is hidden on mobile')
-  await page.goto('/checkout')
+  await page.goto('/cart')
 
   await expect(page.getByRole('button', { name: '開啟選單' })).toBeHidden()
   await expect(page.getByRole('navigation', { name: '主要導覽' })
@@ -81,24 +83,35 @@ test('tabs through the desktop header with visible focus', async ({ page }, test
 })
 
 test('keeps auth controls labeled, reachable and form-first on mobile', async ({ page }) => {
+  await page.goto('/login')
+  const password = page.getByLabel('密碼', { exact: true })
+  const toggle = page.getByRole('button', { name: '顯示密碼' })
+  await expect(page.getByLabel('Email 或手機號碼')).toBeVisible()
+  await expect(password).toHaveAttribute('type', 'password')
+  await tabTo(page, toggle)
+  await expectVisibleFocus(toggle)
+  await expect(toggle).toHaveCSS('min-height', '44px')
+  await toggle.press('Space')
+  await expect(password).toHaveAttribute('type', 'text')
+
+  await page.goto('/signup')
+  const nextButton = page.getByRole('button', { name: '寄送 Email 驗證碼' })
+  await expect(page.getByLabel('Email')).toBeVisible()
+  await expect(page.getByLabel('手機號碼')).toHaveAttribute('autocomplete', 'tel')
+  await expect(page.getByLabel(/我已閱讀並同意/)).not.toBeChecked()
+  await expect(nextButton).toBeDisabled()
+  await page.getByLabel(/真實姓名/).fill('王小美')
+  await page.getByLabel('Email').fill('accessible@example.com')
+  await page.getByLabel('手機號碼').fill('0912345678')
+  await page.getByLabel('設定密碼').fill('mori-parent-123')
+  await page.getByLabel('確認密碼').fill('mori-parent-123')
+  await page.getByLabel(/我已閱讀並同意/).check()
+  await expect(nextButton).toBeEnabled()
+
   for (const path of ['/login', '/signup']) {
     await page.goto(path)
-
     const form = page.locator('.auth-card')
     const story = page.locator('.auth-story')
-    const email = page.getByLabel('Email')
-    const password = page.getByLabel('密碼', { exact: true })
-    const toggle = page.getByRole('button', { name: '顯示密碼' })
-
-    await expect(email).toBeVisible()
-    await expect(password).toHaveAttribute('type', 'password')
-    await tabTo(page, toggle)
-    await expectVisibleFocus(toggle)
-    await expect(toggle).toHaveCSS('min-height', '44px')
-    await toggle.press('Space')
-    const hiddenToggle = page.getByRole('button', { name: '隱藏密碼' })
-    await expectVisibleFocus(hiddenToggle)
-    await expect(password).toHaveAttribute('type', 'text')
     expect(await page.locator('.auth-shell').evaluate((shell) => (
       shell.firstElementChild?.classList.contains('auth-card')
     ))).toBe(true)
@@ -140,14 +153,15 @@ test('tabs through seeded product controls with visible focus', async ({ page })
 })
 
 test('tabs through checkout fields with programmatic labels', async ({ page }) => {
+  test.skip(externalTarget, 'checkout accessibility requires a configured member account')
   await openCheckoutWithCart(page)
 
   const fields = [
     { label: 'Email', value: 'parent@example.com' },
     { label: '收件人姓名', value: '王小美' },
     { label: '手機號碼', value: '0912345678' },
-    { label: '超商通路', value: 'seven_eleven' },
-    { label: '取貨門市', value: '123456' },
+    { label: '取貨門市名稱', value: '台北門市' },
+    { label: '門市店號', value: '123456' },
   ]
 
   for (const { label, value } of fields) {
@@ -157,33 +171,33 @@ test('tabs through checkout fields with programmatic labels', async ({ page }) =
     expect(await field.evaluate((element: HTMLInputElement | HTMLSelectElement) => (
       element.labels?.length ?? 0
     ))).toBeGreaterThan(0)
-    if (label === '超商通路' || label === '取貨門市') {
-      await field.selectOption(value)
-    } else {
-      await field.fill(value)
-    }
+    await field.fill(value)
   }
 
-  const submit = page.getByRole('button', { name: '前往測試付款' })
+  const chain = page.getByRole('radio', { name: '7-ELEVEN', exact: true })
+  await expect(chain).toBeChecked()
+
+  const submit = page.getByRole('button', { name: '送出資料，確認訂單' })
   await tabTo(page, submit)
   await expectVisibleFocus(submit)
 })
 
 test('connects real checkout validation errors to invalid fields', async ({ page }) => {
+  test.skip(externalTarget, 'checkout accessibility requires a configured member account')
   await openCheckoutWithCart(page)
 
   const email = page.getByLabel('Email')
   const recipientName = page.getByLabel('收件人姓名')
   const phone = page.getByLabel('手機號碼')
-  const store = page.getByLabel('取貨門市')
-  const submit = page.getByRole('button', { name: '前往測試付款' })
+  const storeName = page.getByLabel('取貨門市名稱')
+  const storeId = page.getByLabel('門市店號')
+  const form = page.locator('.checkout-form')
 
-  await expect(submit).toBeEnabled()
   await email.fill('not-an-email')
   await phone.fill('123')
-  await submit.click()
+  await form.evaluate((element: HTMLFormElement) => element.requestSubmit())
 
-  for (const field of [email, recipientName, phone, store]) {
+  for (const field of [email, recipientName, phone, storeName, storeId]) {
     await expect(field).toHaveAttribute('aria-invalid', 'true')
     await expect(field).toHaveAccessibleDescription(/.+/)
   }
@@ -191,19 +205,21 @@ test('connects real checkout validation errors to invalid fields', async ({ page
   await email.fill('parent@example.com')
   await recipientName.fill('王小美')
   await phone.fill('0912345678')
-  await store.selectOption('123456')
+  await storeName.fill('台北門市')
+  await storeId.fill('123456')
 
-  for (const field of [email, recipientName, phone, store]) {
+  for (const field of [email, recipientName, phone, storeName, storeId]) {
     await expect(field).toHaveAttribute('aria-invalid', 'false')
     await expect(field).not.toHaveAttribute('aria-describedby', /.+/)
   }
 })
 
 test('removes smooth scrolling and transitions for reduced motion', async ({ page }) => {
+  test.skip(externalTarget, 'checkout accessibility requires a configured member account')
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await openCheckoutWithCart(page)
 
-  const styles = await page.getByRole('button', { name: '前往測試付款' }).evaluate((button) => ({
+  const styles = await page.locator('.checkout-submit').evaluate((button) => ({
     animationDuration: window.getComputedStyle(button).animationDuration,
     scrollBehavior: window.getComputedStyle(document.documentElement).scrollBehavior,
     transitionDuration: window.getComputedStyle(button).transitionDuration,

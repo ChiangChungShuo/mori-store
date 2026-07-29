@@ -8,16 +8,24 @@ describe('storefront header source contract', () => {
 
     expect(layout).toContain('getCurrentUser')
     expect(layout).toContain('listProductCategories')
-    expect(layout).toMatch(/<SiteHeader categories=\{categories\} isSignedIn=\{Boolean\(user\)\}/)
+    expect(layout).toMatch(/<SiteHeader cart=\{<CartDrawer settings=\{settings\} isSignedIn=\{Boolean\(user\)\} \/>\} categories=\{categories\} isSignedIn=\{Boolean\(user\)\}/)
   })
 
   it('keeps the approved desktop controls and storefront breakpoint', () => {
     const header = readFileSync(resolve(process.cwd(), 'src/components/site-header.tsx'), 'utf8')
+    const layout = readFileSync(resolve(process.cwd(), 'src/app/(store)/layout.tsx'), 'utf8')
 
     expect(header).toContain('WishlistHeaderLink')
     expect(header).toContain('nav-category-menu')
     expect(header).toContain('account-menu')
     expect(header).toContain('header-search')
     expect(header).toMatch(/<MobileMenu[^>]+breakpoint="36rem"/)
+    expect(header).toContain('MobileHeaderSearch')
+    expect(header).toContain('side="left"')
+    expect(header).toContain('store-mobile-categories')
+    expect(header).toMatch(/href=\{isSignedIn \? '\/account' : '\/login\?next=\/account'\}/)
+    expect(header).not.toContain('store-mobile-search-heading')
+    expect(header).not.toContain('store-mobile-account-heading')
+    expect(layout).toMatch(/cart=\{<CartDrawer settings=\{settings\} isSignedIn=\{Boolean\(user\)\} \/>\}/)
   })
 })

@@ -10,10 +10,12 @@ export function maskEmail(email: string) {
 }
 
 export const signupContactSchema = z.object({
+  displayName: z.string().trim().min(2, '請輸入真實姓名').max(40, '姓名請勿超過 40 個字元'),
   email: z.string().trim().toLowerCase().email('請輸入有效的 Email'),
   phone: z.string().transform(normalizeTaiwanMobile)
     .pipe(z.string().regex(/^09\d{8}$/, '請輸入有效的台灣手機號碼')),
   consent: z.literal('on', { error: '請先同意服務條款與隱私權政策' }),
+  marketingConsent: z.literal('on').optional(),
 })
 
 export const signupOtpSchema = z.object({
@@ -23,15 +25,21 @@ export const signupOtpSchema = z.object({
 
 export const signupPasswordSchema = z.object({
   password: z.string().min(8, '密碼至少需要 8 個字元'),
+  confirmPassword: z.string(),
+}).refine((value) => value.password === value.confirmPassword, {
+  message: '兩次輸入的密碼不一致',
+  path: ['confirmPassword'],
 })
 
 export type SignupContactState = {
   ok: boolean
+  displayName?: string
   email?: string
   phone?: string
+  marketingConsent?: boolean
   maskedEmail?: string
   resendAvailableAt?: number
-  fieldErrors?: { email?: string[]; phone?: string[]; consent?: string[] }
+  fieldErrors?: { displayName?: string[]; email?: string[]; phone?: string[]; consent?: string[] }
   message?: string
 }
 
@@ -44,6 +52,6 @@ export type SignupOtpState = {
 
 export type SignupPasswordState = {
   ok: boolean
-  fieldErrors?: { password?: string[] }
+  fieldErrors?: { password?: string[]; confirmPassword?: string[] }
   message?: string
 }

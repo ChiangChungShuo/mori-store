@@ -1,4 +1,5 @@
 import type { Json } from '@/types/database'
+import { isE2EMode } from '@/testing/e2e-mode'
 
 export type StorefrontSettings = {
   shippingFee: number
@@ -34,9 +35,10 @@ export function parseStorefrontSettings(rows: StoreSettingRow[]): StorefrontSett
 }
 
 export async function getStorefrontSettings() {
-  if (process.env.NODE_ENV !== 'production' && process.env.MORI_E2E_FIXTURES === '1') {
-    const { E2E_STOREFRONT_SETTINGS } = await import('@/testing/e2e-storefront-fixtures')
-    return E2E_STOREFRONT_SETTINGS
+  if (isE2EMode()) {
+    const { getE2EStore } = await import('@/testing/e2e-store')
+    const { shippingFee, freeShippingThreshold } = getE2EStore().settings
+    return { shippingFee, freeShippingThreshold }
   }
   const { createClient } = await import('@/lib/supabase/server')
   const { data, error } = await (await createClient())

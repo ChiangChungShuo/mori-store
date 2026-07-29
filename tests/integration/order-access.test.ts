@@ -16,6 +16,9 @@ const parentOrder: OrderDetails = {
   storeChain: 'seven_eleven',
   storeId: '123456',
   storeName: '台北門市',
+  customerNote: '',
+  merchantReply: '',
+  paymentMethod: 'online_test',
   subtotal: 720,
   shippingFee: 60,
   total: 780,
@@ -51,7 +54,7 @@ class MemoryOrderRepository implements OrderQueriesRepository {
   async lookupGuestOrder(orderNumber: string, email: string) {
     this.guestLookups.push({ orderNumber, email })
     return this.orders.find((order) => (
-      order.orderNumber === orderNumber && order.email === email && order.userId === null
+      order.orderNumber === orderNumber && order.email === email
     )) ?? null
   }
 }
@@ -73,11 +76,12 @@ describe('order access integration', () => {
     expect(await lookupGuestOrder('MORI-260717-0001', 'wrong@example.com')).toBeNull()
     expect(await lookupGuestOrder('MORI-260717-0001', ' PARENT@EXAMPLE.COM '))
       .toMatchObject({ orderNumber: 'MORI-260717-0001' })
-    expect(await lookupGuestOrder(' MORI-260717-0001 ', 'parent@example.com')).toBeNull()
+    expect(await lookupGuestOrder(' mori-260717-0001 ', 'parent@example.com'))
+      .toMatchObject({ orderNumber: 'MORI-260717-0001' })
     expect(repository.guestLookups).toEqual([
       { orderNumber: 'MORI-260717-0001', email: 'wrong@example.com' },
       { orderNumber: 'MORI-260717-0001', email: 'parent@example.com' },
-      { orderNumber: ' MORI-260717-0001 ', email: 'parent@example.com' },
+      { orderNumber: 'MORI-260717-0001', email: 'parent@example.com' },
     ])
   })
 
@@ -87,5 +91,14 @@ describe('order access integration', () => {
 
     await expect(getOrderForUser('MORI-260717-0001', 'member-b')).resolves.toBeNull()
     await expect(listOrdersForUser('member-b')).resolves.toEqual([])
+  })
+
+  it('allows order-number lookup for a member checkout when its email also matches', async () => {
+    const repository = new MemoryOrderRepository([{ ...parentOrder, userId: 'member-a' }])
+    const { lookupGuestOrder } = createOrderQueries(repository)
+
+    await expect(lookupGuestOrder('mori-260717-0001', 'parent@example.com'))
+      .resolves.toMatchObject({ orderNumber: 'MORI-260717-0001' })
+    await expect(lookupGuestOrder('MORI-260717-0001', 'wrong@example.com')).resolves.toBeNull()
   })
 })

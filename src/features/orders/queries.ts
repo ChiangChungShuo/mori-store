@@ -18,6 +18,11 @@ export type OrderDetails = {
   storeChain: StoreChain
   storeId: string
   storeName: string
+  customerNote: string
+  merchantReply: string
+  paymentMethod: string
+  bankTransferLastFive?: string | null
+  bankTransferSubmittedAt?: string | null
   subtotal: number
   shippingFee: number
   total: number
@@ -36,6 +41,10 @@ export function normalizeOrderEmail(email: string) {
   return email.trim().toLowerCase()
 }
 
+export function normalizeOrderNumber(orderNumber: string) {
+  return orderNumber.trim().toUpperCase()
+}
+
 export function createOrderQueries(repository: OrderQueriesRepository) {
   return {
     listOrdersForUser(userId: string) {
@@ -47,7 +56,7 @@ export function createOrderQueries(repository: OrderQueriesRepository) {
     },
 
     lookupGuestOrder(orderNumber: string, email: string) {
-      return repository.lookupGuestOrder(orderNumber, normalizeOrderEmail(email))
+      return repository.lookupGuestOrder(normalizeOrderNumber(orderNumber), normalizeOrderEmail(email))
     },
   }
 }
@@ -60,6 +69,11 @@ type OrderRow = {
   store_chain: StoreChain
   store_id: string
   store_name: string
+  customer_note: string
+  merchant_reply: string
+  payment_method: string
+  bank_transfer_last_five: string | null
+  bank_transfer_submitted_at: string | null
   subtotal: number
   shipping_fee: number
   total: number
@@ -77,7 +91,7 @@ type OrderRow = {
 
 const orderSelect = `
   order_number, email, recipient_name, recipient_phone,
-  store_chain, store_id, store_name, subtotal, shipping_fee, total, status, created_at,
+  store_chain, store_id, store_name, customer_note, merchant_reply, payment_method, bank_transfer_last_five, bank_transfer_submitted_at, subtotal, shipping_fee, total, status, created_at,
   order_items(product_name, sku, color, size, unit_price, quantity)
 `
 
@@ -90,6 +104,11 @@ function toOrderDetails(order: OrderRow): OrderDetails {
     storeChain: order.store_chain,
     storeId: order.store_id,
     storeName: order.store_name,
+    customerNote: order.customer_note,
+    merchantReply: order.merchant_reply,
+    paymentMethod: order.payment_method,
+    bankTransferLastFive: order.bank_transfer_last_five,
+    bankTransferSubmittedAt: order.bank_transfer_submitted_at,
     subtotal: order.subtotal,
     shippingFee: order.shipping_fee,
     total: order.total,
@@ -147,7 +166,6 @@ async function createLiveGuestOrderRepository(): Promise<Pick<OrderQueriesReposi
         .select(orderSelect)
         .eq('order_number', orderNumber)
         .eq('email', email)
-        .is('user_id', null)
         .maybeSingle()
       if (error) throw error
       return data ? toOrderDetails(data as unknown as OrderRow) : null
@@ -184,8 +202,8 @@ export async function lookupGuestOrder(orderNumber: string, email: string) {
       import('@/testing/e2e-store'),
     ])
     return createE2EOrderRepository(getE2EStore())
-      .lookupGuestOrder(orderNumber, normalizeOrderEmail(email))
+      .lookupGuestOrder(normalizeOrderNumber(orderNumber), normalizeOrderEmail(email))
   }
   return (await createLiveGuestOrderRepository())
-    .lookupGuestOrder(orderNumber, normalizeOrderEmail(email))
+    .lookupGuestOrder(normalizeOrderNumber(orderNumber), normalizeOrderEmail(email))
 }

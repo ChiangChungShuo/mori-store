@@ -11,6 +11,11 @@ function memberOrder(order: E2EOrder): OrderDetails {
     storeChain: order.storeChain,
     storeId: order.storeId,
     storeName: order.storeName,
+    customerNote: order.customerNote,
+    merchantReply: order.merchantReply,
+    paymentMethod: order.paymentMethod,
+    bankTransferLastFive: order.bankTransferLastFive,
+    bankTransferSubmittedAt: order.bankTransferSubmittedAt,
     subtotal: order.subtotal,
     shippingFee: order.shippingFee,
     total: order.total,
@@ -49,7 +54,7 @@ export function createE2EOrderRepository(store: E2EStoreState):
     },
     async lookupGuestOrder(orderNumber, email) {
       const order = store.orders.get(orderNumber)
-      return order?.userId === null && order.email === email ? memberOrder(order) : null
+      return order?.email === email ? memberOrder(order) : null
     },
     async listOrders(filters) {
       const term = filters.query.toLocaleLowerCase('zh-TW')
@@ -68,6 +73,11 @@ export function createE2EOrderRepository(store: E2EStoreState):
         storeChain: order.storeChain,
         storeId: order.storeId,
         storeName: order.storeName,
+        customerNote: order.customerNote,
+        merchantReply: order.merchantReply,
+        paymentMethod: order.paymentMethod,
+        bankTransferLastFive: order.bankTransferLastFive ?? null,
+        bankTransferSubmittedAt: order.bankTransferSubmittedAt ?? null,
         subtotal: order.subtotal,
         shippingFee: order.shippingFee,
         items: order.items.map(({ id, productName, sku, color, size, unitPrice, quantity }) => ({
@@ -89,6 +99,11 @@ export function createE2EOrderRepository(store: E2EStoreState):
       const order = [...store.orders.values()].find((candidate) => candidate.id === orderId)
       if (!order || order.status !== expectedStatus) throw new Error('order_status_changed')
       order.status = nextStatus
+    },
+    async saveMerchantReply(orderId, reply) {
+      const order = [...store.orders.values()].find((candidate) => candidate.id === orderId)
+      if (!order) throw new Error('order_not_found')
+      order.merchantReply = reply
     },
   }
 }

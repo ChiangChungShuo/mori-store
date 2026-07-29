@@ -1,0 +1,259 @@
+- generic [active] [ref=f9e1]:
+  - banner [ref=f9e2]:
+    - paragraph [ref=f9e4]: 滿 NT$1,500 免運・7-ELEVEN／全家取貨
+    - navigation "主要導覽" [ref=f9e5]:
+      - link "mori":
+        - /url: /
+        - generic [ref=f9e11] [cursor=pointer]: KIDS SELECT
+      - generic [ref=f9e12]:
+        - link "新品" [ref=f9e13] [cursor=pointer]:
+          - /url: /#new
+        - link "所有商品" [ref=f9e14] [cursor=pointer]:
+          - /url: /products
+        - link "依年齡" [ref=f9e15] [cursor=pointer]:
+          - /url: /#ages
+        - group [ref=f9e16]:
+          - generic "全部分類" [ref=f9e17] [cursor=pointer]:
+            - text: 全部分類
+            - generic [ref=f9e18]: ⌄
+        - link "品牌故事" [ref=f9e19] [cursor=pointer]:
+          - /url: /#story
+      - generic [ref=f9e20]:
+        - link "收藏 1" [ref=f9e21] [cursor=pointer]:
+          - /url: /account/wishlist
+          - generic [ref=f9e22]: ♥
+          - text: 收藏
+          - generic [ref=f9e23]: "1"
+        - group [ref=f9e24]:
+          - generic "會員選單" [ref=f9e25] [cursor=pointer]
+        - search [ref=f9e29]:
+          - generic [ref=f9e30]: 搜尋商品
+          - searchbox "搜尋商品" [ref=f9e31]
+          - button "開始搜尋" [ref=f9e32] [cursor=pointer]: ⌕
+  - group "購物車內容" [ref=f9e33]:
+    - generic "購物車 0 件商品" [ref=f9e34] [cursor=pointer]:
+      - text: 購物車
+      - generic "0 件商品" [ref=f9e37]: "0"
+  - main [ref=f9e38]:
+    - region "首頁主視覺" [ref=f9e39]:
+      - generic [ref=f9e40]:
+        - paragraph [ref=f9e41]: mori summer edit · 2026
+        - heading [level=1] [ref=f9e42]:
+          - text: 小小日常，
+          - generic [ref=f9e43]: 自在長大。
+        - paragraph [ref=f9e44]: 替 0–12 歲孩子挑選柔軟、好活動、每天都願意穿的衣服。
+        - generic [ref=f9e45]:
+          - link "選購本週新品" [ref=f9e46] [cursor=pointer]:
+            - /url: /#new
+          - link "瀏覽所有商品 →" [ref=f9e47] [cursor=pointer]:
+            - /url: /products
+      - img "兩位穿著舒適童裝的孩子在庭院散步" [ref=f9e49]
+      - button "上一張輪播圖片" [ref=f9e50] [cursor=pointer]: ←
+      - button "下一張輪播圖片" [ref=f9e51] [cursor=pointer]: →
+      - generic "選擇輪播圖片" [ref=f9e52]:
+        - button "顯示第 1 張：小小日常，自在長大。" [pressed] [ref=f9e53] [cursor=pointer]: "01"
+        - button "顯示第 2 張：把舒服，穿進週末。" [ref=f9e54] [cursor=pointer]: "02"
+    - region [ref=f9e55]:
+      - generic [ref=f9e56]:
+        - generic [ref=f9e57]:
+          - paragraph [ref=f9e58]: shop by age
+          - heading "照著成長階段挑" [level=2] [ref=f9e59]
+        - paragraph [ref=f9e60]: 從剛學會走路，到開始有自己的穿搭主張。
+      - generic [ref=f9e61]:
+        - link "0-2 歲" [ref=f9e62] [cursor=pointer]:
+          - /url: /products?age=0-2
+          - strong [ref=f9e63]: 0-2
+          - generic [ref=f9e64]: 歲
+        - link "3-5 歲" [ref=f9e65] [cursor=pointer]:
+          - /url: /products?age=3-5
+          - strong [ref=f9e66]: 3-5
+          - generic [ref=f9e67]: 歲
+        - link "6-9 歲" [ref=f9e68] [cursor=pointer]:
+          - /url: /products?age=6-9
+          - strong [ref=f9e69]: 6-9
+          - generic [ref=f9e70]: 歲
+        - link "10-12 歲" [ref=f9e71] [cursor=pointer]:
+          - /url: /products?age=10-12
+          - strong [ref=f9e72]: 10-12
+          - generic [ref=f9e73]: 歲
+    - region [ref=f9e74]:
+      - generic [ref=f9e75]:
+        - generic [ref=f9e76]:
+          - paragraph [ref=f9e77]: new arrivals
+          - heading "本週新到貨" [level=2] [ref=f9e78]
+        - link "查看全部 →" [ref=f9e79] [cursor=pointer]:
+          - /url: /products
+      - generic [ref=f9e80]:
+        - article [ref=f9e81]:
+          - button "移除 有機棉小樹 T 恤" [pressed] [ref=f9e82] [cursor=pointer]:
+            - generic [ref=f9e83]: ♥
+          - link "查看 有機棉小樹 T 恤" [ref=f9e84] [cursor=pointer]:
+            - /url: /products/mori-organic-cotton-tee
+            - img "鼠尾草綠有機棉小樹 T 恤" [ref=f9e85]
+            - generic [ref=f9e86]:
+              - generic [ref=f9e87]: 即將上架
+              - text: 預計 7/24 開賣
+          - generic [ref=f9e88]:
+            - generic [ref=f9e89]:
+              - paragraph [ref=f9e90]: new arrival
+              - paragraph [ref=f9e91]:
+                - generic [ref=f9e92]: 1 種顏色
+                - text: 鼠尾草綠
+            - heading [level=2] [ref=f9e93]:
+              - link "有機棉小樹 T 恤" [ref=f9e94] [cursor=pointer]:
+                - /url: /products/mori-organic-cotton-tee
+            - generic [ref=f9e95]:
+              - paragraph [ref=f9e96]: 尺寸 100–120
+              - paragraph [ref=f9e97]: NT$680 起
+        - article [ref=f9e98]:
+          - button "收藏 雲朵包屁衣" [ref=f9e99] [cursor=pointer]:
+            - generic [ref=f9e100]: ♡
+          - link "查看 雲朵包屁衣" [ref=f9e101] [cursor=pointer]:
+            - /url: /products/mori-cloud-romper
+            - img "米白色雲朵包屁衣" [ref=f9e102]
+            - generic [ref=f9e103]:
+              - text: 查看商品
+              - generic [ref=f9e104]: ↗
+          - generic [ref=f9e105]:
+            - generic [ref=f9e106]:
+              - paragraph [ref=f9e107]: new arrival
+              - paragraph [ref=f9e108]:
+                - generic [ref=f9e109]: 1 種顏色
+                - text: 雲朵米
+            - heading [level=2] [ref=f9e110]:
+              - link "雲朵包屁衣" [ref=f9e111] [cursor=pointer]:
+                - /url: /products/mori-cloud-romper
+            - generic [ref=f9e112]:
+              - paragraph [ref=f9e113]: 尺寸 70–80
+              - paragraph [ref=f9e114]: NT$580 起
+        - article [ref=f9e115]:
+          - button "收藏 花野洋裝" [ref=f9e116] [cursor=pointer]:
+            - generic [ref=f9e117]: ♡
+          - link "查看 花野洋裝" [ref=f9e118] [cursor=pointer]:
+            - /url: /products/mori-meadow-dress
+            - img "森林綠小花花野洋裝" [ref=f9e119]
+            - generic [ref=f9e120]:
+              - text: 查看商品
+              - generic [ref=f9e121]: ↗
+          - generic [ref=f9e122]:
+            - generic [ref=f9e123]:
+              - paragraph [ref=f9e124]: new arrival
+              - paragraph [ref=f9e125]:
+                - generic [ref=f9e126]: 1 種顏色
+                - text: 花野綠
+            - heading [level=2] [ref=f9e127]:
+              - link "花野洋裝" [ref=f9e128] [cursor=pointer]:
+                - /url: /products/mori-meadow-dress
+            - generic [ref=f9e129]:
+              - paragraph [ref=f9e130]: 尺寸 100–120
+              - paragraph [ref=f9e131]: NT$980 起
+        - article [ref=f9e132]:
+          - button "收藏 輕風防風外套" [ref=f9e133] [cursor=pointer]:
+            - generic [ref=f9e134]: ♡
+          - link "查看 輕風防風外套" [ref=f9e135] [cursor=pointer]:
+            - /url: /products/mori-wind-jacket
+            - img "苔蘚綠輕風防風外套" [ref=f9e136]
+            - generic [ref=f9e137]:
+              - text: 查看商品
+              - generic [ref=f9e138]: ↗
+          - generic [ref=f9e139]:
+            - generic [ref=f9e140]:
+              - paragraph [ref=f9e141]: new arrival
+              - paragraph [ref=f9e142]:
+                - generic [ref=f9e143]: 1 種顏色
+                - text: 苔蘚綠
+            - heading [level=2] [ref=f9e144]:
+              - link "輕風防風外套" [ref=f9e145] [cursor=pointer]:
+                - /url: /products/mori-wind-jacket
+            - generic [ref=f9e146]:
+              - paragraph [ref=f9e147]: 尺寸 130–150
+              - paragraph [ref=f9e148]: NT$1,280 起
+        - article [ref=f9e149]:
+          - button "收藏 水洗丹寧吊帶褲" [ref=f9e150] [cursor=pointer]:
+            - generic [ref=f9e151]: ♡
+          - link "查看 水洗丹寧吊帶褲" [ref=f9e152] [cursor=pointer]:
+            - /url: /products/mori-denim-overalls
+            - img "水洗藍兒童丹寧吊帶褲" [ref=f9e153]
+            - generic [ref=f9e154]:
+              - text: 查看商品
+              - generic [ref=f9e155]: ↗
+          - generic [ref=f9e156]:
+            - generic [ref=f9e157]:
+              - paragraph [ref=f9e158]: new arrival
+              - paragraph [ref=f9e159]:
+                - generic [ref=f9e160]: 1 種顏色
+                - text: 水洗藍
+            - heading [level=2] [ref=f9e161]:
+              - link "水洗丹寧吊帶褲" [ref=f9e162] [cursor=pointer]:
+                - /url: /products/mori-denim-overalls
+            - generic [ref=f9e163]:
+              - paragraph [ref=f9e164]: 尺寸 80–100
+              - paragraph [ref=f9e165]: NT$1,080 起
+    - region [ref=f9e166]:
+      - generic [ref=f9e167]:
+        - paragraph [ref=f9e168]: mori selection
+        - heading "會跑、會跳， 也好好整理。" [level=2] [ref=f9e169]: 會跑、會跳，也好好整理。
+        - paragraph [ref=f9e170]: 柔軟上衣、耐穿下著與不費力就能搭好的日常單品。
+        - link "挑選日常衣櫥" [ref=f9e171] [cursor=pointer]:
+          - /url: /products
+      - generic "選品原則" [ref=f9e172]:
+        - generic [ref=f9e173]: 柔軟親膚
+        - generic [ref=f9e174]: 自在活動
+        - generic [ref=f9e175]: 耐洗耐穿
+    - region [ref=f9e176]:
+      - paragraph [ref=f9e177]: our point of view
+      - heading "衣服不該限制孩子怎麼玩。" [level=2] [ref=f9e178]
+      - paragraph [ref=f9e179]: mori 從布料、版型到洗滌方式仔細挑選，讓大人少一點煩惱，孩子多一點自在。
+      - generic [ref=f9e180]:
+        - generic [ref=f9e181]:
+          - term [ref=f9e182]: "01"
+          - definition [ref=f9e183]: 舒服，是每天願意穿的第一件事。
+        - generic [ref=f9e184]:
+          - term [ref=f9e185]: "02"
+          - definition [ref=f9e186]: 耐穿，才能陪著孩子真正生活。
+        - generic [ref=f9e187]:
+          - term [ref=f9e188]: "03"
+          - definition [ref=f9e189]: 簡單搭配，把時間留給更重要的事。
+  - contentinfo [ref=f9e190]:
+    - generic [ref=f9e191]:
+      - generic [ref=f9e192]:
+        - generic "mori kids select":
+          - generic [ref=f9e197]: mori
+          - generic [ref=f9e198]: KIDS SELECT
+        - heading "把舒服穿進 每一天的成長。" [level=2] [ref=f9e199]: 把舒服穿進每一天的成長。
+        - paragraph [ref=f9e200]: 為 0–12 歲孩子選進親膚、耐穿，也能自在活動的日常服。
+        - link "hello@mori.tw" [ref=f9e201] [cursor=pointer]:
+          - /url: mailto:hello@mori.tw
+      - navigation "購物指南" [ref=f9e202]:
+        - strong [ref=f9e203]: 購物指南
+        - link "所有商品" [ref=f9e204] [cursor=pointer]:
+          - /url: /products
+        - link "購物車" [ref=f9e205] [cursor=pointer]:
+          - /url: /cart
+        - link "訪客訂單查詢" [ref=f9e206] [cursor=pointer]:
+          - /url: /order-lookup
+        - link "會員訂單" [ref=f9e207] [cursor=pointer]:
+          - /url: /account/orders
+      - navigation "會員服務" [ref=f9e208]:
+        - strong [ref=f9e209]: 會員服務
+        - link "會員中心" [ref=f9e210] [cursor=pointer]:
+          - /url: /account
+        - link "會員登入" [ref=f9e211] [cursor=pointer]:
+          - /url: /login
+        - link "建立帳號" [ref=f9e212] [cursor=pointer]:
+          - /url: /signup
+      - generic [ref=f9e213]:
+        - strong [ref=f9e214]: 配送與服務
+        - paragraph [ref=f9e215]: 7-ELEVEN／全家台灣本島超商取貨
+        - paragraph [ref=f9e216]: 客服時間週一至週五 10:00–18:00
+        - generic [ref=f9e217]:
+          - generic [ref=f9e218]: VISA
+          - generic [ref=f9e219]: MC
+          - generic [ref=f9e220]: JCB
+    - generic [ref=f9e221]:
+      - paragraph [ref=f9e222]: © 2026 mori kids select
+      - paragraph [ref=f9e223]: 台灣出貨・超商取貨・安心選衣
+      - link "回到上方 ↑" [ref=f9e224] [cursor=pointer]:
+        - /url: "#top"
+  - button "Open Next.js Dev Tools" [ref=f9e230] [cursor=pointer]
+  - alert [ref=f9e234]

@@ -22,12 +22,13 @@ describe('member auth form', () => {
     render(<AuthForm fixtureMode mode="sign-in" />)
 
     expect(screen.getByRole('heading', { name: '歡迎回到 mori' })).toBeInTheDocument()
-    expect(screen.getByLabelText('Email')).toHaveAttribute('autocomplete', 'email')
+    expect(screen.getByLabelText('Email 或手機號碼')).toHaveAttribute('autocomplete', 'username')
     expect(screen.getByLabelText('密碼')).toHaveAttribute('type', 'password')
     expect(screen.getByLabelText('密碼')).not.toHaveAttribute('aria-describedby')
     fireEvent.click(screen.getByRole('button', { name: '顯示密碼' }))
     expect(screen.getByLabelText('密碼')).toHaveAttribute('type', 'text')
     expect(screen.getByText('本機老闆示範帳號')).toBeInTheDocument()
+    expect(screen.getByLabelText('記住我（30 天內不用重新登入）')).not.toBeChecked()
     expect(screen.getByRole('link', { name: '建立會員帳號' })).toHaveAttribute('href', '/signup')
   })
 
@@ -91,6 +92,27 @@ describe('member auth form', () => {
     render(<AuthForm mode="sign-in" />)
 
     expect(screen.queryByText('本機老闆示範帳號')).not.toBeInTheDocument()
+  })
+
+  it('shows the registration notice on the sign-in form', () => {
+    render(<AuthForm mode="sign-in" notice="註冊成功，請使用剛才設定的 Email 與密碼登入。" />)
+
+    expect(screen.getByRole('status')).toHaveTextContent('註冊成功')
+  })
+
+  it('passes submitted form data as the sole server action argument', async () => {
+    authActionMocks.signIn.mockResolvedValueOnce({ ok: false })
+    render(<AuthForm mode="sign-in" />)
+
+    fireEvent.change(screen.getByLabelText('Email 或手機號碼'), { target: { value: 'admin@mori.tw' } })
+    fireEvent.change(screen.getByLabelText('密碼'), { target: { value: 'mori123456' } })
+    fireEvent.submit(screen.getByRole('button', { name: '登入' }).closest('form')!)
+
+    await waitFor(() => expect(authActionMocks.signIn).toHaveBeenCalledOnce())
+    expect(authActionMocks.signIn.mock.calls[0]).toHaveLength(1)
+    const submitted = authActionMocks.signIn.mock.calls[0][0] as FormData
+    expect(submitted.get('identifier')).toBe('admin@mori.tw')
+    expect(submitted.get('password')).toBe('mori123456')
   })
 
   it('preserves a safe next path through sign-in and the registration link', () => {

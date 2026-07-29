@@ -2,14 +2,17 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { calculateCart } from '@/features/cart/totals'
 import { parseCartRefreshRequest } from '@/features/cart/refresh'
 import { canonicalizeCartVariantId } from '@/features/cart/types'
-import { findTestStore } from '@/features/checkout/stores'
 import { parseStorefrontSettings } from '@/features/checkout/settings'
 import { CheckoutAttemptError } from '@/features/checkout/types'
+import { validateCoupon, type CouponValidation } from '@/features/checkout/coupons'
 import type {
   CheckoutCartItem,
   CheckoutInput,
   PaymentAttemptStatus,
+  PaymentAttemptSummary,
+  PaymentMethod,
   PaymentResult,
+  OrderSubmissionResult,
   TestPaymentOutcome,
 } from '@/features/checkout/types'
 import { checkoutSchema } from '@/lib/validation/checkout'
@@ -25,6 +28,7 @@ export type CheckoutVariant = {
   price: number
   stock: number
   isPublished: boolean
+  imageUrl: string | null
 }
 
 export type PaymentAttemptItem = {
@@ -35,6 +39,7 @@ export type PaymentAttemptItem = {
   sku: string
   color: string
   size: string
+  image_url?: string | null
 }
 
 export type PaymentAttemptInsert = {
@@ -45,6 +50,8 @@ export type PaymentAttemptInsert = {
   storeChain: CheckoutInput['chain']
   storeId: string
   storeName: string
+  customerNote: string
+  paymentMethod: PaymentMethod
   subtotal: number
   shippingFee: number
   total: number
@@ -65,6 +72,14 @@ type StoredPaymentAttemptSummary = {
   shippingFee: number
   total: number
   status: PaymentAttemptStatus
+  email?: string
+  recipientName?: string
+  recipientPhone?: string
+  customerNote?: string
+  paymentMethod?: PaymentMethod
+  storeChain?: CheckoutInput['chain']
+  storeId?: string
+  storeName?: string
 }
 
 export type PaymentCompletion = {
@@ -81,6 +96,8 @@ export type CompletedOrder = {
   storeId: string
   storeName: string
   status: string
+  paymentMethod?: PaymentMethod
+  total?: number
 }
 
 export interface CheckoutRepository {
@@ -99,6 +116,7 @@ export interface CheckoutRepository {
   completePayment(
     attemptId: string,
     providerReference: string,
+    paymentMethod?: PaymentMethod,
   ): Promise<PaymentCompletion>
   getCompletedOrderForAttempt(attemptId: string): Promise<CompletedOrder | null>
 }
@@ -122,7 +140,19 @@ export function createTestProviderReference(attemptId: string) {
   return `test-payment:${canonicalizePaymentAttemptId(attemptId)}`
 }
 
-export function createCheckoutService(repository: CheckoutRepository) {
+type CouponResolver = (code: string, subtotal: number) => Promise<CouponValidation>
+
+const rejectCoupon: CouponResolver = async (code) => ({
+  ok: false,
+  code,
+  discount: 0,
+  message: '優惠碼無效。',
+})
+
+export function createCheckoutService(
+  repository: CheckoutRepository,
+  resolveCoupon: CouponResolver = rejectCoupon,
+) {
   async function authorizePaymentAttempt(attemptIdInput: string) {
     const attemptId = canonicalizePaymentAttemptId(attemptIdInput)
     const attempt = await repository.getPaymentAttemptAccess(attemptId)
@@ -152,8 +182,6 @@ export function createCheckoutService(repository: CheckoutRepository) {
 
   async function createPaymentAttempt(input: CheckoutInput, cart: CheckoutCartItem[]) {
     const customer = checkoutSchema.parse(input)
-    const store = findTestStore(customer.chain, customer.storeId)
-    if (!store) throw new Error('不支援的取貨門市')
     const requestedItems = parseCartRefreshRequest({ items: cart })
     if (!requestedItems?.length) throw new CheckoutAttemptError('cart_invalid')
 
@@ -175,6 +203,10 @@ export function createCheckoutService(repository: CheckoutRepository) {
       settings.shippingFee,
       settings.freeShippingThreshold,
     )
+    const coupon = customer.couponCode
+      ? await resolveCoupon(customer.couponCode, totals.subtotal)
+      : null
+    if (coupon && !coupon.ok) throw new CheckoutAttemptError('coupon_invalid')
     const userId = await repository.getCurrentUserId()
     const guestToken = userId ? null : randomBytes(32).toString('base64url')
     const attempt = await repository.insertPaymentAttempt({
@@ -184,10 +216,12 @@ export function createCheckoutService(repository: CheckoutRepository) {
       recipientPhone: customer.phone,
       storeChain: customer.chain,
       storeId: customer.storeId,
-      storeName: store.storeName,
+      storeName: customer.storeName,
+      customerNote: customer.customerNote ?? '',
+      paymentMethod: customer.paymentMethod ?? 'bank_transfer',
       subtotal: totals.subtotal,
       shippingFee: totals.shipping,
-      total: totals.total,
+      total: Math.max(0, totals.total - (coupon?.discount ?? 0)),
       items: pricedItems.map(({ variant, quantity }) => ({
         variant_id: variant.id,
         quantity,
@@ -196,6 +230,7 @@ export function createCheckoutService(repository: CheckoutRepository) {
         sku: variant.sku,
         color: variant.color,
         size: variant.size,
+        image_url: variant.imageUrl,
       })),
       paymentAccessExpiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
       paymentAccessTokenHash: guestToken ? hashPaymentAccessToken(guestToken) : null,
@@ -234,6 +269,28 @@ export function createCheckoutService(repository: CheckoutRepository) {
     }
   }
 
+  async function submitOrder(attemptId: string): Promise<OrderSubmissionResult> {
+    const canonicalAttemptId = await authorizePaymentAttempt(attemptId)
+    const attempt = await repository.getPaymentAttemptSummary(canonicalAttemptId)
+    if (!attempt) throw new Error('無權存取付款交易')
+
+    const completion = await repository.completePayment(
+      canonicalAttemptId,
+      `manual-order:${canonicalAttemptId}`,
+      attempt.paymentMethod ?? 'bank_transfer',
+    )
+    if (completion.status === 'requires_review') {
+      throw new CheckoutAttemptError(
+        completion.reviewCode === 'stock_unavailable' ? 'stock_changed' : 'catalog_changed',
+      )
+    }
+    return {
+      outcome: 'submitted',
+      orderNumber: completion.orderNumber,
+      redirectUrl: `/order-complete/${completion.orderNumber}?attemptId=${canonicalAttemptId}`,
+    }
+  }
+
   async function getAuthorizedPaymentAttempt(attemptId: string) {
     const canonicalAttemptId = await authorizePaymentAttempt(attemptId)
     const attempt = await repository.getPaymentAttemptSummary(canonicalAttemptId)
@@ -248,8 +305,9 @@ export function createCheckoutService(repository: CheckoutRepository) {
         sku: item.sku,
         color: item.color,
         size: item.size,
+        imageUrl: item.image_url ?? null,
       })),
-    }
+    } as PaymentAttemptSummary
   }
 
   async function getAuthorizedCompletedOrder(attemptId: string, orderNumber: string) {
@@ -262,6 +320,7 @@ export function createCheckoutService(repository: CheckoutRepository) {
     authorizePaymentAttempt,
     createPaymentAttempt,
     completeTestPayment,
+    submitOrder,
     getAuthorizedPaymentAttempt,
     getAuthorizedCompletedOrder,
   }
@@ -316,7 +375,7 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
     async getPaymentAttemptSummary(attemptId) {
       const { data, error } = await admin
         .from('payment_attempts')
-        .select('items, subtotal, shipping_fee, total, status')
+        .select('items, subtotal, shipping_fee, total, status, email, recipient_name, recipient_phone, store_chain, store_id, store_name, customer_note, payment_method')
         .eq('id', attemptId)
         .maybeSingle()
       if (error) throw error
@@ -341,19 +400,33 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
         shippingFee: data.shipping_fee,
         total: data.total,
         status: data.status,
+        email: data.email,
+        recipientName: data.recipient_name,
+        recipientPhone: data.recipient_phone,
+        storeChain: data.store_chain,
+        storeId: data.store_id,
+        storeName: data.store_name,
+        customerNote: data.customer_note,
+        paymentMethod: data.payment_method as PaymentMethod,
       }
     },
 
     async getVariants(variantIds) {
       const { data, error } = await admin
         .from('product_variants')
-        .select('id, sku, color, size, price, stock, products!inner(name, is_published)')
+        .select('id, sku, color, size, price, stock, products!inner(name, is_published, available_at, product_images(storage_path, sort_order))')
         .in('id', variantIds)
         .eq('is_active', true)
       if (error) throw error
 
       return (data ?? []).map((variant) => {
-        const product = variant.products as unknown as { name: string; is_published: boolean }
+        const product = variant.products as unknown as {
+          name: string
+          is_published: boolean
+          available_at: string | null
+          product_images: Array<{ storage_path: string; sort_order: number }>
+        }
+        const primaryImage = [...product.product_images].sort((a, b) => a.sort_order - b.sort_order)[0]
         return {
           id: variant.id,
           productName: product.name,
@@ -362,7 +435,10 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
           size: variant.size,
           price: variant.price,
           stock: variant.stock,
-          isPublished: product.is_published,
+          isPublished: product.is_published && (!product.available_at || new Date(product.available_at) <= new Date()),
+          imageUrl: primaryImage
+            ? admin.storage.from('product-images').getPublicUrl(primaryImage.storage_path).data.publicUrl
+            : null,
         }
       })
     },
@@ -386,6 +462,8 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
         store_chain: attempt.storeChain,
         store_id: attempt.storeId,
         store_name: attempt.storeName,
+        customer_note: attempt.customerNote,
+        payment_method: attempt.paymentMethod,
         subtotal: attempt.subtotal,
         shipping_fee: attempt.shippingFee,
         total: attempt.total,
@@ -422,8 +500,11 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
       if (current.data?.status !== status) throw new Error('payment attempt is not pending')
     },
 
-    async completePayment(attemptId, providerReference) {
-      const { data, error } = await admin.rpc('complete_test_payment', {
+    async completePayment(attemptId, providerReference, paymentMethod) {
+      const rpc = paymentMethod === 'bank_transfer' || paymentMethod === 'convenience_cod'
+        ? 'finalize_manual_order'
+        : 'complete_test_payment'
+      const { data, error } = await admin.rpc(rpc, {
         payment_attempt_id: attemptId,
         provider_reference: providerReference,
       })
@@ -444,7 +525,7 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
       const { data, error } = await admin
         .from('payment_attempts')
         .select(`
-          orders!inner(order_number, store_chain, store_id, store_name, status)
+          orders!inner(order_number, store_chain, store_id, store_name, status, payment_method, total)
         `)
         .eq('id', attemptId)
         .maybeSingle()
@@ -457,6 +538,8 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
         store_id: string
         store_name: string
         status: string
+        payment_method: PaymentMethod
+        total: number
       }
       return {
         orderNumber: order.order_number,
@@ -464,6 +547,8 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
         storeId: order.store_id,
         storeName: order.store_name,
         status: order.status,
+        paymentMethod: order.payment_method,
+        total: order.total,
       }
     },
   }
@@ -486,7 +571,8 @@ async function createCheckoutRepository() {
 }
 
 export async function createPaymentAttempt(input: CheckoutInput, cart: CheckoutCartItem[]) {
-  return createCheckoutService(await createCheckoutRepository()).createPaymentAttempt(input, cart)
+  return createCheckoutService(await createCheckoutRepository(), validateCoupon)
+    .createPaymentAttempt(input, cart)
 }
 
 export async function completeTestPayment(
@@ -495,6 +581,10 @@ export async function completeTestPayment(
 ) {
   return createCheckoutService(await createCheckoutRepository())
     .completeTestPayment(attemptId, outcome)
+}
+
+export async function submitOrder(attemptId: string) {
+  return createCheckoutService(await createCheckoutRepository()).submitOrder(attemptId)
 }
 
 export async function authorizePaymentAttempt(attemptId: string) {

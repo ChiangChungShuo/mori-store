@@ -80,7 +80,7 @@ export function AdminOrderList({
         </div>
       </form>
       {state.orders.length === 0 ? (
-        <p className="empty-state">尚未有訂單，請先從商城完成一筆測試付款。 <Link href="/products">前往商品列表</Link></p>
+        <p className="empty-state">尚未有訂單，可先從商城送出一筆示範訂單。 <Link href="/products">前往商品列表</Link></p>
       ) : (
         <div className="admin-table-scroll"><table className="admin-product-table admin-order-table">
           <thead>

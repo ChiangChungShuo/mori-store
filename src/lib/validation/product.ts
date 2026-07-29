@@ -9,6 +9,7 @@ const variantSchema = z.object({
   color: z.string().trim().min(1, '顏色為必填'),
   size: z.string().trim().min(1, '尺寸為必填'),
   price: z.number().int('售價必須是整數').nonnegative('售價不可小於 0'),
+  cost: z.number().int('成本必須是整數').nonnegative('成本不可小於 0').optional(),
   compareAtPrice: z.number().int('原價必須是整數').nonnegative('原價不可小於 0').optional(),
   stock: z.number().int('庫存必須是整數').nonnegative('庫存不可小於 0'),
 }).strict().refine(
@@ -22,10 +23,15 @@ export const productSchema = z.object({
   category: z.string().trim().min(1, '分類為必填'),
   ageBands: z.array(ageBandSchema).min(1, '至少選擇一個年齡層'),
   description: z.string().default(''),
+  summary: z.string().trim().max(200, '簡短描述請控制在 200 字以內').optional(),
+  tags: z.array(z.string().trim().min(1, '標籤不可為空').max(20, '單一標籤請在 20 字以內')).max(20, '標籤最多 20 個').optional(),
+  seoTitle: z.string().trim().max(70, 'SEO 標題請控制在 70 字以內').optional(),
+  seoDescription: z.string().trim().max(160, 'SEO 描述請控制在 160 字以內').optional(),
   material: z.string().default(''),
   careInstructions: z.string().default(''),
   sizeGuide: z.string().default(''),
   isNew: z.boolean().default(false),
+  availableAt: z.string().datetime({ offset: true }).nullable().optional(),
   variants: z.array(variantSchema).min(1, '至少需要一個商品規格'),
 }).strict().superRefine((product, context) => {
   const skus = new Set<string>()
@@ -113,3 +119,38 @@ export const productImageSchema = z.object({
 }).strict()
 
 export type ProductInput = z.infer<typeof productSchema>
+
+export const scheduledSaleMessage = '預約開賣時間必須晚於現在'
+
+// Returns an error message only when a NEW or CHANGED availableAt is not in the future.
+// An unchanged, already-past date (e.g. a product whose scheduled launch has passed) is allowed,
+// so editing such a product no longer fails validation.
+export function availableAtError(
+  availableAt: string | null | undefined,
+  originalAvailableAt: string | null = null,
+): string | null {
+  if (!availableAt) return null
+  if (originalAvailableAt && availableAt === originalAvailableAt) return null
+  return new Date(availableAt).getTime() <= Date.now() ? scheduledSaleMessage : null
+}
+
+export type ProductVariantField = keyof ProductInput['variants'][number]
+export type ProductVariantErrors = Array<Partial<Record<ProductVariantField, string[]>>>
+
+export function getProductValidationErrors(error: z.ZodError) {
+  const fieldErrors = error.flatten().fieldErrors
+  const variantErrors: ProductVariantErrors = []
+
+  for (const issue of error.issues) {
+    if (issue.path[0] !== 'variants' || typeof issue.path[1] !== 'number') continue
+    const index = issue.path[1]
+    const field = issue.path[2]
+    if (typeof field !== 'string') continue
+    const row = variantErrors[index] ?? {}
+    const key = field as ProductVariantField
+    row[key] = [...(row[key] ?? []), issue.message]
+    variantErrors[index] = row
+  }
+
+  return { fieldErrors, variantErrors }
+}

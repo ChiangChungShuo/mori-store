@@ -17,14 +17,19 @@ describe('Next.js web runtime contracts', () => {
     expect(proxy).toContain("/((?!_next/static|_next/image|favicon.ico|.*\\\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)")
   })
 
-  it('bypasses Supabase only for credential-free local fixture runs', () => {
+  it('bypasses Supabase only for credential-free local or preview fixture runs', () => {
     const helper = readFileSync(
       resolve(process.cwd(), 'src/lib/supabase/proxy.ts'),
       'utf8',
     )
+    const fixtureMode = readFileSync(
+      resolve(process.cwd(), 'src/testing/e2e-mode.ts'),
+      'utf8',
+    )
 
     expect(helper).toMatch(/MORI_E2E_FIXTURES/)
-    expect(helper).toMatch(/NODE_ENV\s*!==\s*['"]production['"]/)
+    expect(fixtureMode).toMatch(/NODE_ENV\s*!==\s*['"]production['"]/) 
+    expect(fixtureMode).toMatch(/VERCEL_ENV\s*===\s*['"]preview['"]/) 
     expect(helper).toMatch(/NEXT_PUBLIC_SUPABASE_URL/)
     expect(helper).toMatch(/NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/)
     expect(helper).toMatch(/NextResponse\.next/)
@@ -36,6 +41,14 @@ describe('Next.js web runtime contracts', () => {
     expect(shouldBypassSessionRefresh({
       NODE_ENV: 'production',
       MORI_E2E_FIXTURES: '1',
+    })).toBe(false)
+    expect(shouldBypassSessionRefresh({
+      NODE_ENV: 'production',
+      VERCEL_ENV: 'preview',
+    })).toBe(true)
+    expect(shouldBypassSessionRefresh({
+      NODE_ENV: 'production',
+      VERCEL_ENV: 'production',
     })).toBe(false)
     expect(shouldBypassSessionRefresh({ NODE_ENV: 'development' })).toBe(false)
     expect(shouldBypassSessionRefresh({

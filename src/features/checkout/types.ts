@@ -13,14 +13,15 @@ export type CheckoutActionState = {
   refreshCart?: boolean
 }
 
-export type CheckoutAttemptErrorCode = 'cart_invalid' | 'catalog_changed' | 'stock_changed'
+export type CheckoutAttemptErrorCode = 'cart_invalid' | 'catalog_changed' | 'stock_changed' | 'coupon_invalid'
 
 export class CheckoutAttemptError extends Error {
   constructor(readonly code: CheckoutAttemptErrorCode) {
     super({
-      cart_invalid: '購物袋內容無效',
+      cart_invalid: '購物車內容無效',
       catalog_changed: '商品已下架或不存在',
       stock_changed: '商品庫存不足',
+      coupon_invalid: '優惠碼已失效或不符合使用條件',
     }[code])
     this.name = 'CheckoutAttemptError'
   }
@@ -28,9 +29,16 @@ export class CheckoutAttemptError extends Error {
 
 export function toCheckoutActionState(error: unknown): CheckoutActionState {
   if (error instanceof CheckoutAttemptError) {
+    if (error.code === 'coupon_invalid') {
+      return {
+        status: 'error',
+        message: '優惠碼已失效或不符合使用條件，請重新套用。',
+        refreshCart: false,
+      }
+    }
     return {
       status: 'error',
-      message: '商品資料或庫存已變更，請更新購物袋後再試一次。',
+      message: '商品資料或庫存已變更，請更新購物車後再試一次。',
       refreshCart: true,
     }
   }
@@ -42,6 +50,7 @@ export function toCheckoutActionState(error: unknown): CheckoutActionState {
 }
 
 export type StoreChain = CheckoutInput['chain']
+export type PaymentMethod = Exclude<CheckoutInput['paymentMethod'], undefined>
 
 export type TestStore = {
   chain: StoreChain
@@ -63,11 +72,26 @@ export type PaymentAttemptSummary = {
     sku: string
     color: string
     size: string
+    imageUrl: string | null
   }>
   subtotal: number
   shippingFee: number
   total: number
   status: PaymentAttemptStatus
+  email: string
+  recipientName: string
+  recipientPhone: string
+  customerNote: string
+  paymentMethod: PaymentMethod
+  storeChain?: StoreChain
+  storeId?: string
+  storeName?: string
+}
+
+export type OrderSubmissionResult = {
+  outcome: 'submitted'
+  redirectUrl: string
+  orderNumber: string
 }
 
 export type PaymentResult = {

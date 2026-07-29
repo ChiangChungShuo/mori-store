@@ -1,0 +1,62 @@
+- generic [active] [ref=f3e1]:
+  - generic [ref=f3e2]:
+    - banner [ref=f3e3]:
+      - link "mori kids wear" [ref=f3e4] [cursor=pointer]:
+        - /url: /
+        - text: mori
+        - generic [ref=f3e5]: kids wear
+      - navigation "會員快速導覽" [ref=f3e6]:
+        - link "繼續選購" [ref=f3e7] [cursor=pointer]:
+          - /url: /products
+        - link "購物車" [ref=f3e8] [cursor=pointer]:
+          - /url: /cart
+    - generic [ref=f3e9]:
+      - complementary [ref=f3e10]:
+        - paragraph [ref=f3e11]: my mori
+        - generic [ref=f3e12]:
+          - generic [ref=f3e13]: A
+          - generic [ref=f3e14]:
+            - strong [ref=f3e15]: admin
+            - generic [ref=f3e16]: admin@mori.tw
+        - navigation "會員中心導覽" [ref=f3e17]:
+          - link "家 會員首頁" [ref=f3e18] [cursor=pointer]:
+            - /url: /account
+            - generic [ref=f3e19]: 家
+            - text: 會員首頁
+          - link "單 訂單紀錄" [ref=f3e20] [cursor=pointer]:
+            - /url: /account/orders
+            - generic [ref=f3e21]: 單
+            - text: 訂單紀錄
+          - link "♡ 追蹤清單" [ref=f3e22] [cursor=pointer]:
+            - /url: /account/wishlist
+            - generic [ref=f3e23]: ♡
+            - text: 追蹤清單
+          - link "禮 會員福利" [ref=f3e24] [cursor=pointer]:
+            - /url: /account#benefits
+            - generic [ref=f3e25]: 禮
+            - text: 會員福利
+          - link "我 基本資料" [ref=f3e26] [cursor=pointer]:
+            - /url: /account#profile
+            - generic [ref=f3e27]: 我
+            - text: 基本資料
+        - button "登出" [ref=f3e29] [cursor=pointer]
+      - main [ref=f3e31]:
+        - generic [ref=f3e32]:
+          - generic [ref=f3e33]:
+            - paragraph [ref=f3e34]: saved pieces
+            - heading "追蹤清單" [level=1] [ref=f3e35]
+          - paragraph [ref=f3e36]: 把喜歡的款式先收好，回來時能快速比較尺寸與庫存。
+        - article [ref=f3e39]:
+          - link [ref=f3e40] [cursor=pointer]:
+            - /url: /products/mori-organic-cotton-tee
+            - img "鼠尾草綠有機棉小樹 T 恤" [ref=f3e41]
+          - generic [ref=f3e42]:
+            - paragraph [ref=f3e43]: 上衣
+            - heading [level=2] [ref=f3e44]:
+              - link "有機棉小樹 T 恤" [ref=f3e45] [cursor=pointer]:
+                - /url: /products/mori-organic-cotton-tee
+            - strong [ref=f3e46]: NT$680 起
+          - button "移除 有機棉小樹 T 恤" [pressed] [ref=f3e47] [cursor=pointer]:
+            - generic [ref=f3e48]: ♥
+  - button "Open Next.js Dev Tools" [ref=f3e54] [cursor=pointer]
+  - alert [ref=f3e58]

@@ -19,12 +19,15 @@ export function WishlistHeaderLink() {
       previousCount.current = nextCount
       setCount(nextCount)
     }
+
     sync()
     window.addEventListener('mori:wishlist-changed', sync)
     return () => window.removeEventListener('mori:wishlist-changed', sync)
   }, [])
 
-  return <Link className="wishlist-header-link" data-bumping={bumping} data-has-items={count > 0} href="/account/wishlist" onAnimationEnd={() => setBumping(false)}>
-    <span aria-hidden="true">{count > 0 ? '♥' : '♡'}</span>收藏<span className="wishlist-header-count">{count}</span>
-  </Link>
+  return (
+    <Link className="wishlist-header-link" data-bumping={bumping} data-has-items={count > 0} href="/wishlist" onAnimationEnd={() => setBumping(false)}>
+      <span aria-hidden="true">{count > 0 ? '♥' : '♡'}</span><span className="wishlist-header-count">{count}</span>
+    </Link>
+  )
 }

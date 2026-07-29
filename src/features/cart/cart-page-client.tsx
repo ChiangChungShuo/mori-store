@@ -1,17 +1,33 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useCart } from '@/features/cart/cart-provider'
 import { getCartQuantityLimit, isCartItem } from '@/features/cart/types'
 import { calculateCart } from '@/features/cart/totals'
 import type { StorefrontSettings } from '@/features/checkout/settings'
 import { formatTwd } from '@/lib/money'
+import { CheckoutProgress } from '@/features/checkout/checkout-progress'
+import type { CouponValidation } from '@/features/checkout/coupons'
+import type { CatalogProduct } from '@/features/catalog/queries'
+import { ProductCard } from '@/features/catalog/product-card'
 
-export function CartPageClient({ settings }: { settings: StorefrontSettings }) {
+const couponStorageKey = 'mori-checkout-coupon'
+
+export function CartPageClient({ settings, isSignedIn = false, recommendedProducts, couponAction }: {
+  settings: StorefrontSettings
+  isSignedIn?: boolean
+  recommendedProducts?: CatalogProduct[]
+  couponAction?: (code: string, subtotal: number) => Promise<CouponValidation>
+}) {
   const { items, hydrated, dispatch, replaceItems } = useCart()
   const [refreshStatus, setRefreshStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [refreshAttempt, setRefreshAttempt] = useState(0)
+  const [couponInput, setCouponInput] = useState('')
+  const [appliedCouponCode, setAppliedCouponCode] = useState('')
+  const [couponRequestId, setCouponRequestId] = useState(0)
+  const [couponResult, setCouponResult] = useState<(CouponValidation & { subtotal: number }) | null>(null)
+  const [couponPending, startCouponTransition] = useTransition()
   const refreshKey = JSON.stringify(
     items.map(({ variantId, quantity }) => ({ variantId, quantity })),
   )
@@ -23,6 +39,37 @@ export function CartPageClient({ settings }: { settings: StorefrontSettings }) {
   const freeShippingProgress = settings.freeShippingThreshold && settings.freeShippingThreshold > 0
     ? Math.min(100, Math.round((totals.subtotal / settings.freeShippingThreshold) * 100))
     : 100
+  const appliedCoupon = couponResult?.ok && couponResult.subtotal === totals.subtotal
+    ? couponResult
+    : null
+  const payableTotal = Math.max(0, totals.total - (appliedCoupon?.discount ?? 0))
+  const cartProductSlugs = useMemo(() => new Set(items.map((item) => item.productSlug)), [items])
+  const suggestions = (recommendedProducts ?? [])
+    .filter((product) => !cartProductSlugs.has(product.slug))
+    .slice(0, 4)
+
+  useEffect(() => {
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled) return
+      const storedCode = window.sessionStorage.getItem(couponStorageKey) ?? ''
+      setCouponInput(storedCode)
+      setAppliedCouponCode(storedCode)
+    })
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    if (!hydrated || !appliedCouponCode || totals.subtotal <= 0 || !couponAction) return
+    let cancelled = false
+    startCouponTransition(async () => {
+      const result = await couponAction(appliedCouponCode, totals.subtotal)
+      if (cancelled) return
+      setCouponResult({ ...result, subtotal: totals.subtotal })
+      if (!result.ok) window.sessionStorage.removeItem(couponStorageKey)
+    })
+    return () => { cancelled = true }
+  }, [appliedCouponCode, couponAction, couponRequestId, hydrated, totals.subtotal])
 
   useEffect(() => {
     if (!hydrated || refreshKey === '[]') return
@@ -65,6 +112,7 @@ export function CartPageClient({ settings }: { settings: StorefrontSettings }) {
         <h1>購物車</h1>
         <p>確認尺寸與數量，再選擇最方便的超商取貨門市。</p>
       </header>
+      <CheckoutProgress current={1} />
 
       {!hydrated || (items.length > 0 && refreshStatus === 'loading') ? (
         <p aria-live="polite">正在確認最新商品與庫存…</p>
@@ -168,20 +216,40 @@ export function CartPageClient({ settings }: { settings: StorefrontSettings }) {
             </section>
 
             <div className="cart-sidebar">
-              <section className="member-nudge" aria-label="會員登入提示">
+              {!isSignedIn ? <section className="member-nudge" aria-label="會員登入提示">
                 <span aria-hidden="true">♧</span>
                 <p>已經是會員？登入後可以更方便查看與管理訂單。</p>
                 <Link href="/login" className="button button-secondary">登入</Link>
-              </section>
+              </section> : null}
               <aside className="cart-summary cart-order-summary" aria-label="訂單摘要">
                 <h2>訂單資訊</h2>
+                <div className="cart-coupon-panel">
+                  <div className="cart-coupon-heading"><span aria-hidden="true">%</span><div><label htmlFor="cart-coupon">優惠碼</label><small>每張訂單限用一組優惠碼</small></div></div>
+                  <div className="cart-coupon-form"><input id="cart-coupon" aria-label="優惠碼" autoComplete="off" placeholder="請輸入優惠碼" value={couponInput} onChange={(event) => setCouponInput(event.target.value.toUpperCase())} /><button type="button" disabled={couponPending || !couponInput.trim()} onClick={() => {
+                    const code = couponInput.trim().toUpperCase()
+                    setAppliedCouponCode(code)
+                    setCouponRequestId((requestId) => requestId + 1)
+                    window.sessionStorage.setItem(couponStorageKey, code)
+                  }}>{couponPending ? '確認中…' : '套用'}</button></div>
+                  {couponResult ? <p className={couponResult.ok ? 'coupon-success' : 'coupon-error'} role="status">{couponResult.message}</p> : null}
+                </div>
                 <p><span>商品小計</span><strong>{formatTwd(totals.subtotal)}</strong></p>
                 <p><span>運費</span><strong>{totals.shipping === 0 ? '免運' : formatTwd(totals.shipping)}</strong></p>
-                <p className="cart-total"><span>合計</span><strong>{formatTwd(totals.total)}</strong></p>
-                <Link href="/checkout" className="button button-wide">前往結帳</Link>
+                {appliedCoupon ? <p className="cart-discount"><span>優惠碼 {appliedCoupon.code}</span><strong>−{formatTwd(appliedCoupon.discount)}</strong></p> : null}
+                <p className="cart-total"><span>合計</span><strong>{formatTwd(payableTotal)}</strong></p>
+                <Link
+                  href={isSignedIn ? '/checkout' : '/login?next=%2Fcheckout'}
+                  className="button button-wide"
+                >
+                  {isSignedIn ? '前往結帳' : '登入後結帳'}
+                </Link>
               </aside>
             </div>
           </div>
+          {suggestions.length > 0 ? <section className="cart-recommendations" aria-labelledby="cart-recommendations-title">
+            <header className="section-heading"><div><p className="eyebrow">you may also like</p><h2 id="cart-recommendations-title">您可能喜歡</h2></div><p>依照購物車中的日常選品，再挑幾件好搭、好活動的款式。</p></header>
+            <div className="product-grid">{suggestions.map((product) => <ProductCard key={product.id} product={product} />)}</div>
+          </section> : null}
         </>
       )}
     </main>

@@ -23,6 +23,7 @@ const variants: CheckoutVariant[] = [
     price: 720,
     stock: 5,
     isPublished: true,
+    imageUrl: '/images/products/mori-tree-tee.jpg',
   },
   {
     id: pantsId,
@@ -33,6 +34,7 @@ const variants: CheckoutVariant[] = [
     price: 880,
     stock: 0,
     isPublished: true,
+    imageUrl: '/images/products/mori-pants.jpg',
   },
 ]
 
@@ -43,7 +45,7 @@ const checkoutInput = {
   phone: '0912345678',
   chain: 'seven_eleven' as const,
   storeId: '123456',
-  storeName: '被竄改的門市名稱',
+  storeName: '台北門市',
 }
 
 class MemoryCheckoutRepository implements CheckoutRepository {
@@ -182,11 +184,21 @@ describe('checkout payment integration', () => {
         providerReference: 'browser-controlled',
       }),
     }))
+    const proxiedSameOrigin = await POST(new NextRequest('http://localhost/api/test-payment', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        host: '127.0.0.1:3000',
+        origin: 'http://127.0.0.1:3000',
+      },
+      body: '{',
+    }))
 
     expect(crossSite.status).toBe(403)
     expect(missingOrigin.status).toBe(403)
     expect(wrongType.status).toBe(415)
     expect(malformed.status).toBe(400)
+    expect(proxiedSameOrigin.status).toBe(400)
   })
 
   it('stores a high-entropy guest token hash and canonical server data only', async () => {
@@ -252,21 +264,23 @@ describe('checkout payment integration', () => {
       .rejects.toThrow('庫存不足')
   })
 
-  it('rejects unknown and cross-chain stores and ignores a tampered store name', async () => {
-    const unknownStore = { ...checkoutInput, storeId: 'unknown', storeName: '任意門市' }
-    const crossChain = {
+  it('stores the customer-entered pickup store name and number as provided', async () => {
+    const customStore = {
       ...checkoutInput,
       chain: 'family_mart' as const,
-      storeId: '123456',
-      storeName: '全家假門市',
+      storeId: 'F00789',
+      storeName: '全家大安店',
     }
+    const repository = new MemoryCheckoutRepository()
 
-    await expect(createCheckoutService(new MemoryCheckoutRepository())
-      .createPaymentAttempt(unknownStore, [{ variantId: teeId, quantity: 1 }]))
-      .rejects.toThrow('不支援的取貨門市')
-    await expect(createCheckoutService(new MemoryCheckoutRepository())
-      .createPaymentAttempt(crossChain, [{ variantId: teeId, quantity: 1 }]))
-      .rejects.toThrow('不支援的取貨門市')
+    await createCheckoutService(repository)
+      .createPaymentAttempt(customStore, [{ variantId: teeId, quantity: 1 }])
+
+    expect(repository.attempts[0]).toMatchObject({
+      storeChain: 'family_mart',
+      storeId: 'F00789',
+      storeName: '全家大安店',
+    })
   })
 
   it('rejects member and guest access that does not own the attempt', async () => {
@@ -332,6 +346,7 @@ describe('checkout payment integration', () => {
         quantity: 2,
         unitPrice: 720,
         productName: '有機棉小樹 T 恤',
+        imageUrl: '/images/products/mori-tree-tee.jpg',
         sku: 'TEE-100',
         color: '鼠尾草綠',
         size: '100',

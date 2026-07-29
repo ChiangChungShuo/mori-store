@@ -48,6 +48,8 @@ function useFreshFixtureStore() {
   store.sessions = source.sessions
   store.attempts = source.attempts
   store.orders = source.orders
+  store.events = source.events
+  store.settings = source.settings
   vi.stubEnv('NODE_ENV', 'test')
   vi.stubEnv('MORI_E2E_FIXTURES', '1')
   return store
@@ -57,6 +59,7 @@ class MemoryOrderRepository implements AdminOrderRepository {
   readonly events: string[] = []
   status: OrderStatus = 'paid'
   updatedAt: string | null = null
+  merchantReply = ''
 
   async getOrderStatus(id: string) {
     this.events.push(`load:${id}`)
@@ -74,11 +77,24 @@ class MemoryOrderRepository implements AdminOrderRepository {
     this.status = nextStatus
     this.updatedAt = updatedAt
   }
+
+  async saveMerchantReply(id: string, reply: string) {
+    this.events.push(`reply:${id}:${reply}`)
+    this.merchantReply = reply
+  }
 }
 
 class MemoryStoreSettingsRepository implements StoreSettingsRepository {
   readonly events: string[] = []
   saved: Parameters<StoreSettingsRepository['updateSettings']>[0] | null = null
+
+  async getSettings() {
+    return {
+      shippingFee: 60,
+      freeShippingThreshold: 1500,
+      contactEmail: 'hello@mori.test',
+    }
+  }
 
   async updateSettings(settings: Parameters<StoreSettingsRepository['updateSettings']>[0]) {
     this.events.push('update-settings')
@@ -87,6 +103,19 @@ class MemoryStoreSettingsRepository implements StoreSettingsRepository {
 }
 
 describe('admin order actions', () => {
+  it('lets the owner save a reply that customers can read with the order', async () => {
+    const repository = new MemoryOrderRepository()
+    const actions = createAdminOrderActions({
+      repository,
+      requireAdmin: async () => repository.events.push('admin'),
+    })
+
+    await expect(actions.replyToCustomer(orderId, '尺寸已確認，會依訂單內容出貨。'))
+      .resolves.toMatchObject({ ok: true })
+    expect(repository.merchantReply).toBe('尺寸已確認，會依訂單內容出貨。')
+    expect(repository.events).toEqual(['admin', `reply:${orderId}:尺寸已確認，會依訂單內容出貨。`])
+  })
+
   it('does not move collected orders back to preparing', async () => {
     const repository = new MemoryOrderRepository()
     repository.status = 'collected'
@@ -251,6 +280,34 @@ describe('fixture admin order resolvers', () => {
 })
 
 describe('admin store settings', () => {
+  it('accepts editable SEO metadata, five keyword groups and an optional GA4 ID', () => {
+    expect(settingsSchema.parse({
+      shippingFee: 60,
+      freeShippingThreshold: 1500,
+      contactEmail: 'hello@mori.tw',
+      siteTitle: 'mori 童裝商城｜孩子的日常選衣',
+      siteDescription: '為孩子挑選親膚、耐穿並且適合每天活動的日常童裝。',
+      siteKeywords: ['童裝', '兒童服飾', '有機棉童裝', '親子選物', '超商取貨'],
+      googleAnalyticsId: 'G-PSW1MY7HB4',
+    })).toEqual(expect.objectContaining({
+      siteTitle: 'mori 童裝商城｜孩子的日常選衣',
+      siteKeywords: ['童裝', '兒童服飾', '有機棉童裝', '親子選物', '超商取貨'],
+      googleAnalyticsId: 'G-PSW1MY7HB4',
+    }))
+  })
+
+  it('rejects more than five keyword groups and malformed GA4 IDs', () => {
+    const base = {
+      shippingFee: 60,
+      freeShippingThreshold: 1500,
+      contactEmail: 'hello@mori.tw',
+      siteTitle: 'mori 童裝商城',
+      siteDescription: '為孩子挑選親膚、耐穿並且適合每天活動的日常童裝。',
+    }
+    expect(settingsSchema.safeParse({ ...base, siteKeywords: ['1', '2', '3', '4', '5', '6'], googleAnalyticsId: null }).success).toBe(false)
+    expect(settingsSchema.safeParse({ ...base, siteKeywords: ['童裝'], googleAnalyticsId: 'UA-123' }).success).toBe(false)
+  })
+
   it('rejects negative shipping fees', () => {
     expect(settingsSchema.safeParse({
       shippingFee: -1,
@@ -314,6 +371,34 @@ describe('admin store settings', () => {
       freeShippingThreshold: null,
       contactEmail: 'orders@mori.test',
     })
+  })
+
+  it('reads and updates shared fixture settings without creating a Supabase client', async () => {
+    const store = useFreshFixtureStore()
+    const { getStoreSettings, updateStoreSettings } = await import('@/features/admin/settings-actions')
+    const { getStorefrontSettings } = await import('@/features/checkout/settings')
+
+    await expect(getStoreSettings()).resolves.toEqual({
+      shippingFee: 60,
+      freeShippingThreshold: 1500,
+      contactEmail: 'hello@mori.tw',
+    })
+    await updateStoreSettings({
+      shippingFee: 80,
+      freeShippingThreshold: 1800,
+      contactEmail: 'orders@mori.tw',
+    })
+
+    expect(store.settings).toEqual({
+      shippingFee: 80,
+      freeShippingThreshold: 1800,
+      contactEmail: 'orders@mori.tw',
+    })
+    await expect(getStorefrontSettings()).resolves.toEqual({
+      shippingFee: 80,
+      freeShippingThreshold: 1800,
+    })
+    expect(liveSupabase.createClient).not.toHaveBeenCalled()
   })
 })
 
@@ -421,7 +506,8 @@ describe('admin fulfillment pages', () => {
     expect(detailPage).toMatch(/formatTaipeiDateTime/)
     expect(detailPage).toMatch(/formatTaipeiDateTime\(order\.createdAt\)/)
     expect(detailPage).toMatch(/order\.items\.map/)
-    expect(detailPage).toMatch(/測試付款/)
+    expect(detailPage).toMatch(/付款資訊/)
+    expect(detailPage).toMatch(/銀行匯款/)
     expect(detailPage).toMatch(/取貨門市/)
     expect(detailPage).toMatch(/收件人/)
     expect(dashboardPage).toMatch(/todayOrders/)
@@ -439,7 +525,7 @@ describe('admin fulfillment pages', () => {
     expect(orderList).toMatch(/admin-table-scroll/)
     expect(orderList).toMatch(/className="status-badge" data-status=/)
     expect(orderList).toMatch(/data-label="訂單編號"/)
-    expect(orderList).toMatch(/尚未有訂單，請先從商城完成一筆測試付款。/)
+    expect(orderList).toMatch(/尚未有訂單，可先從商城送出一筆示範訂單。/)
     expect(detailPage).toMatch(/seven_eleven: '7-ELEVEN'/)
     expect(detailPage).toMatch(/family_mart: '全家'/)
   })

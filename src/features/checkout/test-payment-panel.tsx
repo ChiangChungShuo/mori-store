@@ -38,7 +38,11 @@ export function TestPayment({
         throw new Error('error' in result ? result.error : '付款結果處理失敗')
       }
 
-      if (result.outcome === 'success') dispatch({ type: 'clear' })
+      if (result.outcome === 'success') {
+        dispatch({ type: 'clear' })
+        window.sessionStorage.removeItem('mori-checkout-coupon')
+        window.sessionStorage.removeItem('mori-checkout-draft')
+      }
       window.location.assign(result.redirectUrl)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : '付款結果處理失敗')
@@ -53,18 +57,18 @@ export function TestPayment({
       {reviewMessage ? (
         <div role="alert">
           <p>{reviewMessage}</p>
-          <p>購物袋未清除；請先聯絡客服確認，再更新商品與庫存。</p>
-          <Link href="/cart">更新購物袋</Link>
+          <p>購物車未清除；請先聯絡客服確認，再更新商品與庫存。</p>
+          <Link className="button button-secondary" href="/cart">更新購物車</Link>
         </div>
       ) : null}
       <div className="payment-actions">
         <button className="button" type="button" disabled={pending || Boolean(reviewMessage)} onClick={() => void submit('success')}>
           模擬付款成功
         </button>
-        <button type="button" disabled={pending || Boolean(reviewMessage)} onClick={() => void submit('failure')}>
+        <button className="button button-secondary" type="button" disabled={pending || Boolean(reviewMessage)} onClick={() => void submit('failure')}>
           模擬付款失敗
         </button>
-        <button type="button" disabled={pending || Boolean(reviewMessage)} onClick={() => void submit('cancelled')}>
+        <button className="button button-secondary" type="button" disabled={pending || Boolean(reviewMessage)} onClick={() => void submit('cancelled')}>
           模擬取消付款
         </button>
       </div>

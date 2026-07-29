@@ -1,11 +1,16 @@
 import Link from 'next/link'
-import type { ProductFilters as ProductFilterValues } from '@/features/catalog/queries'
+import { type ProductFilters as ProductFilterValues } from '@/features/catalog/queries'
+import { defaultProductCategories } from '@/features/catalog/category-defaults'
 
 const ages: Array<NonNullable<ProductFilterValues['age']>> = ['0-2', '3-5', '6-9', '10-12']
 
-export function ProductFilters({ filters }: { filters: ProductFilterValues }) {
+export function ProductFilters({ filters, categories = [...defaultProductCategories] }: { filters: ProductFilterValues; categories?: string[] }) {
   return (
     <form action="/products" method="get" aria-label="篩選商品" className="product-filters">
+      <label className="product-search-field">
+        搜尋商品
+        <input name="q" defaultValue={filters.q ?? ''} placeholder="輸入商品名稱" type="search" />
+      </label>
       <label>
         年齡
         <select name="age" defaultValue={filters.age ?? ''}>
@@ -26,7 +31,10 @@ export function ProductFilters({ filters }: { filters: ProductFilterValues }) {
 
       <label>
         分類
-        <input name="category" defaultValue={filters.category ?? ''} />
+        <select name="category" defaultValue={filters.category ?? ''}>
+          <option value="">全部分類</option>
+          {categories.map((category) => <option value={category} key={category}>{category}</option>)}
+        </select>
       </label>
 
       <label className="checkbox-label">
@@ -36,7 +44,7 @@ export function ProductFilters({ filters }: { filters: ProductFilterValues }) {
 
       <div className="filter-actions">
         <button type="submit" className="button">套用篩選</button>
-        <Link href="/products">清除</Link>
+        <Link className="filter-clear-button" href="/products"><span aria-hidden="true">↺</span> 清除條件</Link>
       </div>
     </form>
   )

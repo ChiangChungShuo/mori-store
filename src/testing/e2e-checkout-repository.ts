@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { CheckoutRepository } from '@/features/checkout/service'
-import { getE2EVariants, E2E_STOREFRONT_SETTINGS } from '@/testing/e2e-storefront-fixtures'
+import { getE2EVariants, getMutableE2EProducts, E2E_STOREFRONT_SETTINGS } from '@/testing/e2e-storefront-fixtures'
 import { getE2EStore, type E2EStoreState } from '@/testing/e2e-store'
 
 type FixtureCheckoutDependencies = {
@@ -53,11 +53,19 @@ export function createFixtureCheckoutRepository(
         shippingFee: attempt.shippingFee,
         total: attempt.total,
         status: attempt.status,
+        email: attempt.email,
+        recipientName: attempt.recipientName,
+        recipientPhone: attempt.recipientPhone,
+        storeChain: attempt.storeChain,
+        storeId: attempt.storeId,
+        storeName: attempt.storeName,
+        customerNote: attempt.customerNote,
+        paymentMethod: attempt.paymentMethod,
       } : null
     },
 
     async getVariants(variantIds) {
-      return getE2EVariants(variantIds)
+      return getE2EVariants(variantIds, store)
     },
 
     async getStoreSettings() {
@@ -86,6 +94,28 @@ export function createFixtureCheckoutRepository(
       }
       if (attempt.status !== 'pending') throw new Error('payment attempt is not pending')
 
+      const products = getMutableE2EProducts(store)
+      const variants = new Map(products.flatMap((product) => product.variants.map((variant) => [variant.id, { product, variant }] as const)))
+      const quantities = new Map<string, number>()
+      for (const item of attempt.items) {
+        quantities.set(item.variant_id, (quantities.get(item.variant_id) ?? 0) + item.quantity)
+      }
+      for (const [variantId, quantity] of quantities) {
+        const current = variants.get(variantId)
+        if (!current || !store.publishedProductIds.has(current.product.id)) {
+          attempt.status = 'requires_review'
+          return { status: 'requires_review', reviewCode: 'catalog_changed' }
+        }
+        if (current.variant.stock < quantity) {
+          attempt.status = 'requires_review'
+          return { status: 'requires_review', reviewCode: 'stock_unavailable' }
+        }
+      }
+
+      for (const [variantId, quantity] of quantities) {
+        variants.get(variantId)!.variant.stock -= quantity
+      }
+
       const orderNumber = `MORI-DEMO-${attempt.id.slice(0, 8).toUpperCase()}`
       const createdAt = new Date().toISOString()
       attempt.status = 'paid'
@@ -100,10 +130,15 @@ export function createFixtureCheckoutRepository(
         storeChain: attempt.storeChain,
         storeId: attempt.storeId,
         storeName: attempt.storeName,
+        customerNote: attempt.customerNote,
+        merchantReply: '',
+        paymentMethod: attempt.paymentMethod,
         subtotal: attempt.subtotal,
         shippingFee: attempt.shippingFee,
         total: attempt.total,
-        status: 'paid',
+        status: attempt.paymentMethod === 'online_test'
+          ? 'paid'
+          : attempt.paymentMethod === 'convenience_cod' ? 'preparing' : 'pending_payment',
         createdAt,
         items: attempt.items.map((item) => ({
           id: randomUUID(),
@@ -115,7 +150,9 @@ export function createFixtureCheckoutRepository(
           unitPrice: item.unit_price,
           quantity: item.quantity,
         })),
-        payment: { status: 'paid', providerReference, paidAt: createdAt },
+        payment: attempt.paymentMethod === 'online_test'
+          ? { status: 'paid', providerReference, paidAt: createdAt }
+          : { status: 'submitted', providerReference, paidAt: null },
       })
       return { status: 'paid', orderNumber }
     },
@@ -129,6 +166,8 @@ export function createFixtureCheckoutRepository(
         storeId: order.storeId,
         storeName: order.storeName,
         status: order.status,
+        paymentMethod: order.paymentMethod,
+        total: order.total,
       } : null
     },
   }

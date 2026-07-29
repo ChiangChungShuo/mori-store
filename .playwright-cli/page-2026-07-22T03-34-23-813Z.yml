@@ -1,0 +1,35 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - paragraph [ref=e4]: member account
+      - heading "歡迎回到 mori" [level=1] [ref=e5]
+      - paragraph [ref=e6]: 登入查看訂單與取貨進度。
+      - generic [ref=e7]:
+        - generic [ref=e8]: Email
+        - textbox "Email" [ref=e9]
+      - generic [ref=e10]:
+        - generic [ref=e11]: 密碼
+        - generic [ref=e12]:
+          - textbox "密碼" [ref=e13]
+          - button "顯示密碼" [ref=e14] [cursor=pointer]: 顯示
+      - button "登入" [ref=e15] [cursor=pointer]
+      - paragraph [ref=e16]:
+        - text: 第一次來 mori？
+        - link "建立會員帳號" [ref=e17] [cursor=pointer]:
+          - /url: /signup?next=%2Fadmin
+      - complementary [ref=e18]:
+        - strong [ref=e19]: 本機老闆示範帳號
+        - generic [ref=e20]: admin@mori.tw
+        - generic [ref=e21]: mori123456
+        - generic [ref=e22]: 示範會員與訂單只保留到開發伺服器重新啟動前。
+    - region "mori 會員服務" [ref=e23]:
+      - paragraph [ref=e24]: mori members
+      - heading "陪孩子，把每天穿得舒服一點。" [level=2] [ref=e25]
+      - paragraph [ref=e26]: 登入後可查看訂單、取貨門市與付款狀態，讓每一次選衣都簡單安心。
+      - list "mori 適穿年齡" [ref=e27]:
+        - listitem [ref=e28]: 0–2
+        - listitem [ref=e29]: 3–5
+        - listitem [ref=e30]: 6–9
+        - listitem [ref=e31]: 10–12
+  - button "Open Next.js Dev Tools" [ref=e37] [cursor=pointer]
+  - alert [ref=e41]

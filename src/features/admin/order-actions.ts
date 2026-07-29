@@ -21,6 +21,7 @@ export interface AdminOrderRepository {
     nextStatus: OrderStatus,
     updatedAt: string,
   ): Promise<void>
+  saveMerchantReply(orderId: string, reply: string): Promise<void>
 }
 
 export type AdminOrderFilters = {
@@ -43,6 +44,11 @@ export type AdminOrderDetail = AdminOrderSummary & {
   storeChain: string
   storeId: string
   storeName: string
+  customerNote: string
+  merchantReply: string
+  paymentMethod: string
+  bankTransferLastFive: string | null
+  bankTransferSubmittedAt: string | null
   subtotal: number
   shippingFee: number
   items: Array<{
@@ -155,6 +161,16 @@ function errorMessage(error: unknown) {
 
 export function createAdminOrderActions(dependencies: AdminOrderDependencies) {
   return {
+    async replyToCustomer(orderId: string, reply: string) {
+      await dependencies.requireAdmin()
+      const id = orderIdSchema.safeParse(orderId)
+      const message = z.string().trim().min(1, '請輸入回覆內容').max(1000, '回覆內容最多 1000 個字').safeParse(reply)
+      if (!id.success) return { ok: false, message: '訂單不存在' }
+      if (!message.success) return { ok: false, message: message.error.issues[0]?.message ?? '請檢查回覆內容' }
+      await dependencies.repository.saveMerchantReply(id.data, message.data)
+      await dependencies.onChanged?.(id.data)
+      return { ok: true, message: '回覆已儲存，顧客可在訂單內容中查看' }
+    },
     async updateOrderStatus(orderId: string, nextStatus: OrderStatus) {
       await dependencies.requireAdmin()
       const id = orderIdSchema.safeParse(orderId)
@@ -213,6 +229,14 @@ function createSupabaseOrderRepository(): AdminOrderRepository {
       })
       if (error) throw error
     },
+
+    async saveMerchantReply(orderId, reply) {
+      const { error } = await (await client())
+        .from('orders')
+        .update({ merchant_reply: reply, updated_at: new Date().toISOString() })
+        .eq('id', orderId)
+      if (error) throw error
+    },
   }
 }
 
@@ -225,6 +249,11 @@ type AdminOrderRow = {
   store_chain: string
   store_id: string
   store_name: string
+  customer_note: string
+  merchant_reply: string
+  payment_method: string
+  bank_transfer_last_five: string | null
+  bank_transfer_submitted_at: string | null
   subtotal: number
   shipping_fee: number
   total: number
@@ -326,7 +355,7 @@ function createSupabaseOrderQueryRepository(): AdminOrderQueryRepository {
     async listOrders(filters) {
       let query = (await client())
         .from('orders')
-        .select('id, order_number, recipient_name, recipient_phone, email, store_chain, store_id, store_name, subtotal, shipping_fee, total, status, created_at')
+        .select('id, order_number, recipient_name, recipient_phone, email, store_chain, store_id, store_name, customer_note, merchant_reply, payment_method, bank_transfer_last_five, bank_transfer_submitted_at, subtotal, shipping_fee, total, status, created_at')
         .order('created_at', { ascending: false })
       if (filters.query) {
         const term = filters.query.replace(/[,()]/g, ' ')
@@ -343,7 +372,7 @@ function createSupabaseOrderQueryRepository(): AdminOrderQueryRepository {
         .from('orders')
         .select(`
           id, order_number, recipient_name, recipient_phone, email,
-          store_chain, store_id, store_name, subtotal, shipping_fee, total, status, created_at,
+          store_chain, store_id, store_name, customer_note, merchant_reply, payment_method, bank_transfer_last_five, bank_transfer_submitted_at, subtotal, shipping_fee, total, status, created_at,
           order_items(id, product_name, sku, color, size, unit_price, quantity),
           payment_attempts(status, provider_reference, paid_at)
         `)
@@ -361,6 +390,11 @@ function createSupabaseOrderQueryRepository(): AdminOrderQueryRepository {
         storeChain: order.store_chain,
         storeId: order.store_id,
         storeName: order.store_name,
+        customerNote: order.customer_note,
+        merchantReply: order.merchant_reply,
+        paymentMethod: order.payment_method,
+        bankTransferLastFive: order.bank_transfer_last_five,
+        bankTransferSubmittedAt: order.bank_transfer_submitted_at,
         subtotal: order.subtotal,
         shippingFee: order.shipping_fee,
         items: (order.order_items ?? []).map((item) => ({
@@ -455,6 +489,15 @@ async function resolvedActions() {
 export async function updateOrderStatus(orderId: string, nextStatus: OrderStatus) {
   'use server'
   return (await resolvedActions()).updateOrderStatus(orderId, nextStatus)
+}
+
+export async function replyToCustomer(
+  orderId: string,
+  _previousState: { ok: boolean; message: string },
+  formData: FormData,
+) {
+  'use server'
+  return (await resolvedActions()).replyToCustomer(orderId, String(formData.get('reply') ?? ''))
 }
 
 async function resolvedQueries() {

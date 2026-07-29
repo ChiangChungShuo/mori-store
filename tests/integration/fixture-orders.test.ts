@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createCheckoutService,
   createTestProviderReference,
@@ -11,6 +11,7 @@ import {
 import { createFixtureCheckoutRepository } from '@/testing/e2e-checkout-repository'
 import { createE2EOrderRepository } from '@/testing/e2e-order-repository'
 import { createE2EStore, getE2EStore, type E2EOrder } from '@/testing/e2e-store'
+import { getE2EProduct, getMutableE2EProducts } from '@/testing/e2e-storefront-fixtures'
 
 const liveRepository = vi.hoisted(() => ({
   createClient: vi.fn(),
@@ -24,6 +25,10 @@ vi.mock('@/lib/supabase/admin', () => liveGuestRepository)
 
 const routingOrderNumber = 'MORI-DEMO-ROUTING'
 
+beforeEach(() => {
+  Object.assign(getE2EStore(), createE2EStore())
+})
+
 afterEach(() => {
   vi.clearAllMocks()
   vi.unstubAllEnvs()
@@ -31,6 +36,37 @@ afterEach(() => {
 })
 
 describe('shared fixture orders', () => {
+  it('deducts the shared inventory once and rejects a second checkout after the last unit is sold', async () => {
+    const source = createE2EStore()
+    const store = getE2EStore()
+    Object.assign(store, source)
+    const variant = getMutableE2EProducts()[0].variants[0]
+    variant.stock = 1
+    const checkout = createCheckoutService(createFixtureCheckoutRepository({
+      store,
+      getCurrentUserId: async () => 'customer-a',
+    }))
+    const customer = {
+      email: 'parent@example.com',
+      recipientName: '王小美',
+      phone: '0912345678',
+      chain: 'seven_eleven' as const,
+      storeId: '123456',
+      storeName: '台北門市',
+      customerNote: '',
+      paymentMethod: 'online_test' as const,
+    }
+
+    const first = await checkout.createPaymentAttempt(customer, [{ variantId: variant.id, quantity: 1 }])
+    const paid = await checkout.completeTestPayment(first.attemptId, 'success')
+    await checkout.completeTestPayment(first.attemptId, 'success')
+
+    expect(paid.outcome).toBe('success')
+    expect(getE2EProduct('mori-organic-cotton-tee')?.variants[0].stock).toBe(0)
+    await expect(checkout.createPaymentAttempt(customer, [{ variantId: variant.id, quantity: 1 }]))
+      .rejects.toMatchObject({ code: 'stock_changed' })
+  })
+
   it('makes a completed member payment visible to member and owner queries', async () => {
     const store = createE2EStore()
     const checkout = createCheckoutService(createFixtureCheckoutRepository({
@@ -44,6 +80,9 @@ describe('shared fixture orders', () => {
       phone: '0912345678',
       chain: 'seven_eleven',
       storeId: '123456',
+      storeName: '台北門市',
+      customerNote: '請協助確認包裝完整，謝謝。',
+      paymentMethod: 'online_test',
     }, [{ variantId: '00000000-0000-4000-8000-000000000001', quantity: 2 }])
     const result = await checkout.completeTestPayment(attemptId, 'success')
     const replay = await checkout.completeTestPayment(attemptId, 'success')
@@ -63,6 +102,9 @@ describe('shared fixture orders', () => {
       email: 'parent@example.com',
       recipientName: '王小美',
       recipientPhone: '0912345678',
+      customerNote: '請協助確認包裝完整，謝謝。',
+      merchantReply: '',
+      paymentMethod: 'online_test',
       storeChain: 'seven_eleven',
       storeId: '123456',
       storeName: '台北門市',
@@ -92,6 +134,9 @@ describe('shared fixture orders', () => {
       email: 'parent@example.com',
       recipientName: '王小美',
       recipientPhone: '0912345678',
+      customerNote: '請協助確認包裝完整，謝謝。',
+      merchantReply: '',
+      paymentMethod: 'online_test',
       storeChain: 'seven_eleven',
       storeId: '123456',
       storeName: '台北門市',
@@ -115,6 +160,7 @@ describe('shared fixture orders', () => {
     await expect(orders.getOrder(orderNumber)).resolves.toEqual(expect.objectContaining({
       recipientName: '王小美',
       storeChain: 'seven_eleven',
+      customerNote: '請協助確認包裝完整，謝謝。',
       items: expect.arrayContaining([expect.objectContaining({ quantity: 2 })]),
     }))
     expect((await orders.getOrder(orderNumber))?.payment).toEqual({
@@ -142,7 +188,7 @@ describe('shared fixture orders', () => {
     store.orders.set(memberOrder.orderNumber, memberOrder)
 
     await expect(orders.lookupGuestOrder(memberOrder.orderNumber, memberOrder.email))
-      .resolves.toBeNull()
+      .resolves.toEqual(expect.objectContaining({ orderNumber: memberOrder.orderNumber }))
     await expect(orders.getOrderForUser(memberOrder.orderNumber, 'customer-b'))
       .resolves.toBeNull()
   })

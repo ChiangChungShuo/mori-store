@@ -10,7 +10,7 @@ describe('checkout action recovery', () => {
     (code) => {
       expect(toCheckoutActionState(new CheckoutAttemptError(code))).toEqual({
         status: 'error',
-        message: '商品資料或庫存已變更，請更新購物袋後再試一次。',
+        message: '商品資料或庫存已變更，請更新購物車後再試一次。',
         refreshCart: true,
       })
     },

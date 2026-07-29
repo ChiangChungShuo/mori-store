@@ -33,6 +33,7 @@ const navigation = vi.hoisted(() => {
   }
 })
 const createClient = vi.hoisted(() => vi.fn())
+const createAdminClient = vi.hoisted(() => vi.fn())
 
 vi.mock('next/headers', () => ({
   cookies: async () => ({
@@ -52,6 +53,7 @@ vi.mock('next/headers', () => ({
 
 vi.mock('next/navigation', () => ({ redirect: navigation.redirect }))
 vi.mock('@/lib/supabase/server', () => ({ createClient }))
+vi.mock('@/lib/supabase/admin', () => ({ createAdminClient }))
 
 beforeEach(() => {
   const store = getE2EStore()
@@ -60,6 +62,7 @@ beforeEach(() => {
   serverCookieValues.clear()
   navigation.redirect.mockClear()
   createClient.mockReset()
+  createAdminClient.mockReset()
 })
 
 afterEach(() => {
@@ -98,6 +101,13 @@ function credentialsForm(email: string, password: string, next?: string) {
   return formData
 }
 
+function identifierForm(identifier: string, password: string) {
+  const formData = new FormData()
+  formData.set('identifier', identifier)
+  formData.set('password', password)
+  return formData
+}
+
 async function invokeAuthAction(
   action: (formData: FormData) => Promise<AuthActionState>,
   formData: FormData,
@@ -111,7 +121,7 @@ describe('fixture authentication', () => {
     const email = `otp-${crypto.randomUUID()}@example.com`
     const acceptedAt = new Date().toISOString()
 
-    await expect(requestSignupOtpE2E(email, '0912345678', acceptedAt)).resolves.toBe('sent')
+    await expect(requestSignupOtpE2E(email, '0912345678', '王小美', acceptedAt, null)).resolves.toBe('sent')
     await expect(completeSignupE2E(email, 'parent123')).resolves.toBeNull()
     await expect(verifySignupOtpE2E(email, '000000')).resolves.toBe('invalid')
     await expect(verifySignupOtpE2E(email, '123456')).resolves.toBe('verified')
@@ -120,6 +130,7 @@ describe('fixture authentication', () => {
     expect(user?.email).toBe(email)
     expect(getE2EStore().users.get(user!.id)).toMatchObject({
       phone: '0912345678',
+      displayName: '王小美',
       termsAcceptedAt: acceptedAt,
     })
     await expect(getE2ECurrentUser()).resolves.toMatchObject({ email })
@@ -129,13 +140,13 @@ describe('fixture authentication', () => {
     enableFixtureMode()
     const email = `expired-${crypto.randomUUID()}@example.com`
 
-    await expect(requestSignupOtpE2E(email, '0912345678', new Date().toISOString()))
+    await expect(requestSignupOtpE2E(email, '0922345678', '王小美', new Date().toISOString(), null))
       .resolves.toBe('sent')
     getE2EStore().pendingSignups.get(email)!.requestedAt = new Date(Date.now() - 11 * 60_000)
       .toISOString()
 
     await expect(verifySignupOtpE2E(email, '123456')).resolves.toBe('expired')
-    await expect(requestSignupOtpE2E('admin@mori.tw', '0912345678', new Date().toISOString()))
+    await expect(requestSignupOtpE2E('admin@mori.tw', '0912345678', '王小美', new Date().toISOString(), null))
       .resolves.toBe('duplicate')
   })
 
@@ -155,6 +166,32 @@ describe('fixture authentication', () => {
       name: 'mori-demo-session',
       options: expect.objectContaining({ httpOnly: true, sameSite: 'lax', path: '/' }),
     }))
+  })
+
+  it('authenticates a contact member with either Email or mobile number', async () => {
+    const store = createE2EStore()
+    const cookies = createCookieJar()
+    const auth = createE2EAuthRepository(store, cookies.adapter)
+    const email = 'phone-login@example.com'
+
+    await auth.requestSignupOtp(email, '0912345678', '王小美', new Date().toISOString(), null)
+    await auth.verifySignupOtp(email, '123456')
+    await auth.completeSignup(email, 'parent123')
+    await auth.signOut()
+
+    await expect(auth.signIn(email, 'parent123')).resolves.toMatchObject({ email })
+    await auth.signOut()
+    await expect(auth.signIn('0912-345-678', 'parent123')).resolves.toMatchObject({ email })
+  })
+
+  it('keeps a remembered fixture login for thirty days', async () => {
+    const store = createE2EStore()
+    const cookies = createCookieJar()
+    const auth = createE2EAuthRepository(store, cookies.adapter)
+
+    await auth.signIn('admin@mori.tw', 'mori123456', true)
+
+    expect(cookies.writes.at(-1)?.options.maxAge).toBe(60 * 60 * 24 * 30)
   })
 
   it('recognizes the seeded owner and clears its opaque session on sign out', async () => {
@@ -246,19 +283,31 @@ describe('fixture authentication', () => {
     expect(createClient).not.toHaveBeenCalled()
   })
 
-  it('returns fixture signup success and duplicate copy without verification wording', async () => {
+  it('redirects fixture signup success to login and keeps duplicate copy', async () => {
     enableFixtureMode()
     const email = `member-${crypto.randomUUID()}@example.com`
     const formData = credentialsForm(email, 'parent123')
 
-    await expect(invokeAuthAction(signUpAction, formData)).resolves.toEqual({
-      ok: true,
-      message: '註冊成功，現在可以使用相同帳密登入。',
-    })
+    await expect(invokeAuthAction(signUpAction, formData)).rejects.toBe(navigation.sentinel)
+    expect(navigation.redirect).toHaveBeenCalledWith('/login?registered=1')
     await expect(invokeAuthAction(signUpAction, formData)).resolves.toEqual({
       ok: false,
       message: '這個 Email 已經註冊，請直接登入。',
     })
+  })
+
+  it('preserves the safe next path when redirecting a new fixture member', async () => {
+    enableFixtureMode()
+    const formData = credentialsForm(
+      `member-${crypto.randomUUID()}@example.com`,
+      'parent123',
+      '/account/orders',
+    )
+
+    await expect(invokeAuthAction(signUpAction, formData)).rejects.toBe(navigation.sentinel)
+    expect(navigation.redirect).toHaveBeenCalledWith(
+      '/login?registered=1&next=%2Faccount%2Forders',
+    )
   })
 
   it('clears the fixture session before sign-out redirects home', async () => {
@@ -298,6 +347,7 @@ describe('fixture authentication', () => {
       phone: '0912345678',
       chain: 'seven_eleven' as const,
       storeId: '123456',
+      storeName: '台北門市',
     }
     const cart = [{ variantId: '00000000-0000-4000-8000-000000000001', quantity: 1 }]
 
@@ -320,13 +370,47 @@ describe('fixture authentication', () => {
     await expect(invokeAuthAction(
       signInAction,
       credentialsForm('admin@mori.tw', 'mori123456'),
-    )).resolves.toEqual({ ok: false, message: 'Email 或密碼不正確，請再試一次。' })
+    )).resolves.toEqual({ ok: false, message: '帳號或密碼不正確，請再試一次。' })
     expect(signInWithPassword).toHaveBeenCalledWith({
       email: 'admin@mori.tw',
       password: 'mori123456',
     })
     expect(getE2EStore().sessions.size).toBe(0)
     expect(serverCookieValues.size).toBe(0)
+  })
+
+  it('resolves a production mobile number to the member Email before password sign-in', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    const signInWithPassword = vi.fn().mockResolvedValue({ error: null })
+    createClient.mockResolvedValue({ auth: { signInWithPassword } })
+    const profileQuery = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'member-id' }, error: null }),
+    }
+    profileQuery.select.mockReturnValue(profileQuery)
+    profileQuery.eq.mockReturnValue(profileQuery)
+    const getUserById = vi.fn().mockResolvedValue({
+      data: { user: { email: 'member@example.com' } },
+      error: null,
+    })
+    createAdminClient.mockReturnValue({
+      from: vi.fn().mockReturnValue(profileQuery),
+      auth: { admin: { getUserById } },
+    })
+
+    await expect(invokeAuthAction(
+      signInAction,
+      identifierForm('0912-345-678', 'parent123'),
+    )).rejects.toBe(navigation.sentinel)
+
+    expect(profileQuery.eq).toHaveBeenCalledWith('phone', '0912345678')
+    expect(getUserById).toHaveBeenCalledWith('member-id')
+    expect(signInWithPassword).toHaveBeenCalledWith({
+      email: 'member@example.com',
+      password: 'parent123',
+    })
+    expect(navigation.redirect).toHaveBeenLastCalledWith('/account')
   })
 
   it('keeps production admin authorization authoritative to the profile role', async () => {

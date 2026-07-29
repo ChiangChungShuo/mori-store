@@ -1,0 +1,281 @@
+import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
+import { requireAdmin } from '@/lib/auth/require-admin'
+import { isE2EMode } from '@/testing/e2e-mode'
+import type { E2EOrder } from '@/testing/e2e-store'
+
+export type MemberTier = 'seed' | 'forest' | 'canopy'
+
+export const memberTierLabels: Record<MemberTier, string> = {
+  seed: '種子會員',
+  forest: '森林會員',
+  canopy: '樹冠 VIP',
+}
+
+export type MemberRecord = {
+  id: string
+  email: string
+  phone: string | null
+  termsAcceptedAt: string | null
+  name: string
+  accountType: '會員' | '訪客'
+  tier: MemberTier
+  points: number
+  discountPercent: number
+  orderCount: number
+  totalSpent: number
+  orders: Array<Pick<E2EOrder, 'orderNumber' | 'createdAt' | 'status' | 'total'>>
+}
+
+function validOrders(orders: E2EOrder[]) {
+  return orders.filter((order) => !['pending_payment', 'cancelled'].includes(order.status))
+}
+
+function suggestedTier(totalSpent: number, orderCount: number): MemberTier {
+  if (totalSpent >= 10000 || orderCount >= 10) return 'canopy'
+  if (totalSpent >= 3000 || orderCount >= 3) return 'forest'
+  return 'seed'
+}
+
+export async function listMembers(): Promise<MemberRecord[]> {
+  await requireAdmin()
+
+  if (isE2EMode()) {
+    const { getE2EStore } = await import('@/testing/e2e-store')
+    const store = getE2EStore()
+    const emails = new Set([
+      ...[...store.users.values()].filter((user) => user.role === 'customer').map((user) => user.email),
+      ...[...store.orders.values()].map((order) => order.email),
+    ])
+
+    return [...emails].map((email) => {
+      const user = [...store.users.values()].find((candidate) => candidate.email === email)
+      const orders = [...store.orders.values()].filter((order) => order.email === email)
+      const completedOrders = validOrders(orders)
+      const totalSpent = completedOrders.reduce((total, order) => total + order.total, 0)
+      const profile = store.memberProfiles.get(email)
+      return {
+        id: user?.id ?? `guest:${email}`,
+        email,
+        phone: user?.phone ?? null,
+        termsAcceptedAt: user?.termsAcceptedAt ?? null,
+        name: orders.at(0)?.recipientName ?? '尚未留下姓名',
+        accountType: user ? '會員' as const : '訪客' as const,
+        tier: profile?.tier ?? suggestedTier(totalSpent, completedOrders.length),
+        points: profile?.points ?? Math.floor(totalSpent / 10),
+        discountPercent: profile?.discountPercent ?? 0,
+        orderCount: orders.length,
+        totalSpent,
+        orders: orders.map(({ orderNumber, createdAt, status, total }) => ({ orderNumber, createdAt, status, total })),
+      }
+    }).sort((a, b) => b.totalSpent - a.totalSpent)
+  }
+
+  const [{ createClient }, { createAdminClient }] = await Promise.all([
+    import('@/lib/supabase/server'),
+    import('@/lib/supabase/admin'),
+  ])
+  const supabase = await createClient()
+  const [ordersResult, profilesResult, usersResult] = await Promise.all([
+    supabase.from('orders')
+      .select('email, recipient_name, order_number, created_at, status, total')
+      .order('created_at', { ascending: false }),
+    supabase.from('profiles').select('id, phone, terms_accepted_at'),
+    createAdminClient().auth.admin.listUsers({ page: 1, perPage: 1000 }),
+  ])
+  if (ordersResult.error) throw ordersResult.error
+  if (profilesResult.error) throw profilesResult.error
+  if (usersResult.error) throw usersResult.error
+
+  const orders = ordersResult.data ?? []
+  const profiles = new Map((profilesResult.data ?? []).map((profile) => [profile.id, profile]))
+  const users = new Map(usersResult.data.users
+    .filter((user) => user.email)
+    .map((user) => [user.email!.toLowerCase(), user]))
+  const grouped = new Map<string, typeof orders>()
+  for (const order of orders) grouped.set(order.email, [...(grouped.get(order.email) ?? []), order])
+  const emails = new Set([...users.keys(), ...grouped.keys()])
+
+  return [...emails].map((email) => {
+    const memberOrders = grouped.get(email) ?? []
+    const user = users.get(email)
+    const profile = user ? profiles.get(user.id) : undefined
+    const completedOrders = memberOrders.filter((order) => !['pending_payment', 'cancelled'].includes(order.status))
+    const totalSpent = completedOrders.reduce((total, order) => total + order.total, 0)
+    return {
+      id: user?.id ?? `guest:${email}`,
+      email,
+      phone: profile?.phone ?? null,
+      termsAcceptedAt: profile?.terms_accepted_at ?? null,
+      name: memberOrders[0]?.recipient_name ?? '尚未留下姓名',
+      accountType: user ? '會員' as const : '訪客' as const,
+      tier: suggestedTier(totalSpent, completedOrders.length),
+      points: Math.floor(totalSpent / 10),
+      discountPercent: 0,
+      orderCount: memberOrders.length,
+      totalSpent,
+      orders: memberOrders.map((order) => ({
+        orderNumber: order.order_number,
+        createdAt: order.created_at,
+        status: order.status,
+        total: order.total,
+      })),
+    }
+  }).sort((a, b) => b.totalSpent - a.totalSpent)
+}
+
+const memberUpdateSchema = z.object({
+  email: z.string().trim().toLowerCase().email(),
+  tier: z.enum(['seed', 'forest', 'canopy']),
+  points: z.coerce.number().int().nonnegative(),
+  discountPercent: z.coerce.number().int().min(0).max(100),
+})
+
+export async function updateMemberFromForm(formData: FormData) {
+  'use server'
+  await requireAdmin()
+  const input = memberUpdateSchema.parse({
+    email: formData.get('email'),
+    tier: formData.get('tier'),
+    points: formData.get('points'),
+    discountPercent: formData.get('discountPercent'),
+  })
+  if (!isE2EMode()) throw new Error('正式會員分級需先套用會員資料庫 migration')
+  const { getE2EStore } = await import('@/testing/e2e-store')
+  getE2EStore().memberProfiles.set(input.email, {
+    tier: input.tier,
+    points: input.points,
+    discountPercent: input.discountPercent,
+  })
+  revalidatePath('/admin/members')
+}
+
+export type Promotion = ReturnType<typeof promotionSchema.parse> & { id: string }
+
+const promotionSchema = z.object({
+  name: z.string().trim().min(1),
+  type: z.enum(['coupon', 'threshold_gift', 'quantity_discount']),
+  code: z.string().trim().toUpperCase(),
+  conditionValue: z.coerce.number().int().nonnegative(),
+  rewardValue: z.coerce.number().int().nonnegative(),
+  giftName: z.string().trim(),
+  active: z.boolean(),
+})
+
+export async function getMarketingDashboard() {
+  await requireAdmin()
+  if (!isE2EMode()) return { promotions: [] as Promotion[], reminder: null, abandonedCarts: 0 }
+  const { getE2EStore } = await import('@/testing/e2e-store')
+  const store = getE2EStore()
+  const cartSessions = new Set(store.events.filter((event) => event.type === 'add_to_cart').map((event) => event.sessionId))
+  const buyerSessions = new Set(store.events.filter((event) => event.type === 'purchase').map((event) => event.sessionId))
+  return {
+    promotions: store.promotions,
+    reminder: store.abandonedCartReminder,
+    abandonedCarts: [...cartSessions].filter((session) => !buyerSessions.has(session)).length,
+  }
+}
+
+export async function createPromotionFromForm(formData: FormData) {
+  'use server'
+  await requireAdmin()
+  const promotion = promotionSchema.parse({
+    name: formData.get('name'),
+    type: formData.get('type'),
+    code: formData.get('code') ?? '',
+    conditionValue: formData.get('conditionValue'),
+    rewardValue: formData.get('rewardValue'),
+    giftName: formData.get('giftName') ?? '',
+    active: formData.get('active') === 'on',
+  })
+  if (!isE2EMode()) throw new Error('正式行銷活動需先套用行銷資料庫 migration')
+  const { getE2EStore } = await import('@/testing/e2e-store')
+  getE2EStore().promotions.unshift({ id: crypto.randomUUID(), ...promotion })
+  revalidatePath('/admin/marketing')
+}
+
+export async function togglePromotionFromForm(formData: FormData) {
+  'use server'
+  await requireAdmin()
+  if (!isE2EMode()) return
+  const { getE2EStore } = await import('@/testing/e2e-store')
+  const promotion = getE2EStore().promotions.find((candidate) => candidate.id === formData.get('id'))
+  if (promotion) promotion.active = !promotion.active
+  revalidatePath('/admin/marketing')
+}
+
+export async function updateReminderFromForm(formData: FormData) {
+  'use server'
+  await requireAdmin()
+  const reminder = z.object({
+    enabled: z.boolean(),
+    delayHours: z.coerce.number().int().min(1).max(168),
+    subject: z.string().trim().min(1),
+  }).parse({
+    enabled: formData.get('enabled') === 'on',
+    delayHours: formData.get('delayHours'),
+    subject: formData.get('subject'),
+  })
+  if (!isE2EMode()) throw new Error('正式提醒信需先串接郵件服務')
+  const { getE2EStore } = await import('@/testing/e2e-store')
+  getE2EStore().abandonedCartReminder = reminder
+  revalidatePath('/admin/marketing')
+}
+
+type ReportOrder = Pick<E2EOrder, 'status' | 'total' | 'createdAt' | 'items'>
+
+export function calculateSalesReport(orders: ReportOrder[], period: 'day' | 'month') {
+  const paidOrders = orders.filter((order) => !['pending_payment', 'cancelled'].includes(order.status))
+  const groups = new Map<string, { revenue: number; orders: number }>()
+  const products = new Map<string, { quantity: number; revenue: number }>()
+
+  for (const order of paidOrders) {
+    const date = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit',
+      ...(period === 'day' ? { day: '2-digit' } : {}),
+    }).format(new Date(order.createdAt))
+    const current = groups.get(date) ?? { revenue: 0, orders: 0 }
+    groups.set(date, { revenue: current.revenue + order.total, orders: current.orders + 1 })
+    for (const item of order.items) {
+      const product = products.get(item.productName) ?? { quantity: 0, revenue: 0 }
+      products.set(item.productName, {
+        quantity: product.quantity + item.quantity,
+        revenue: product.revenue + item.unitPrice * item.quantity,
+      })
+    }
+  }
+
+  return {
+    periods: [...groups].map(([label, value]) => ({
+      label,
+      ...value,
+      averageOrderValue: value.orders ? Math.round(value.revenue / value.orders) : 0,
+    })).sort((a, b) => b.label.localeCompare(a.label)),
+    products: [...products].map(([name, value]) => ({ name, ...value }))
+      .sort((a, b) => b.quantity - a.quantity),
+    revenue: paidOrders.reduce((total, order) => total + order.total, 0),
+    orderCount: paidOrders.length,
+  }
+}
+
+export async function getSalesReport(period: 'day' | 'month') {
+  await requireAdmin()
+  if (isE2EMode()) {
+    const { getE2EStore } = await import('@/testing/e2e-store')
+    return calculateSalesReport([...getE2EStore().orders.values()], period)
+  }
+  const { createClient } = await import('@/lib/supabase/server')
+  const { data, error } = await (await createClient())
+    .from('orders')
+    .select('status, total, created_at, order_items(product_name, quantity, unit_price)')
+  if (error) throw error
+  return calculateSalesReport((data ?? []).map((order) => ({
+    status: order.status,
+    total: order.total,
+    createdAt: order.created_at,
+    items: order.order_items.map((item) => ({
+      id: '', variantId: '', sku: '', color: '', size: '',
+      productName: item.product_name, quantity: item.quantity, unitPrice: item.unit_price,
+    })),
+  })), period)
+}

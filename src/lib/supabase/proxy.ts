@@ -6,6 +6,7 @@ import type { Database } from '@/types/database'
 type ProxyEnvironment = {
   NODE_ENV?: string
   MORI_E2E_FIXTURES?: string
+  VERCEL_ENV?: string
   NEXT_PUBLIC_SUPABASE_URL?: string
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?: string
 }
@@ -13,7 +14,7 @@ type ProxyEnvironment = {
 export function shouldBypassSessionRefresh(environment: ProxyEnvironment = process.env) {
   const missingCredentials = !environment.NEXT_PUBLIC_SUPABASE_URL
     || !environment.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-  // isE2EMode checks MORI_E2E_FIXTURES and NODE_ENV !== 'production'.
+  // Fixtures are limited to explicit local runs and Vercel preview deployments.
   return isE2EMode(environment) && missingCredentials
 }
 
@@ -21,6 +22,10 @@ export async function updateSession(request: NextRequest) {
   if (shouldBypassSessionRefresh()) return NextResponse.next({ request })
 
   let response = NextResponse.next({ request })
+  const rememberPreference = request.cookies.get('mori-remember-login')?.value
+  const sessionMaxAge = rememberPreference === '1'
+    ? 60 * 60 * 24 * 30
+    : rememberPreference === '0' ? null : undefined
 
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,7 +38,19 @@ export async function updateSession(request: NextRequest) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           response = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
+          cookiesToSet.forEach(({ name, value, options }) => {
+            if (sessionMaxAge === undefined) {
+              response.cookies.set(name, value, options)
+              return
+            }
+            if (sessionMaxAge !== null) {
+              response.cookies.set(name, value, { ...options, maxAge: sessionMaxAge })
+              return
+            }
+            const sessionOptions = { ...options }
+            delete sessionOptions.maxAge
+            response.cookies.set(name, value, sessionOptions)
+          })
         },
       },
     },

@@ -1,0 +1,170 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e37] [cursor=pointer]
+  - alert [ref=e41]
+  - generic [ref=e42]:
+    - complementary [ref=e43]:
+      - link "mori store room" [ref=e44] [cursor=pointer]:
+        - /url: /admin
+        - text: mori
+        - generic [ref=e45]: store room
+      - generic [ref=e46]:
+        - generic [ref=e47]: 店
+        - generic [ref=e48]:
+          - strong [ref=e49]: mori 老闆
+          - generic [ref=e50]: 商店管理員
+      - navigation "商店後台導覽" [ref=e51]:
+        - link "總 商店總覽" [ref=e52] [cursor=pointer]:
+          - /url: /admin
+          - generic [ref=e53]: 總
+          - text: 商店總覽
+        - link "單 訂單管理" [ref=e54] [cursor=pointer]:
+          - /url: /admin/orders
+          - generic [ref=e55]: 單
+          - text: 訂單管理
+        - link "品 商品管理與庫存" [ref=e56] [cursor=pointer]:
+          - /url: /admin/products
+          - generic [ref=e57]: 品
+          - text: 商品管理與庫存
+        - link "類 商品分類" [ref=e58] [cursor=pointer]:
+          - /url: /admin/categories
+          - generic [ref=e59]: 類
+          - text: 商品分類
+        - link "客 會員管理" [ref=e60] [cursor=pointer]:
+          - /url: /admin/members
+          - generic [ref=e61]: 客
+          - text: 會員管理
+        - link "促 行銷推廣" [ref=e62] [cursor=pointer]:
+          - /url: /admin/marketing
+          - generic [ref=e63]: 促
+          - text: 行銷推廣
+        - link "報 報表分析" [ref=e64] [cursor=pointer]:
+          - /url: /admin/reports
+          - generic [ref=e65]: 報
+          - text: 報表分析
+        - link "設 商店設定" [ref=e66] [cursor=pointer]:
+          - /url: /admin/settings
+          - generic [ref=e67]: 設
+          - text: 商店設定
+        - link "↗ 返回商城" [ref=e68] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e69]: ↗
+          - text: 返回商城
+      - button "登出" [ref=e72] [cursor=pointer]
+    - main [ref=e74]:
+      - generic [ref=e75]:
+        - generic [ref=e76]:
+          - paragraph [ref=e77]: mori store room
+          - heading "今天，從訂單開始。" [level=1] [ref=e78]
+        - paragraph [ref=e79]: 銷售與顧客動態會隨前台操作更新。
+      - navigation "常用功能" [ref=e80]:
+        - link "＋ 新增商品 建立價格、規格與圖片" [ref=e81] [cursor=pointer]:
+          - /url: /admin/products/new
+          - generic [ref=e82]: ＋
+          - strong [ref=e83]: 新增商品
+          - generic [ref=e84]: 建立價格、規格與圖片
+        - link "訊 回覆訂單留言 處理顧客問題與出貨" [ref=e85] [cursor=pointer]:
+          - /url: /admin/orders
+          - generic [ref=e86]: 訊
+          - strong [ref=e87]: 回覆訂單留言
+          - generic [ref=e88]: 處理顧客問題與出貨
+        - link "客 會員資料 查看消費與訂單紀錄" [ref=e89] [cursor=pointer]:
+          - /url: /admin/members
+          - generic [ref=e90]: 客
+          - strong [ref=e91]: 會員資料
+          - generic [ref=e92]: 查看消費與訂單紀錄
+        - link "促 建立優惠 折扣碼與行銷活動" [ref=e93] [cursor=pointer]:
+          - /url: /admin/marketing
+          - generic [ref=e94]: 促
+          - strong [ref=e95]: 建立優惠
+          - generic [ref=e96]: 折扣碼與行銷活動
+        - link "頁 編輯首頁 輪播、SEO 與流量設定" [ref=e97] [cursor=pointer]:
+          - /url: /admin/settings
+          - generic [ref=e98]: 頁
+          - strong [ref=e99]: 編輯首頁
+          - generic [ref=e100]: 輪播、SEO 與流量設定
+      - region "銷售摘要" [ref=e101]:
+        - article [ref=e102]:
+          - paragraph [ref=e103]: 累計銷售額
+          - strong [ref=e104]: NT$740
+          - generic [ref=e105]: 已付款以上的有效訂單
+        - article [ref=e106]:
+          - paragraph [ref=e107]: 訂單數
+          - strong [ref=e108]: "1"
+          - generic [ref=e109]: 今日新增 0 筆
+        - article [ref=e110]:
+          - paragraph [ref=e111]: 平均客單價
+          - strong [ref=e112]: NT$740
+          - generic [ref=e113]: 每筆有效訂單
+        - article [ref=e114]:
+          - paragraph [ref=e115]: 購物車放棄率
+          - strong [ref=e116]: 50%
+          - generic [ref=e117]: 加購後尚未完成下單
+      - generic [ref=e118]:
+        - generic [ref=e119]:
+          - generic [ref=e120]:
+            - generic [ref=e121]:
+              - paragraph [ref=e122]: fulfillment
+              - heading "訂單處理進度" [level=2] [ref=e123]
+            - link "查看全部" [ref=e124] [cursor=pointer]:
+              - /url: /admin/orders
+          - generic [ref=e125]:
+            - generic [ref=e126]:
+              - strong [ref=e127]: "0"
+              - generic [ref=e128]: 待付款
+            - generic [ref=e129]:
+              - strong [ref=e130]: "1"
+              - generic [ref=e131]: 已付款
+            - generic [ref=e132]:
+              - strong [ref=e133]: "0"
+              - generic [ref=e134]: 備貨中
+            - generic [ref=e135]:
+              - strong [ref=e136]: "0"
+              - generic [ref=e137]: 已出貨
+            - generic [ref=e138]:
+              - strong [ref=e139]: "0"
+              - generic [ref=e140]: 已完成
+          - paragraph [ref=e141]:
+            - text: 目前有
+            - strong [ref=e142]: "1"
+            - text: 筆已付款／備貨中訂單等待處理。
+        - generic [ref=e143]:
+          - generic [ref=e145]:
+            - paragraph [ref=e146]: attention
+            - heading "需要注意" [level=2] [ref=e147]
+          - link "1 待處理訂單 →" [ref=e148] [cursor=pointer]:
+            - /url: /admin/orders
+            - strong [ref=e149]: "1"
+            - generic [ref=e150]: 待處理訂單
+            - generic [ref=e151]: →
+          - link "1 低庫存規格 →" [ref=e152] [cursor=pointer]:
+            - /url: /admin/products
+            - strong [ref=e153]: "1"
+            - generic [ref=e154]: 低庫存規格
+            - generic [ref=e155]: →
+          - generic [ref=e156]:
+            - strong [ref=e157]: "10"
+            - generic [ref=e158]: 商品瀏覽次數
+        - generic [ref=e159]:
+          - generic [ref=e160]:
+            - generic [ref=e161]:
+              - paragraph [ref=e162]: recent orders
+              - heading "最近訂單" [level=2] [ref=e163]
+            - link "管理訂單" [ref=e164] [cursor=pointer]:
+              - /url: /admin/orders
+          - list [ref=e165]:
+            - listitem [ref=e166]:
+              - generic [ref=e167]:
+                - link "MORI-DEMO-1001" [ref=e168] [cursor=pointer]:
+                  - /url: /admin/orders/MORI-DEMO-1001
+                - generic [ref=e169]: 王小美 · 2026年7月20日 上午10:00:00
+              - strong [ref=e170]: NT$740
+              - generic [ref=e171]: 已付款
+        - generic [ref=e172]:
+          - generic [ref=e174]:
+            - paragraph [ref=e175]: best sellers
+            - heading "熱門商品" [level=2] [ref=e176]
+          - list [ref=e177]:
+            - listitem [ref=e178]:
+              - generic [ref=e179]: "01"
+              - strong [ref=e180]: 有機棉小樹 T 恤
+              - emphasis [ref=e181]: 售出 1 件

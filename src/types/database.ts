@@ -9,6 +9,27 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      product_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          position: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           color: string
@@ -76,9 +97,14 @@ export type Database = {
       orders: {
         Row: {
           created_at: string
+          customer_note: string
+          merchant_reply: string
           email: string
           id: string
           order_number: string
+          payment_method: string
+          bank_transfer_last_five: string | null
+          bank_transfer_submitted_at: string | null
           recipient_name: string
           recipient_phone: string
           shipping_fee: number
@@ -93,9 +119,14 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          customer_note?: string
+          merchant_reply?: string
           email: string
           id?: string
           order_number?: string
+          payment_method?: string
+          bank_transfer_last_five?: string | null
+          bank_transfer_submitted_at?: string | null
           recipient_name: string
           recipient_phone: string
           shipping_fee: number
@@ -110,9 +141,14 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          customer_note?: string
+          merchant_reply?: string
           email?: string
           id?: string
           order_number?: string
+          payment_method?: string
+          bank_transfer_last_five?: string | null
+          bank_transfer_submitted_at?: string | null
           recipient_name?: string
           recipient_phone?: string
           shipping_fee?: number
@@ -138,6 +174,7 @@ export type Database = {
       payment_attempts: {
         Row: {
           created_at: string
+          customer_note: string
           email: string
           id: string
           items: Json
@@ -145,6 +182,7 @@ export type Database = {
           paid_at: string | null
           payment_access_expires_at: string
           payment_access_token_hash: string | null
+          payment_method: string
           provider_reference: string | null
           recipient_name: string
           recipient_phone: string
@@ -162,6 +200,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          customer_note?: string
           email: string
           id?: string
           items: Json
@@ -169,6 +208,7 @@ export type Database = {
           paid_at?: string | null
           payment_access_expires_at: string
           payment_access_token_hash: string | null
+          payment_method?: string
           provider_reference?: string | null
           recipient_name: string
           recipient_phone: string
@@ -186,6 +226,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          customer_note?: string
           email?: string
           id?: string
           items?: Json
@@ -193,6 +234,7 @@ export type Database = {
           paid_at?: string | null
           payment_access_expires_at?: string
           payment_access_token_hash?: string | null
+          payment_method?: string
           provider_reference?: string | null
           recipient_name?: string
           recipient_phone?: string
@@ -267,6 +309,7 @@ export type Database = {
         Row: {
           color: string
           compare_at_price: number | null
+          cost: number
           created_at: string
           id: string
           is_active: boolean
@@ -280,6 +323,7 @@ export type Database = {
         Insert: {
           color: string
           compare_at_price?: number | null
+          cost?: number
           created_at?: string
           id?: string
           is_active?: boolean
@@ -293,6 +337,7 @@ export type Database = {
         Update: {
           color?: string
           compare_at_price?: number | null
+          cost?: number
           created_at?: string
           id?: string
           is_active?: boolean
@@ -315,6 +360,7 @@ export type Database = {
       }
       products: {
         Row: {
+          available_at: string | null
           age_bands: Database['public']['Enums']['age_band'][]
           care_instructions: string
           category: string
@@ -325,11 +371,16 @@ export type Database = {
           is_published: boolean
           material: string
           name: string
+          seo_description: string
+          seo_title: string
           size_guide: string
           slug: string
+          summary: string
+          tags: string[]
           updated_at: string
         }
         Insert: {
+          available_at?: string | null
           age_bands: Database['public']['Enums']['age_band'][]
           care_instructions?: string
           category: string
@@ -340,11 +391,16 @@ export type Database = {
           is_published?: boolean
           material?: string
           name: string
+          seo_description?: string
+          seo_title?: string
           size_guide?: string
           slug: string
+          summary?: string
+          tags?: string[]
           updated_at?: string
         }
         Update: {
+          available_at?: string | null
           age_bands?: Database['public']['Enums']['age_band'][]
           care_instructions?: string
           category?: string
@@ -355,8 +411,12 @@ export type Database = {
           is_published?: boolean
           material?: string
           name?: string
+          seo_description?: string
+          seo_title?: string
           size_guide?: string
           slug?: string
+          summary?: string
+          tags?: string[]
           updated_at?: string
         }
         Relationships: []
@@ -366,6 +426,7 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          marketing_consent_at: string | null
           phone: string | null
           role: string
           terms_accepted_at: string | null
@@ -375,6 +436,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id: string
+          marketing_consent_at?: string | null
           phone?: string | null
           role?: string
           terms_accepted_at?: string | null
@@ -384,6 +446,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          marketing_consent_at?: string | null
           phone?: string | null
           role?: string
           terms_accepted_at?: string | null
@@ -398,6 +461,39 @@ export type Database = {
             referencedColumns: ['id']
           },
         ]
+      }
+      storefront_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          path: string
+          product_name: string | null
+          search_query: string | null
+          search_result_count: number | null
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          path: string
+          product_name?: string | null
+          search_query?: string | null
+          search_result_count?: number | null
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          path?: string
+          product_name?: string | null
+          search_query?: string | null
+          search_result_count?: number | null
+          session_id?: string
+        }
+        Relationships: []
       }
       store_settings: {
         Row: {
@@ -460,6 +556,10 @@ export type Database = {
         Returns: undefined
       }
       complete_test_payment: {
+        Args: { payment_attempt_id: string; provider_reference: string }
+        Returns: Database['public']['CompositeTypes']['payment_completion_result']
+      }
+      finalize_manual_order: {
         Args: { payment_attempt_id: string; provider_reference: string }
         Returns: Database['public']['CompositeTypes']['payment_completion_result']
       }

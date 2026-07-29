@@ -16,20 +16,29 @@ import {
 
 export async function requestSignupOtp(formData: FormData): Promise<SignupContactState> {
   const parsed = signupContactSchema.safeParse({
+    displayName: formData.get('displayName'),
     email: formData.get('email'),
     phone: formData.get('phone'),
     consent: formData.get('consent'),
+    marketingConsent: formData.get('marketingConsent') || undefined,
   })
   if (!parsed.success) {
     return { ok: false, fieldErrors: parsed.error.flatten().fieldErrors }
   }
 
-  const { email, phone } = parsed.data
+  const { displayName, email, phone, marketingConsent } = parsed.data
   const termsAcceptedAt = new Date().toISOString()
+  const marketingConsentAt = marketingConsent ? new Date().toISOString() : null
 
   if (isE2EMode()) {
     const { requestSignupOtpE2E } = await import('@/testing/e2e-auth-repository')
-    const result = await requestSignupOtpE2E(email, phone, termsAcceptedAt)
+    const result = await requestSignupOtpE2E(
+      email,
+      phone,
+      displayName,
+      termsAcceptedAt,
+      marketingConsentAt,
+    )
     if (result === 'duplicate') {
       return { ok: false, message: '目前無法寄出驗證碼，請稍後再試。' }
     }
@@ -39,7 +48,12 @@ export async function requestSignupOtp(formData: FormData): Promise<SignupContac
       email,
       options: {
         shouldCreateUser: true,
-        data: { phone, terms_accepted_at: termsAcceptedAt },
+        data: {
+          display_name: displayName,
+          phone,
+          terms_accepted_at: termsAcceptedAt,
+          marketing_consent_at: marketingConsentAt,
+        },
       },
     })
     if (error) {
@@ -49,8 +63,10 @@ export async function requestSignupOtp(formData: FormData): Promise<SignupContac
 
   return {
     ok: true,
+    displayName,
     email,
     phone,
+    marketingConsent: Boolean(marketingConsent),
     maskedEmail: maskEmail(email),
     resendAvailableAt: Date.now() + 60_000,
   }
@@ -90,7 +106,10 @@ export async function verifySignupOtp(formData: FormData): Promise<SignupOtpStat
 }
 
 export async function completeSignup(formData: FormData): Promise<SignupPasswordState> {
-  const password = signupPasswordSchema.safeParse({ password: formData.get('password') })
+  const password = signupPasswordSchema.safeParse({
+    password: formData.get('password'),
+    confirmPassword: formData.get('confirmPassword'),
+  })
   if (!password.success) {
     return { ok: false, fieldErrors: password.error.flatten().fieldErrors }
   }

@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto'
 import { isE2EMode } from '@/testing/e2e-mode'
 import type { E2EStoreState, E2EUser } from '@/testing/e2e-store'
+import { parseLoginIdentifier } from '@/features/auth/login-identifier'
 
 export type AuthenticatedUser = Pick<E2EUser, 'id' | 'email' | 'role'>
 
@@ -32,16 +33,26 @@ function publicUser(user: E2EUser): AuthenticatedUser {
 
 export function createE2EAuthRepository(store: E2EStoreState, cookieStore: CookieAdapter) {
   return {
-    async requestSignupOtp(email: string, phone: string, termsAcceptedAt: string) {
+    async requestSignupOtp(
+      email: string,
+      phone: string,
+      displayName: string,
+      termsAcceptedAt: string,
+      marketingConsentAt: string | null,
+    ) {
       const canonicalEmail = normalizedEmail(email)
-      if ([...store.users.values()].some((user) => user.email === canonicalEmail)) {
+      if ([...store.users.values()].some((user) => (
+        user.email === canonicalEmail || user.phone === phone
+      ))) {
         return 'duplicate' as const
       }
 
       store.pendingSignups.set(canonicalEmail, {
         email: canonicalEmail,
+        displayName,
         phone,
         termsAcceptedAt,
+        marketingConsentAt,
         code: '123456',
         requestedAt: new Date().toISOString(),
         verifiedAt: null,
@@ -72,8 +83,10 @@ export function createE2EAuthRepository(store: E2EStoreState, cookieStore: Cooki
         id: randomUUID(),
         email: canonicalEmail,
         role: 'customer',
+        displayName: pending.displayName,
         phone: pending.phone,
         termsAcceptedAt: pending.termsAcceptedAt,
+        marketingConsentAt: pending.marketingConsentAt,
         passwordSalt: salt,
         passwordHash: passwordHash(password, salt).toString('hex'),
       }
@@ -103,8 +116,10 @@ export function createE2EAuthRepository(store: E2EStoreState, cookieStore: Cooki
         id: randomUUID(),
         email: canonicalEmail,
         role: 'customer',
+        displayName: null,
         phone: null,
         termsAcceptedAt: null,
+        marketingConsentAt: null,
         passwordSalt: salt,
         passwordHash: passwordHash(password, salt).toString('hex'),
       }
@@ -112,9 +127,13 @@ export function createE2EAuthRepository(store: E2EStoreState, cookieStore: Cooki
       return 'created' as const
     },
 
-    async signIn(email: string, password: string) {
+    async signIn(identifier: string, password: string, remember = false) {
+      const parsed = parseLoginIdentifier(identifier)
+      if (!parsed) return null
       const user = [...store.users.values()].find(
-        (candidate) => candidate.email === normalizedEmail(email),
+        (candidate) => parsed.type === 'email'
+          ? candidate.email === parsed.value
+          : candidate.phone === parsed.value,
       )
       if (!user) return null
 
@@ -126,7 +145,7 @@ export function createE2EAuthRepository(store: E2EStoreState, cookieStore: Cooki
       store.sessions.set(sessionId, { userId: user.id, createdAt: new Date().toISOString() })
       cookieStore.set(E2E_SESSION_COOKIE, sessionId, {
         httpOnly: true,
-        maxAge: 60 * 60 * 8,
+        maxAge: remember ? 60 * 60 * 24 * 30 : 60 * 60 * 8,
         path: '/',
         sameSite: 'lax',
         secure: false,
@@ -175,10 +194,11 @@ export async function getE2ECurrentUser(): Promise<AuthenticatedUser | null> {
 }
 
 export async function signInE2E(
-  email: string,
+  identifier: string,
   password: string,
+  remember = false,
 ): Promise<AuthenticatedUser | null> {
-  return (await createServerE2EAuthRepository()).signIn(email, password)
+  return (await createServerE2EAuthRepository()).signIn(identifier, password, remember)
 }
 
 export async function signUpE2E(
@@ -191,9 +211,17 @@ export async function signUpE2E(
 export async function requestSignupOtpE2E(
   email: string,
   phone: string,
+  displayName: string,
   termsAcceptedAt: string,
+  marketingConsentAt: string | null,
 ): Promise<'sent' | 'duplicate'> {
-  return (await createServerE2EAuthRepository()).requestSignupOtp(email, phone, termsAcceptedAt)
+  return (await createServerE2EAuthRepository()).requestSignupOtp(
+    email,
+    phone,
+    displayName,
+    termsAcceptedAt,
+    marketingConsentAt,
+  )
 }
 
 export async function verifySignupOtpE2E(

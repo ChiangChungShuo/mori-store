@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 236 64" role="img" aria-labelledby="title desc">
+  <title id="title">mori kids select</title>
+  <desc id="desc">由嫩芽與小寫 m 組成的 mori 童裝品牌標誌</desc>
+  <g fill="none" stroke="#203426" stroke-linecap="round" stroke-linejoin="round" stroke-width="7">
+    <path d="M8 46V29c0-9 5-14 13-14s13 5 13 14v17M34 29c0-9 5-14 13-14s13 5 13 14v17"/>
+  </g>
+  <g fill="#203426">
+    <path d="M33 15C25 14 19 9 17 3c8-1 14 2 17 9Z"/>
+    <path d="M35 15C43 14 49 9 51 3c-8-1-14 2-17 9Z"/>
+    <text x="73" y="43" font-family="Georgia,Times New Roman,serif" font-size="42" font-style="italic" font-weight="700">mori</text>
+    <text x="77" y="60" font-family="Arial,sans-serif" font-size="6" font-weight="700" letter-spacing="4">KIDS SELECT</text>
+  </g>
+</svg>

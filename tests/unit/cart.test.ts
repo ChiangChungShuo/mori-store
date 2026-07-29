@@ -8,6 +8,7 @@ import { cartReducer } from '@/features/cart/reducer'
 import { calculateCart } from '@/features/cart/totals'
 import { parseStoredCartItems, type CartItem } from '@/features/cart/types'
 import { parseStorefrontSettings } from '@/features/checkout/settings'
+import type { CatalogProduct } from '@/features/catalog/queries'
 
 const tee: CartItem = {
   variantId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
@@ -35,9 +36,34 @@ const pants: CartItem = {
 
 const storeSettings = { shippingFee: 60, freeShippingThreshold: 1500 }
 
+const suggestedProduct: CatalogProduct = {
+  id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+  slug: 'mori-cloud-romper',
+  name: '雲朵包屁衣',
+  description: '柔軟日常包屁衣',
+  category: '包屁衣',
+  ageBands: ['0-2'],
+  material: '棉',
+  careInstructions: '冷水洗滌',
+  sizeGuide: '70–80',
+  isNew: true,
+  imageUrl: null,
+  imageAlt: '雲朵包屁衣',
+  variants: [{
+    id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+    sku: 'MORI-CLOUD-70',
+    color: '雲朵米',
+    size: '70',
+    price: 580,
+    compareAtPrice: null,
+    stock: 5,
+  }],
+}
+
 afterEach(() => {
   cleanup()
   window.localStorage.clear()
+  window.sessionStorage.clear()
   vi.unstubAllGlobals()
 })
 
@@ -226,16 +252,79 @@ describe('CartProvider', () => {
 
   it('renders hydrated items and their subtotal in the cart drawer', async () => {
     window.localStorage.setItem('mori-cart-v1', JSON.stringify([tee]))
-    render(createElement(CartProvider, null, createElement(CartDrawer)))
+    render(createElement(CartProvider, null, createElement(CartDrawer, { settings: storeSettings })))
 
     expect(await screen.findByText('有機棉小樹 T 恤')).toBeInTheDocument()
     expect(screen.getAllByText('購物車')).toHaveLength(2)
     expect(screen.getByLabelText('1 件商品')).toBeInTheDocument()
-    expect(screen.getByText('小計 NT$680')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: '有機棉小樹 T 恤' })).toBeInTheDocument()
+    expect(screen.getByText('鼠尾草綠／尺寸 100')).toBeInTheDocument()
+    expect(screen.getByText('商品小計').closest('p')).toHaveTextContent('商品小計NT$680')
+    expect(screen.getByText('運費').closest('p')).toHaveTextContent('運費NT$60')
+    expect(screen.getByText('合計').closest('p')).toHaveTextContent('合計NT$740')
+    expect(screen.getByLabelText('免運進度 45%')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '登入後結帳' })).toHaveAttribute('href', '/login?next=%2Fcheckout')
+  })
+
+  it('opens after adding an item and updates quantity and totals in place', async () => {
+    window.localStorage.setItem('mori-cart-v1', JSON.stringify([pants]))
+    render(createElement(CartProvider, null, createElement(CartDrawer, { settings: storeSettings })))
+
+    await screen.findByText('自在長褲')
+    window.dispatchEvent(new CustomEvent('mori:cart-added'))
+
+    await waitFor(() => expect(screen.getByRole('group', { name: '購物車內容' })).toHaveAttribute('open'))
+    fireEvent.click(screen.getByRole('button', { name: '增加 自在長褲 數量' }))
+    expect(screen.getByRole('status', { name: '自在長褲 數量' })).toHaveTextContent('2')
+    expect(screen.getByText('商品小計').closest('p')).toHaveTextContent('商品小計NT$1,760')
+    expect(screen.getByText('運費').closest('p')).toHaveTextContent('運費免運')
+    expect(screen.getByText('合計').closest('p')).toHaveTextContent('合計NT$1,760')
   })
 })
 
 describe('CartPage refresh', () => {
+  it('applies a coupon in the cart and shows product suggestions', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
+    window.localStorage.setItem('mori-cart-v1', JSON.stringify([tee]))
+    const couponAction = vi.fn().mockResolvedValue({
+      ok: true,
+      code: 'HELLOMORI',
+      discount: 100,
+      message: '已套用 HELLOMORI，折抵 NT$100。',
+    })
+
+    render(createElement(CartProvider, null, createElement(CartPageClient, {
+      settings: storeSettings,
+      recommendedProducts: [suggestedProduct],
+      couponAction,
+    })))
+
+    await screen.findByRole('alert')
+    fireEvent.change(screen.getByLabelText('優惠碼'), { target: { value: 'hellomori' } })
+    fireEvent.click(screen.getByRole('button', { name: '套用' }))
+
+    expect(await screen.findByText('已套用 HELLOMORI，折抵 NT$100。')).toBeInTheDocument()
+    expect(couponAction).toHaveBeenCalledWith('HELLOMORI', 680)
+    expect(screen.getByText('NT$640')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '您可能喜歡' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: suggestedProduct.name })).toHaveAttribute('href', '/products/mori-cloud-romper')
+  })
+
+  it('does not ask a signed-in member to log in again', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
+    window.localStorage.setItem('mori-cart-v1', JSON.stringify([tee]))
+
+    render(createElement(CartProvider, null, createElement(CartPageClient, {
+      settings: storeSettings,
+      isSignedIn: true,
+    })))
+
+    await screen.findByRole('alert')
+    expect(screen.queryByRole('region', { name: '會員登入提示' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: '登入' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '前往結帳' })).toHaveAttribute('href', '/checkout')
+  })
+
   it('updates quantity, line total, shipping and total through the stepper', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
     window.localStorage.setItem('mori-cart-v1', JSON.stringify([pants]))

@@ -1,12 +1,17 @@
 import type { CartVariantSnapshot } from '@/features/cart/refresh'
 import type { CatalogProduct, ProductFilters } from '@/features/catalog/queries'
 import type { CheckoutVariant } from '@/features/checkout/service'
+import { getE2EStore, type E2EStoreState } from '@/testing/e2e-store'
 
 const TREE_TEE: CatalogProduct = {
   id: '00000000-0000-4000-8000-000000000000',
   slug: 'mori-organic-cotton-tee',
   name: '有機棉小樹 T 恤',
-  description: '柔軟透氣的日常有機棉 T 恤。',
+  description: '柔軟透氣的日常有機棉 T 恤。\n親膚有機棉織法，水洗後越穿越軟，適合每天穿搭與跑跳。',
+  summary: '親膚有機棉、越洗越軟，孩子每天想穿的日常百搭上衣。',
+  tags: ['有機棉', '日常', '親膚'],
+  seoTitle: '有機棉小樹 T 恤 - mori 童裝',
+  seoDescription: '100% 有機棉、親膚透氣的兒童日常 T 恤，柔軟耐穿好活動；台灣本島超商取貨、滿額免運。',
   category: '上衣',
   ageBands: ['3-5', '6-9'],
   material: '100% 有機棉',
@@ -304,10 +309,32 @@ export const E2E_PRODUCTS: readonly CatalogProduct[] = [
 
 export const E2E_PRODUCT = E2E_PRODUCTS[0]
 
+export function getMutableE2EProducts(store: E2EStoreState = getE2EStore()) {
+  if (store.products.length === 0) {
+    store.products = structuredClone([...E2E_PRODUCTS])
+    store.publishedProductIds = new Set(E2E_PRODUCTS.map((product) => product.id))
+    for (const product of store.products) {
+      for (const variant of product.variants) {
+        if (!store.variantCosts.has(variant.id)) store.variantCosts.set(variant.id, Math.round(variant.price * 0.45))
+      }
+    }
+  }
+  return store.products
+}
+
 function matchesProduct(product: CatalogProduct, filters: ProductFilters) {
-  return (!filters.age || product.ageBands.includes(filters.age))
+  const query = filters.q?.toLocaleLowerCase('zh-Hant')
+  const searchable = [
+    product.name,
+    product.description,
+    product.category,
+    product.material,
+    ...product.variants.flatMap((variant) => [variant.color, variant.size, variant.sku]),
+  ].join(' ').toLocaleLowerCase('zh-Hant')
+  return (!query || searchable.includes(query))
+    && (!filters.age || product.ageBands.includes(filters.age))
     && (!filters.size || product.variants.some((variant) => variant.size === filters.size))
-    && (!filters.color || product.variants.some((variant) => variant.color === filters.color))
+    && (!filters.color || product.variants.some((variant) => variant.color.includes(filters.color!)))
     && (!filters.category || product.category === filters.category)
     && (!filters.inStock || product.variants.some((variant) => variant.stock > 0))
 }
@@ -329,21 +356,28 @@ function toCartSnapshot(
 }
 
 export function listE2EProducts(filters: ProductFilters) {
-  return E2E_PRODUCTS.filter((product) => matchesProduct(product, filters))
+  const store = getE2EStore()
+  return getMutableE2EProducts().filter((product) => (
+    store.publishedProductIds.has(product.id) && matchesProduct(product, filters)
+  ))
 }
 
 export function getE2EProduct(slug: string) {
-  return E2E_PRODUCTS.find((product) => product.slug === slug) ?? null
+  const store = getE2EStore()
+  return getMutableE2EProducts().find((product) => (
+    store.publishedProductIds.has(product.id) && product.slug === slug
+  )) ?? null
 }
 
 export function getE2ECartVariants(variantIds: string[]): CartVariantSnapshot[] {
-  return E2E_PRODUCTS.flatMap((product) => product.variants
+  const store = getE2EStore()
+  return getMutableE2EProducts().filter((product) => store.publishedProductIds.has(product.id) && (!product.availableAt || new Date(product.availableAt) <= new Date())).flatMap((product) => product.variants
     .filter((variant) => variantIds.includes(variant.id))
     .map((variant) => toCartSnapshot(product, variant)))
 }
 
-export function getE2EVariants(variantIds: string[]): CheckoutVariant[] {
-  return E2E_PRODUCTS.flatMap((product) => product.variants
+export function getE2EVariants(variantIds: string[], store: E2EStoreState = getE2EStore()): CheckoutVariant[] {
+  return getMutableE2EProducts(store).filter((product) => store.publishedProductIds.has(product.id) && (!product.availableAt || new Date(product.availableAt) <= new Date())).flatMap((product) => product.variants
     .filter((variant) => variantIds.includes(variant.id))
     .map((variant) => ({
       id: variant.id,
@@ -354,6 +388,7 @@ export function getE2EVariants(variantIds: string[]): CheckoutVariant[] {
       price: variant.price,
       stock: variant.stock,
       isPublished: true,
+      imageUrl: product.imageUrl,
     })))
 }
 

@@ -42,9 +42,11 @@ vi.mock('@/lib/supabase/server', () => ({ createClient }))
 
 function contactForm() {
   const form = new FormData()
+  form.set('displayName', '王小美')
   form.set('email', 'Parent@Example.com')
   form.set('phone', '0912-345-678')
   form.set('consent', 'on')
+  form.set('marketingConsent', 'on')
   return form
 }
 
@@ -77,6 +79,7 @@ describe('Email OTP signup actions', () => {
     const result = await requestSignupOtp(new FormData())
 
     expect(result.fieldErrors).toMatchObject({
+      displayName: expect.any(Array),
       email: expect.any(Array),
       phone: expect.any(Array),
       consent: expect.any(Array),
@@ -125,7 +128,8 @@ describe('Email OTP signup actions', () => {
 
     const password = new FormData()
     password.set('email', email)
-    password.set('password', 'parent123')
+    password.set('password', 'mori-parent-123')
+    password.set('confirmPassword', 'mori-parent-123')
     password.set('next', '/account/orders')
 
     await expect(completeSignup(password)).rejects.toBe(navigation.sentinel)
@@ -142,6 +146,8 @@ describe('Email OTP signup actions', () => {
       options: {
         shouldCreateUser: true,
         data: {
+          display_name: '王小美',
+          marketing_consent_at: expect.any(String),
           phone: '0912345678',
           terms_accepted_at: expect.any(String),
         },
@@ -174,10 +180,11 @@ describe('Email OTP signup actions', () => {
     auth.updateUser.mockResolvedValueOnce({ error: null })
     const password = new FormData()
     password.set('email', 'parent@example.com')
-    password.set('password', 'parent123')
+    password.set('password', 'mori-parent-123')
+    password.set('confirmPassword', 'mori-parent-123')
 
     await expect(completeSignup(password)).rejects.toBe(navigation.sentinel)
-    expect(auth.updateUser).toHaveBeenCalledWith({ password: 'parent123' })
+    expect(auth.updateUser).toHaveBeenCalledWith({ password: 'mori-parent-123' })
     expect(navigation.redirect).toHaveBeenCalledWith('/account')
   })
 })

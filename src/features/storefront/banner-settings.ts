@@ -1,0 +1,120 @@
+import { z } from 'zod'
+import { productImageSchema } from '@/lib/validation/product'
+import type { Json } from '@/types/database'
+
+const internalHref = z.string().trim().refine((value) => value.startsWith('/') && !value.startsWith('//'), '連結必須是站內路徑')
+
+export const bannerSlideSchema = z.object({
+  imageUrl: z.string().trim().min(1),
+  imageAlt: z.string().trim().min(1, '圖片說明為必填'),
+  eyebrow: z.string().trim().min(1, '英文小標為必填'),
+  title: z.string().trim().min(1, '主標題為必填'),
+  body: z.string().trim().min(1, '說明文字為必填'),
+  buttonLabel: z.string().trim().min(1, '按鈕文字為必填'),
+  buttonHref: internalHref,
+}).strict()
+
+const bannerSlidesSchema = z.array(bannerSlideSchema).min(1).max(5)
+export type BannerSlide = z.infer<typeof bannerSlideSchema>
+
+export const defaultBannerSlides: BannerSlide[] = [{
+  imageUrl: '/images/mori-hero.jpg',
+  imageAlt: '兩位穿著舒適童裝的孩子在庭院散步',
+  eyebrow: 'mori summer edit · 2026',
+  title: '小小日常，\n自在長大。',
+  body: '替 0–12 歲孩子挑選柔軟、好活動、每天都願意穿的衣服。',
+  buttonLabel: '選購本週新品',
+  buttonHref: '/#new',
+}, {
+  imageUrl: '/images/products/mori-meadow-dress.jpg',
+  imageAlt: '森林綠小花花野洋裝',
+  eyebrow: 'weekend in green',
+  title: '把舒服，\n穿進週末。',
+  body: '親膚材質與自在版型，陪孩子從日常一路玩到旅行。',
+  buttonLabel: '看看本週選品',
+  buttonHref: '/products',
+}]
+
+function parseSlides(value: Json | undefined) {
+  const parsed = bannerSlidesSchema.safeParse(value)
+  return parsed.success ? parsed.data : defaultBannerSlides
+}
+
+export async function getBannerSlides(): Promise<BannerSlide[]> {
+  const { isE2EMode } = await import('@/testing/e2e-mode')
+  if (isE2EMode()) {
+    const { getE2EStore } = await import('@/testing/e2e-store')
+    return getE2EStore().bannerSlides ?? defaultBannerSlides
+  }
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) return defaultBannerSlides
+
+  const { createClient } = await import('@/lib/supabase/server')
+  const { data, error } = await (await createClient())
+    .from('store_settings')
+    .select('value')
+    .eq('key', 'home_banner_slides')
+    .maybeSingle()
+  if (error) throw error
+  return parseSlides(data?.value)
+}
+
+async function uploadBanner(file: File) {
+  const { isE2EMode } = await import('@/testing/e2e-mode')
+  if (isE2EMode()) {
+    const bytes = Buffer.from(await file.arrayBuffer()).toString('base64')
+    return `data:${file.type};base64,${bytes}`
+  }
+
+  const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[file.type]
+  const path = `banners/${crypto.randomUUID()}.${extension}`
+  const { createClient } = await import('@/lib/supabase/server')
+  const supabase = await createClient()
+  const { error } = await supabase.storage.from('product-images').upload(path, file, { contentType: file.type })
+  if (error) throw error
+  return supabase.storage.from('product-images').getPublicUrl(path).data.publicUrl
+}
+
+export async function updateBannerSlidesFromForm(formData: FormData) {
+  'use server'
+  const { requireAdmin } = await import('@/lib/auth/require-admin')
+  await requireAdmin()
+
+  const count = Math.min(5, Math.max(1, Number(formData.get('slideCount')) || 1))
+  const slides: BannerSlide[] = []
+  for (let index = 0; index < count; index += 1) {
+    const imageAlt = String(formData.get(`imageAlt-${index}`) ?? '')
+    const file = formData.get(`image-${index}`)
+    let imageUrl = String(formData.get(`imageUrl-${index}`) ?? '')
+    const title = String(formData.get(`title-${index}`) ?? '')
+    if (!imageUrl && (!(file instanceof File) || file.size === 0) && !title.trim()) continue
+    if (file instanceof File && file.size > 0) {
+      const image = await productImageSchema.safeParseAsync({ file, alt: imageAlt })
+      if (!image.success) throw new Error(image.error.issues[0]?.message ?? '圖片格式無效')
+      imageUrl = await uploadBanner(image.data.file)
+    }
+    slides.push({
+      imageUrl,
+      imageAlt,
+      eyebrow: String(formData.get(`eyebrow-${index}`) ?? ''),
+      title,
+      body: String(formData.get(`body-${index}`) ?? ''),
+      buttonLabel: String(formData.get(`buttonLabel-${index}`) ?? ''),
+      buttonHref: String(formData.get(`buttonHref-${index}`) ?? ''),
+    })
+  }
+  const parsed = bannerSlidesSchema.safeParse(slides)
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? '請檢查輪播內容')
+
+  const { isE2EMode } = await import('@/testing/e2e-mode')
+  if (isE2EMode()) {
+    const { getE2EStore } = await import('@/testing/e2e-store')
+    getE2EStore().bannerSlides = parsed.data
+  } else {
+    const { createClient } = await import('@/lib/supabase/server')
+    const { error } = await (await createClient()).from('store_settings').upsert({ key: 'home_banner_slides', value: parsed.data as Json })
+    if (error) throw error
+  }
+  const { revalidatePath } = await import('next/cache')
+  revalidatePath('/')
+  revalidatePath('/admin/settings')
+}

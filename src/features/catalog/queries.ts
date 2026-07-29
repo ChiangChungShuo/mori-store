@@ -1,5 +1,6 @@
 import type { AgeBand } from '@/types/store'
 import type { CartVariantSnapshot } from '@/features/cart/refresh'
+import { isE2EMode } from '@/testing/e2e-mode'
 
 const CATALOG_CONFIGURATION_ERROR = 'MORI catalog configuration error: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY are required.'
 
@@ -25,6 +26,7 @@ export function resolveCatalogConfiguration(
 }
 
 export type ProductFilters = {
+  q?: string
   age?: '0-2' | '3-5' | '6-9' | '10-12'
   size?: string
   color?: string
@@ -47,14 +49,20 @@ export type CatalogProduct = {
   slug: string
   name: string
   description: string
+  summary?: string
+  tags?: readonly string[]
+  seoTitle?: string
+  seoDescription?: string
   category: string
   ageBands: readonly AgeBand[]
   material: string
   careInstructions: string
   sizeGuide: string
   isNew: boolean
+  availableAt?: string | null
   imageUrl: string | null
   imageAlt: string
+  images?: readonly { url: string; alt: string }[]
   variants: readonly CatalogVariant[]
 }
 
@@ -68,12 +76,14 @@ function first(value: string | string[] | undefined) {
 
 export function parseProductFilters(searchParams: SearchParams): ProductFilters {
   const age = first(searchParams.age)
+  const q = first(searchParams.q)?.trim()
   const size = first(searchParams.size)
   const color = first(searchParams.color)
   const category = first(searchParams.category)
   const inStock = first(searchParams.inStock)
 
   return {
+    ...(q ? { q: q.slice(0, 120) } : {}),
     ...(ageBands.includes(age as ProductFilters['age']) ? { age: age as ProductFilters['age'] } : {}),
     ...(size ? { size } : {}),
     ...(color ? { color } : {}),
@@ -87,12 +97,17 @@ type ProductRecord = {
   slug: string
   name: string
   description: string
+  summary?: string | null
+  tags?: string[] | null
+  seo_title?: string | null
+  seo_description?: string | null
   category: string
   age_bands: AgeBand[]
   material: string
   care_instructions: string
   size_guide: string
   is_new: boolean
+  available_at: string | null
   product_images: Array<{ storage_path: string; alt_text: string; position: number }>
   product_variants: Array<{
     id: string
@@ -114,21 +129,30 @@ function publicImageUrl(storagePath: string) {
 }
 
 function mapProduct(record: ProductRecord): CatalogProduct {
-  const image = [...record.product_images].sort((a, b) => a.position - b.position)[0]
+  const images = [...record.product_images]
+    .sort((a, b) => a.position - b.position)
+    .map((image) => ({ url: publicImageUrl(image.storage_path), alt: image.alt_text || record.name }))
+  const image = images[0]
 
   return {
     id: record.id,
     slug: record.slug,
     name: record.name,
     description: record.description,
+    summary: record.summary ?? '',
+    tags: record.tags ?? [],
+    seoTitle: record.seo_title ?? '',
+    seoDescription: record.seo_description ?? '',
     category: record.category,
     ageBands: record.age_bands,
     material: record.material,
     careInstructions: record.care_instructions,
     sizeGuide: record.size_guide,
     isNew: record.is_new,
-    imageUrl: image ? publicImageUrl(image.storage_path) : null,
-    imageAlt: image?.alt_text ?? record.name,
+    availableAt: record.available_at,
+    imageUrl: image?.url ?? null,
+    imageAlt: image?.alt ?? record.name,
+    images,
     variants: [...record.product_variants]
       .sort((a, b) => a.size.localeCompare(b.size, 'zh-Hant', { numeric: true }))
       .map((variant) => ({
@@ -143,16 +167,36 @@ function mapProduct(record: ProductRecord): CatalogProduct {
   }
 }
 
+export function applyCatalogFilters(products: CatalogProduct[], filters: ProductFilters) {
+  const term = filters.q?.toLocaleLowerCase('zh-Hant')
+  return products.filter((product) => {
+    const searchable = [
+      product.name,
+      product.description,
+      product.category,
+      product.material,
+      ...product.variants.flatMap((variant) => [variant.color, variant.size, variant.sku]),
+    ].join(' ').toLocaleLowerCase('zh-Hant')
+    return (!term || searchable.includes(term))
+      && (!filters.age || product.ageBands.includes(filters.age))
+      && (!filters.size || product.variants.some((variant) => variant.size === filters.size))
+      && (!filters.color || product.variants.some((variant) => variant.color.includes(filters.color!)))
+      && (!filters.category || product.category === filters.category)
+      && (!filters.inStock || product.variants.some((variant) => variant.stock > 0))
+  })
+}
+
 const productFields = `
-  id, slug, name, description, category, age_bands, material,
-  care_instructions, size_guide, is_new,
+  id, slug, name, description, summary, tags, seo_title, seo_description,
+  category, age_bands, material,
+  care_instructions, size_guide, is_new, available_at,
   product_images(storage_path, alt_text, position),
   product_variants(id, sku, color, size, price, compare_at_price, stock),
   matching_variants:product_variants!inner(id, size, color, stock)
 `
 
 export async function listProducts(filters: ProductFilters): Promise<CatalogProduct[]> {
-  if (process.env.NODE_ENV !== 'production' && process.env.MORI_E2E_FIXTURES === '1') {
+  if (isE2EMode()) {
     const { listE2EProducts } = await import('@/testing/e2e-storefront-fixtures')
     return listE2EProducts(filters)
   }
@@ -176,11 +220,11 @@ export async function listProducts(filters: ProductFilters): Promise<CatalogProd
   const { data, error } = await query.order('created_at', { ascending: false })
   if (error) throw error
 
-  return ((data ?? []) as unknown as ProductRecord[]).map(mapProduct)
+  return applyCatalogFilters(((data ?? []) as unknown as ProductRecord[]).map(mapProduct), filters)
 }
 
 export async function getProductBySlug(slug: string): Promise<CatalogProduct | null> {
-  if (process.env.NODE_ENV !== 'production' && process.env.MORI_E2E_FIXTURES === '1') {
+  if (isE2EMode()) {
     const { getE2EProduct } = await import('@/testing/e2e-storefront-fixtures')
     return getE2EProduct(slug)
   }
@@ -211,6 +255,7 @@ type CartVariantRecord = {
     slug: string
     name: string
     is_published: boolean
+    available_at: string | null
     product_images: Array<{ storage_path: string; position: number }>
   }
 }
@@ -218,7 +263,7 @@ type CartVariantRecord = {
 export async function getPublishedCartVariants(
   variantIds: string[],
 ): Promise<CartVariantSnapshot[]> {
-  if (process.env.NODE_ENV !== 'production' && process.env.MORI_E2E_FIXTURES === '1') {
+  if (isE2EMode()) {
     const { getE2ECartVariants } = await import('@/testing/e2e-storefront-fixtures')
     return getE2ECartVariants(variantIds)
   }
@@ -234,7 +279,7 @@ export async function getPublishedCartVariants(
     .select(`
       id, color, size, price, stock,
       products!inner(
-        slug, name, is_published,
+        slug, name, is_published, available_at,
         product_images(storage_path, position)
       )
     `)
@@ -244,7 +289,9 @@ export async function getPublishedCartVariants(
 
   if (error) throw error
 
-  return ((data ?? []) as unknown as CartVariantRecord[]).map((variant) => {
+  return ((data ?? []) as unknown as CartVariantRecord[])
+    .filter((variant) => !variant.products.available_at || new Date(variant.products.available_at) <= new Date())
+    .map((variant) => {
     const image = [...variant.products.product_images]
       .sort((a, b) => a.position - b.position)[0]
 
@@ -258,5 +305,5 @@ export async function getPublishedCartVariants(
       unitPrice: variant.price,
       maxStock: variant.stock,
     }
-  })
+    })
 }

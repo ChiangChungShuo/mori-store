@@ -15,8 +15,6 @@ import {
   verifySignupOtp,
 } from './signup-actions'
 
-type SignupStage = 'contact' | 'verify' | 'password'
-
 const initialContactState: SignupContactState = { ok: false }
 const initialOtpState: SignupOtpState = { ok: false }
 const initialPasswordState: SignupPasswordState = { ok: false }
@@ -28,62 +26,103 @@ export function SignupForm({
   nextPath?: string
   fixtureMode?: boolean
 }) {
-  const [stage, setStage] = useState<SignupStage>('contact')
-  const [contact, setContact] = useState({ email: '', phone: '', consent: false })
-  const [verifiedContact, setVerifiedContact] = useState({
-    email: '', phone: '', maskedEmail: '', resendAvailableAt: 0,
+  const [verificationOpen, setVerificationOpen] = useState(false)
+  const [registration, setRegistration] = useState({
+    displayName: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+    consent: false,
+    marketingConsent: false,
   })
+  const [verifiedContact, setVerifiedContact] = useState({
+    displayName: '',
+    email: '',
+    phone: '',
+    marketingConsent: false,
+    maskedEmail: '',
+    resendAvailableAt: 0,
+  })
+  const [completionState, setCompletionState] = useState(initialPasswordState)
   const [remainingSeconds, setRemainingSeconds] = useState(0)
-  const headingRef = useRef<HTMLHeadingElement>(null)
+  const [showPassword, setShowPassword] = useState(false)
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
+  const verificationHeadingRef = useRef<HTMLHeadingElement>(null)
+  const touch = (field: string) => setTouched((current) => ({ ...current, [field]: true }))
+
   const [contactState, contactAction, contactPending] = useActionState(
-    async (_previous: SignupContactState, formData: FormData) => requestSignupOtp(formData),
+    async (_previous: SignupContactState, formData: FormData) => {
+      const result = await requestSignupOtp(formData)
+      if (result.ok && result.email && result.phone) {
+        const resendAvailableAt = result.resendAvailableAt ?? Date.now() + 60_000
+        setVerifiedContact({
+          displayName: result.displayName ?? registration.displayName.trim(),
+          email: result.email,
+          phone: result.phone,
+          marketingConsent: result.marketingConsent ?? registration.marketingConsent,
+          maskedEmail: result.maskedEmail ?? result.email,
+          resendAvailableAt,
+        })
+        setRemainingSeconds(Math.max(0, Math.ceil((resendAvailableAt - Date.now()) / 1000)))
+        setVerificationOpen(true)
+      }
+      return result
+    },
     initialContactState,
   )
   const [otpState, otpAction, otpPending] = useActionState(
-    async (_previous: SignupOtpState, formData: FormData) => verifySignupOtp(formData),
+    async (_previous: SignupOtpState, formData: FormData) => {
+      const result = await verifySignupOtp(formData)
+      if (!result.ok || !result.verified) return result
+
+      const completionData = new FormData()
+      completionData.set('email', verifiedContact.email)
+      completionData.set('password', registration.password)
+      completionData.set('confirmPassword', registration.confirmPassword)
+      if (nextPath) completionData.set('next', nextPath)
+      const completion = await completeSignup(completionData)
+      setCompletionState(completion)
+      if (!completion.ok) setVerificationOpen(false)
+      return result
+    },
     initialOtpState,
   )
-  const [passwordState, passwordAction, passwordPending] = useActionState(
-    async (_previous: SignupPasswordState, formData: FormData) => completeSignup(formData),
-    initialPasswordState,
-  )
 
   useEffect(() => {
-    if (!contactState.ok || !contactState.email || !contactState.phone) return
-    setVerifiedContact({
-      email: contactState.email,
-      phone: contactState.phone,
-      maskedEmail: contactState.maskedEmail ?? contactState.email,
-      resendAvailableAt: contactState.resendAvailableAt ?? Date.now() + 60_000,
-    })
-    setStage('verify')
-  }, [contactState])
+    if (verificationOpen) verificationHeadingRef.current?.focus()
+  }, [verificationOpen])
 
   useEffect(() => {
-    if (otpState.ok && otpState.verified) setStage('password')
-  }, [otpState])
-
-  useEffect(() => {
-    headingRef.current?.focus()
-  }, [stage])
-
-  useEffect(() => {
-    if (stage !== 'verify') return
+    if (!verificationOpen) return
     function updateRemaining() {
       setRemainingSeconds(Math.max(
         0,
         Math.ceil((verifiedContact.resendAvailableAt - Date.now()) / 1000),
       ))
     }
-    updateRemaining()
     const timer = window.setInterval(updateRemaining, 1000)
     return () => window.clearInterval(timer)
-  }, [stage, verifiedContact.resendAvailableAt])
+  }, [verificationOpen, verifiedContact.resendAvailableAt])
 
-  const normalizedPhone = normalizeTaiwanMobile(contact.phone)
-  const contactValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email.trim())
+  const normalizedPhone = normalizeTaiwanMobile(registration.phone)
+  const passwordValid = registration.password.length >= 8
+    && registration.password === registration.confirmPassword
+  const registrationValid = registration.displayName.trim().length >= 2
+    && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(registration.email.trim())
     && /^09\d{8}$/.test(normalizedPhone)
-    && contact.consent
+    && passwordValid
+    && registration.consent
+
+  // Client-side 防呆 hints so the shopper knows exactly what to fix before the button enables.
+  const clientErrors: Record<string, string> = {
+    displayName: registration.displayName.trim().length < 2 ? '請輸入至少 2 個字的真實姓名。' : '',
+    email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(registration.email.trim()) ? '' : '請輸入有效的 Email，例如 name@example.com。',
+    phone: /^09\d{8}$/.test(normalizedPhone) ? '' : '請輸入有效的台灣手機號碼（09 開頭、共 10 碼）。',
+    password: registration.password.length < 8 ? '密碼至少需要 8 個字元。' : '',
+    confirmPassword: registration.confirmPassword.length > 0 && registration.password !== registration.confirmPassword ? '兩次輸入的密碼不一致。' : '',
+  }
+  const fieldError = (field: string) => (touched[field] ? clientErrors[field] : '')
 
   return (
     <main className="auth-shell signup-shell">
@@ -96,18 +135,28 @@ export function SignupForm({
           <Link className="auth-back-link" href="/products">先逛逛商品 →</Link>
         </div>
 
-        <div className="signup-progress" aria-label="註冊進度">
-          <span aria-current={stage === 'contact' ? 'step' : undefined}>1 資料</span>
-          <span aria-current={stage === 'verify' ? 'step' : undefined}>2 驗證</span>
-          <span aria-current={stage === 'password' ? 'step' : undefined}>3 密碼</span>
-        </div>
-
-        {stage === 'contact' && (
-          <form action={contactAction} noValidate>
-            <p className="eyebrow">member account</p>
-            <h1 ref={headingRef} tabIndex={-1}>註冊會員</h1>
-            <p className="auth-intro">留下聯絡資料，再到 Email 收取驗證碼。</p>
-            {nextPath && <input name="next" type="hidden" value={nextPath} />}
+        <form action={contactAction} noValidate>
+          <p className="eyebrow">member account</p>
+          <h1>註冊會員</h1>
+          <p className="auth-intro">一次填好會員資料與密碼，再到 Email 收取驗證碼。</p>
+          {nextPath && <input name="next" type="hidden" value={nextPath} />}
+          <fieldset className="signup-details" disabled={verificationOpen}>
+            <div className="auth-field">
+              <label htmlFor="signup-name">真實姓名 <span aria-hidden="true">＊</span></label>
+              <input
+                aria-describedby={contactState.fieldErrors?.displayName ? 'signup-name-help signup-name-error' : 'signup-name-help'}
+                autoComplete="name"
+                id="signup-name"
+                name="displayName"
+                onBlur={() => touch('displayName')}
+                onChange={(event) => setRegistration((current) => ({ ...current, displayName: event.target.value }))}
+                placeholder="請輸入取貨人的真實姓名"
+                value={registration.displayName}
+              />
+              <p className="field-help" id="signup-name-help">姓名會套用於取貨資料，請務必填寫正確。</p>
+              {fieldError('displayName') && <p className="field-error" role="alert">{fieldError('displayName')}</p>}
+              {contactState.fieldErrors?.displayName && <p id="signup-name-error" role="alert">{contactState.fieldErrors.displayName[0]}</p>}
+            </div>
             <div className="auth-field">
               <label htmlFor="signup-email">Email</label>
               <input
@@ -116,10 +165,13 @@ export function SignupForm({
                 id="signup-email"
                 inputMode="email"
                 name="email"
-                onChange={(event) => setContact((current) => ({ ...current, email: event.target.value }))}
+                onBlur={() => touch('email')}
+                onChange={(event) => setRegistration((current) => ({ ...current, email: event.target.value }))}
+                placeholder="請輸入常用 Email"
                 type="email"
-                value={contact.email}
+                value={registration.email}
               />
+              {fieldError('email') && <p className="field-error" role="alert">{fieldError('email')}</p>}
               {contactState.fieldErrors?.email && <p id="signup-email-error" role="alert">{contactState.fieldErrors.email[0]}</p>}
             </div>
             <div className="auth-field">
@@ -130,37 +182,92 @@ export function SignupForm({
                 id="signup-phone"
                 inputMode="tel"
                 name="phone"
-                onChange={(event) => setContact((current) => ({ ...current, phone: event.target.value }))}
-                placeholder="0912345678"
+                onBlur={() => touch('phone')}
+                onChange={(event) => setRegistration((current) => ({ ...current, phone: event.target.value }))}
+                placeholder="例如：0912 345 678"
                 type="tel"
-                value={contact.phone}
+                value={registration.phone}
               />
               <p className="field-help" id="signup-phone-help">僅作為會員與訂單聯絡資料，不會發送簡訊。</p>
+              {fieldError('phone') && <p className="field-error" role="alert">{fieldError('phone')}</p>}
               {contactState.fieldErrors?.phone && <p id="signup-phone-error" role="alert">{contactState.fieldErrors.phone[0]}</p>}
             </div>
+            <div className="auth-field">
+              <label htmlFor="signup-password">設定密碼</label>
+              <div className="password-field">
+                <input
+                  aria-describedby={completionState.fieldErrors?.password ? 'signup-password-help signup-password-error' : 'signup-password-help'}
+                  autoComplete="new-password"
+                  id="signup-password"
+                  minLength={8}
+                  name="password"
+                  onBlur={() => touch('password')}
+                  onChange={(event) => setRegistration((current) => ({ ...current, password: event.target.value }))}
+                  placeholder="請設定至少 8 個字元的密碼"
+                  type={showPassword ? 'text' : 'password'}
+                  value={registration.password}
+                />
+                <button aria-label={showPassword ? '隱藏密碼' : '顯示密碼'} onClick={() => setShowPassword((shown) => !shown)} type="button">{showPassword ? '隱藏' : '顯示'}</button>
+              </div>
+              <p className="field-help" id="signup-password-help">密碼至少需要 8 個字元</p>
+              {fieldError('password') && <p className="field-error" role="alert">{fieldError('password')}</p>}
+              {completionState.fieldErrors?.password && <p id="signup-password-error" role="alert">{completionState.fieldErrors.password[0]}</p>}
+            </div>
+            <div className="auth-field">
+              <label htmlFor="signup-confirm-password">確認密碼</label>
+              <input
+                aria-describedby={completionState.fieldErrors?.confirmPassword ? 'signup-confirm-password-error' : undefined}
+                autoComplete="new-password"
+                id="signup-confirm-password"
+                minLength={8}
+                name="confirmPassword"
+                onBlur={() => touch('confirmPassword')}
+                onChange={(event) => setRegistration((current) => ({ ...current, confirmPassword: event.target.value }))}
+                placeholder="請再次輸入密碼"
+                type={showPassword ? 'text' : 'password'}
+                value={registration.confirmPassword}
+              />
+              {fieldError('confirmPassword') && <p className="field-error" role="alert">{fieldError('confirmPassword')}</p>}
+              {completionState.fieldErrors?.confirmPassword && <p id="signup-confirm-password-error" role="alert">{completionState.fieldErrors.confirmPassword[0]}</p>}
+            </div>
+            <label className="auth-consent-check auth-marketing-check">
+              <input
+                checked={registration.marketingConsent}
+                name="marketingConsent"
+                onChange={(event) => setRegistration((current) => ({ ...current, marketingConsent: event.target.checked }))}
+                type="checkbox"
+              />
+              <span>我願意接收新品、優惠與活動消息（選填）</span>
+            </label>
             <label className="auth-consent-check">
               <input
-                checked={contact.consent}
+                checked={registration.consent}
                 name="consent"
-                onChange={(event) => setContact((current) => ({ ...current, consent: event.target.checked }))}
+                onChange={(event) => setRegistration((current) => ({ ...current, consent: event.target.checked }))}
                 type="checkbox"
               />
               <span>我已閱讀並同意 <Link href="/terms">服務條款</Link> 與 <Link href="/privacy">隱私權政策</Link></span>
             </label>
-            {contactState.fieldErrors?.consent && <p className="auth-error" role="alert">{contactState.fieldErrors.consent[0]}</p>}
-            {contactState.message && <p className="auth-error" role="status">{contactState.message}</p>}
-            <button className="button button-wide" disabled={!contactValid || contactPending} type="submit">
-              {contactPending ? '寄送中…' : '下一步'}
+          </fieldset>
+          {contactState.fieldErrors?.consent && <p className="auth-error" role="alert">{contactState.fieldErrors.consent[0]}</p>}
+          {contactState.message && <p className="auth-error" role="status">{contactState.message}</p>}
+          {completionState.message && <p className="auth-error" role="status">{completionState.message}</p>}
+          {!verificationOpen && !registrationValid && (
+            <p className="signup-submit-hint" role="status">請完整填寫上方欄位，並勾選同意服務條款後，即可寄送驗證碼。</p>
+          )}
+          {!verificationOpen && (
+            <button className="button button-wide" disabled={!registrationValid || contactPending} type="submit">
+              {contactPending ? '寄送中…' : '寄送 Email 驗證碼'}
             </button>
-          </form>
-        )}
+          )}
+        </form>
 
-        {stage === 'verify' && (
-          <div>
+        {verificationOpen && (
+          <section className="signup-verification-panel">
             <form action={otpAction} noValidate>
-              <p className="eyebrow">verify your Email</p>
-              <h1 ref={headingRef} tabIndex={-1}>輸入 Email 驗證碼</h1>
-              <p className="auth-intro">驗證碼已寄到 <strong>{verifiedContact.maskedEmail}</strong></p>
+              <p className="eyebrow">Email verification</p>
+              <h2 ref={verificationHeadingRef} tabIndex={-1}>驗證 Email</h2>
+              <p>驗證碼已寄到 <strong>{verifiedContact.maskedEmail}</strong></p>
               <input name="email" type="hidden" value={verifiedContact.email} />
               <div className="auth-field">
                 <label htmlFor="signup-otp">Email 驗證碼</label>
@@ -172,6 +279,7 @@ export function SignupForm({
                   maxLength={6}
                   name="token"
                   pattern="[0-9]{6}"
+                  placeholder="請輸入 6 位數驗證碼"
                 />
                 {(otpState.fieldErrors?.token || otpState.message) && (
                   <p id="signup-otp-error" role="alert">{otpState.fieldErrors?.token?.[0] ?? otpState.message}</p>
@@ -179,48 +287,23 @@ export function SignupForm({
               </div>
               {fixtureMode && <p className="signup-fixture-code">本機驗證碼：123456</p>}
               <button className="button button-wide" disabled={otpPending} type="submit">
-                {otpPending ? '驗證中…' : '驗證 Email'}
+                {otpPending ? '建立中…' : '驗證並建立帳號'}
               </button>
             </form>
             <div className="signup-otp-actions">
               <form action={contactAction}>
                 <input name="email" type="hidden" value={verifiedContact.email} />
                 <input name="phone" type="hidden" value={verifiedContact.phone} />
+                <input name="displayName" type="hidden" value={verifiedContact.displayName} />
                 <input name="consent" type="hidden" value="on" />
+                {verifiedContact.marketingConsent && <input name="marketingConsent" type="hidden" value="on" />}
                 <button disabled={remainingSeconds > 0 || contactPending} type="submit">
                   {remainingSeconds > 0 ? `重新寄送（${remainingSeconds} 秒）` : '重新寄送'}
                 </button>
               </form>
-              <button onClick={() => setStage('contact')} type="button">修改 Email</button>
+              <button onClick={() => setVerificationOpen(false)} type="button">修改會員資料</button>
             </div>
-          </div>
-        )}
-
-        {stage === 'password' && (
-          <form action={passwordAction} noValidate>
-            <p className="eyebrow">secure your account</p>
-            <h1 ref={headingRef} tabIndex={-1}>設定會員密碼</h1>
-            <p className="auth-intro">Email 驗證完成，設定之後登入使用的密碼。</p>
-            <input name="email" type="hidden" value={verifiedContact.email} />
-            {nextPath && <input name="next" type="hidden" value={nextPath} />}
-            <div className="auth-field">
-              <label htmlFor="signup-password">設定密碼</label>
-              <input
-                aria-describedby={passwordState.fieldErrors?.password ? 'signup-password-help signup-password-error' : 'signup-password-help'}
-                autoComplete="new-password"
-                id="signup-password"
-                minLength={8}
-                name="password"
-                type="password"
-              />
-              <p className="field-help" id="signup-password-help">至少 8 個字元</p>
-              {passwordState.fieldErrors?.password && <p id="signup-password-error" role="alert">{passwordState.fieldErrors.password[0]}</p>}
-            </div>
-            {passwordState.message && <p className="auth-error" role="status">{passwordState.message}</p>}
-            <button className="button button-wide" disabled={passwordPending} type="submit">
-              {passwordPending ? '建立中…' : '完成註冊'}
-            </button>
-          </form>
+          </section>
         )}
 
         <p className="auth-switch">已經有帳號？ <Link href={nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : '/login'}>前往登入</Link></p>

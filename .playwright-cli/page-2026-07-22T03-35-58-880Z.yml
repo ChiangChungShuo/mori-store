@@ -1,0 +1,267 @@
+- generic [active] [ref=f4e1]:
+  - generic [ref=f4e2]:
+    - complementary [ref=f4e3]:
+      - link "mori store room" [ref=f4e4] [cursor=pointer]:
+        - /url: /admin
+        - text: mori
+        - generic [ref=f4e5]: store room
+      - generic [ref=f4e6]:
+        - generic [ref=f4e7]: 店
+        - generic [ref=f4e8]:
+          - strong [ref=f4e9]: mori 老闆
+          - generic [ref=f4e10]: 商店管理員
+      - navigation "商店後台導覽" [ref=f4e11]:
+        - link "總 商店總覽" [ref=f4e12] [cursor=pointer]:
+          - /url: /admin
+          - generic [ref=f4e13]: 總
+          - text: 商店總覽
+        - link "單 訂單管理" [ref=f4e14] [cursor=pointer]:
+          - /url: /admin/orders
+          - generic [ref=f4e15]: 單
+          - text: 訂單管理
+        - link "品 商品管理與庫存" [ref=f4e16] [cursor=pointer]:
+          - /url: /admin/products
+          - generic [ref=f4e17]: 品
+          - text: 商品管理與庫存
+        - link "類 商品分類" [ref=f4e18] [cursor=pointer]:
+          - /url: /admin/categories
+          - generic [ref=f4e19]: 類
+          - text: 商品分類
+        - link "客 會員管理" [ref=f4e20] [cursor=pointer]:
+          - /url: /admin/members
+          - generic [ref=f4e21]: 客
+          - text: 會員管理
+        - link "促 行銷推廣" [ref=f4e22] [cursor=pointer]:
+          - /url: /admin/marketing
+          - generic [ref=f4e23]: 促
+          - text: 行銷推廣
+        - link "報 報表分析" [ref=f4e24] [cursor=pointer]:
+          - /url: /admin/reports
+          - generic [ref=f4e25]: 報
+          - text: 報表分析
+        - link "設 商店設定" [ref=f4e26] [cursor=pointer]:
+          - /url: /admin/settings
+          - generic [ref=f4e27]: 設
+          - text: 商店設定
+        - link "↗ 返回商城" [ref=f4e28] [cursor=pointer]:
+          - /url: /
+          - generic [ref=f4e29]: ↗
+          - text: 返回商城
+      - button "登出" [ref=f4e32] [cursor=pointer]
+    - main [ref=f4e34]:
+      - generic [ref=f4e35]:
+        - generic [ref=f4e36]:
+          - paragraph [ref=f4e37]: store preferences
+          - heading "商店設定" [level=1] [ref=f4e38]
+        - paragraph [ref=f4e39]: 集中管理配送、搜尋呈現、網站分析與首頁內容。
+      - generic [ref=f4e40]:
+        - generic [ref=f4e42]:
+          - paragraph [ref=f4e43]: shipping & contact
+          - heading "配送與聯絡資料" [level=2] [ref=f4e44]
+        - generic [ref=f4e45]:
+          - generic [ref=f4e46]:
+            - text: 運費
+            - spinbutton "運費" [ref=f4e47]: "60"
+          - generic [ref=f4e48]:
+            - text: 免運門檻
+            - spinbutton "免運門檻" [ref=f4e49]: "1500"
+          - generic [ref=f4e50]:
+            - text: 聯絡 Email
+            - textbox "聯絡 Email" [ref=f4e51]: hello@mori.tw
+          - generic [ref=f4e52]: SEO 與網站流量
+          - generic [ref=f4e54]:
+            - text: 網站主標題
+            - textbox "網站主標題 建議包含品牌、商品特色與主要客群，最多 70 個字。" [ref=f4e55]: mori 童裝商城｜0–12 歲孩子的日常選衣
+            - generic [ref=f4e56]: 建議包含品牌、商品特色與主要客群，最多 70 個字。
+          - generic [ref=f4e57]:
+            - text: Description
+            - textbox "Description 搜尋結果與社群分享會使用這段摘要，建議 80–160 個字。" [ref=f4e58]: 為 0–12 歲孩子挑選親膚、耐穿、自在活動的日常服，支援 7-ELEVEN 與全家取貨。
+            - generic [ref=f4e59]: 搜尋結果與社群分享會使用這段摘要，建議 80–160 個字。
+          - group "關鍵字設定（最多 5 組）" [ref=f4e60]:
+            - generic [ref=f4e62]:
+              - generic [ref=f4e63]:
+                - text: 關鍵字 1
+                - textbox "關鍵字 1" [ref=f4e64]:
+                  - /placeholder: 例：台灣童裝
+                  - text: 童裝
+              - generic [ref=f4e65]:
+                - text: 關鍵字 2
+                - textbox "關鍵字 2" [ref=f4e66]:
+                  - /placeholder: ""
+                  - text: 兒童服飾
+              - generic [ref=f4e67]:
+                - text: 關鍵字 3
+                - textbox "關鍵字 3" [ref=f4e68]:
+                  - /placeholder: ""
+                  - text: 親膚童裝
+              - generic [ref=f4e69]:
+                - text: 關鍵字 4
+                - textbox "關鍵字 4" [ref=f4e70]:
+                  - /placeholder: ""
+                  - text: 0–12 歲穿搭
+              - generic [ref=f4e71]:
+                - text: 關鍵字 5
+                - textbox "關鍵字 5" [ref=f4e72]:
+                  - /placeholder: ""
+                  - text: 超商取貨
+          - generic [ref=f4e73]:
+            - text: Google Analytics 4 Measurement ID（選填）
+            - textbox "Google Analytics 4 Measurement ID（選填） 填入 G- 開頭的 ID 才會載入 Google tag；留白時不會傳送資料。" [ref=f4e74]:
+              - /placeholder: G-XXXXXXXXXX
+            - generic [ref=f4e75]: 填入 G- 開頭的 ID 才會載入 Google tag；留白時不會傳送資料。
+          - button "儲存設定" [ref=f4e76] [cursor=pointer]
+      - generic [ref=f4e77]:
+        - generic [ref=f4e78]:
+          - generic [ref=f4e79]:
+            - paragraph [ref=f4e80]: homepage carousel
+            - heading "首頁輪播圖" [level=2] [ref=f4e81]
+          - paragraph [ref=f4e82]: 可編輯每張主視覺的圖片、文案與站內連結；保留空白的新欄位不會建立輪播。
+        - generic [ref=f4e83]:
+          - generic "首頁輪播即時預覽" [ref=f4e84]:
+            - generic [ref=f4e85]:
+              - generic [ref=f4e86]:
+                - strong [ref=f4e87]: 前台即時預覽
+                - generic [ref=f4e88]: 輸入文字或選擇圖片後立即更新
+              - link "另開首頁 ↗" [ref=f4e89] [cursor=pointer]:
+                - /url: /
+            - region "首頁主視覺" [ref=f4e90]:
+              - generic [ref=f4e91]:
+                - paragraph [ref=f4e92]: mori summer edit · 2026
+                - heading [level=1] [ref=f4e93]:
+                  - text: 小小日常，
+                  - generic [ref=f4e94]: 自在長大。
+                - paragraph [ref=f4e95]: 替 0–12 歲孩子挑選柔軟、好活動、每天都願意穿的衣服。
+                - generic [ref=f4e96]:
+                  - link "選購本週新品" [ref=f4e97] [cursor=pointer]:
+                    - /url: /#new
+                  - link "瀏覽所有商品 →" [ref=f4e98] [cursor=pointer]:
+                    - /url: /products
+              - img "兩位穿著舒適童裝的孩子在庭院散步" [ref=f4e100]
+              - button "上一張輪播圖片" [ref=f4e101] [cursor=pointer]: ←
+              - button "下一張輪播圖片" [ref=f4e102] [cursor=pointer]: →
+              - generic "選擇輪播圖片" [ref=f4e103]:
+                - button "顯示第 1 張：小小日常，自在長大。" [pressed] [ref=f4e104] [cursor=pointer]: "01"
+                - button "顯示第 2 張：把舒服，穿進週末。" [ref=f4e105] [cursor=pointer]: "02"
+          - generic [ref=f4e106]:
+            - group "01 輪播內容" [ref=f4e107]:
+              - img "兩位穿著舒適童裝的孩子在庭院散步" [ref=f4e110]
+              - generic [ref=f4e111]:
+                - text: 更換圖片
+                - button "更換圖片" [ref=f4e112]
+              - generic [ref=f4e113]:
+                - text: 圖片說明
+                - textbox "圖片說明" [ref=f4e114]:
+                  - /placeholder: 描述圖片中的人物與情境
+                  - text: 兩位穿著舒適童裝的孩子在庭院散步
+              - generic [ref=f4e115]:
+                - text: 英文小標
+                - textbox "英文小標" [ref=f4e116]:
+                  - /placeholder: mori seasonal edit
+                  - text: mori summer edit · 2026
+              - generic [ref=f4e117]:
+                - text: 主標題
+                - textbox "主標題" [ref=f4e118]:
+                  - /placeholder: "小小日常，\n自在長大。"
+                  - text: 小小日常， 自在長大。
+              - generic [ref=f4e119]:
+                - text: 說明文字
+                - textbox "說明文字" [ref=f4e120]: 替 0–12 歲孩子挑選柔軟、好活動、每天都願意穿的衣服。
+              - generic [ref=f4e121]:
+                - generic [ref=f4e122]:
+                  - text: 按鈕文字
+                  - textbox "按鈕文字" [ref=f4e123]: 選購本週新品
+                - generic [ref=f4e124]:
+                  - text: 站內連結
+                  - textbox "站內連結" [ref=f4e125]:
+                    - /placeholder: /products
+                    - text: /#new
+            - group "02 輪播內容" [ref=f4e126]:
+              - img "森林綠小花花野洋裝" [ref=f4e129]
+              - generic [ref=f4e130]:
+                - text: 更換圖片
+                - button "更換圖片" [ref=f4e131]
+              - generic [ref=f4e132]:
+                - text: 圖片說明
+                - textbox "圖片說明" [ref=f4e133]:
+                  - /placeholder: 描述圖片中的人物與情境
+                  - text: 森林綠小花花野洋裝
+              - generic [ref=f4e134]:
+                - text: 英文小標
+                - textbox "英文小標" [ref=f4e135]:
+                  - /placeholder: mori seasonal edit
+                  - text: weekend in green
+              - generic [ref=f4e136]:
+                - text: 主標題
+                - textbox "主標題" [ref=f4e137]:
+                  - /placeholder: "小小日常，\n自在長大。"
+                  - text: 把舒服， 穿進週末。
+              - generic [ref=f4e138]:
+                - text: 說明文字
+                - textbox "說明文字" [ref=f4e139]: 親膚材質與自在版型，陪孩子從日常一路玩到旅行。
+              - generic [ref=f4e140]:
+                - generic [ref=f4e141]:
+                  - text: 按鈕文字
+                  - textbox "按鈕文字" [ref=f4e142]: 看看本週選品
+                - generic [ref=f4e143]:
+                  - text: 站內連結
+                  - textbox "站內連結" [ref=f4e144]:
+                    - /placeholder: /products
+                    - text: /products
+            - group "03 新增輪播" [ref=f4e145]:
+              - generic [ref=f4e147]: 等待上傳圖片
+              - generic [ref=f4e148]:
+                - text: 更換圖片
+                - button "更換圖片" [ref=f4e149]
+              - generic [ref=f4e150]:
+                - text: 圖片說明
+                - textbox "圖片說明" [ref=f4e151]:
+                  - /placeholder: 描述圖片中的人物與情境
+              - generic [ref=f4e152]:
+                - text: 英文小標
+                - textbox "英文小標" [ref=f4e153]:
+                  - /placeholder: mori seasonal edit
+              - generic [ref=f4e154]:
+                - text: 主標題
+                - textbox "主標題" [ref=f4e155]:
+                  - /placeholder: "小小日常，\n自在長大。"
+              - generic [ref=f4e156]:
+                - text: 說明文字
+                - textbox "說明文字" [ref=f4e157]
+              - generic [ref=f4e158]:
+                - generic [ref=f4e159]:
+                  - text: 按鈕文字
+                  - textbox "按鈕文字" [ref=f4e160]
+                - generic [ref=f4e161]:
+                  - text: 站內連結
+                  - textbox "站內連結" [ref=f4e162]:
+                    - /placeholder: /products
+          - button "儲存首頁輪播" [ref=f4e163] [cursor=pointer]
+      - generic [ref=f4e164]:
+        - generic [ref=f4e165]:
+          - generic [ref=f4e166]:
+            - paragraph [ref=f4e167]: payments, shipping & seo
+            - heading "串接與搜尋設定" [level=2] [ref=f4e168]
+          - paragraph [ref=f4e169]: 「待串接」功能需申請第三方服務並取得正式金鑰後才能收款或建立物流單。
+        - generic [ref=f4e170]:
+          - article [ref=f4e171]:
+            - generic [ref=f4e172]: 目前可用
+            - heading "7-ELEVEN／全家取貨" [level=3] [ref=f4e173]
+            - paragraph [ref=f4e174]: 前台可選擇測試門市；正式電子地圖與物流單仍需串接物流服務。
+          - article [ref=f4e175]:
+            - generic [ref=f4e176]: 目前可用
+            - heading "本機測試付款" [level=3] [ref=f4e177]
+            - paragraph [ref=f4e178]: 只用於測試完整訂單流程，不會向顧客實際扣款。
+          - article [ref=f4e179]:
+            - generic [ref=f4e180]: 待串接
+            - heading "信用卡・Apple Pay・LINE Pay" [level=3] [ref=f4e181]
+            - paragraph [ref=f4e182]: 需選定台灣金流商、完成商店審核並設定正式環境金鑰。
+          - article [ref=f4e183]:
+            - generic [ref=f4e184]: 待串接
+            - heading "超商代碼繳費・宅配" [level=3] [ref=f4e185]
+            - paragraph [ref=f4e186]: 目前商城以超商取貨為主；啟用前需確認費率與服務合約。
+          - article [ref=f4e187]:
+            - generic [ref=f4e188]: 基礎完成
+            - heading "SEO 與社群預覽" [level=3] [ref=f4e189]
+            - paragraph [ref=f4e190]: 已設定網站名稱、摘要與社群分享卡片；正式上線後再填入公開網域。
+  - button "Open Next.js Dev Tools" [ref=f4e196] [cursor=pointer]
+  - alert [ref=f4e200]

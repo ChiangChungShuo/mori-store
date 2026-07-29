@@ -5,6 +5,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import {
   createAdminProductActions,
+  filterAdminProductSummaries,
   type ProductRepository,
 } from '@/features/admin/product-actions'
 import type { ProductInput } from '@/lib/validation/product'
@@ -35,6 +36,7 @@ const product: ProductInput = {
       color: '黃色',
       size: '100',
       price: 590,
+      cost: 260,
       stock: 3,
     },
   ],
@@ -47,6 +49,7 @@ const newProduct: ProductInput = {
     color: variant.color,
     size: variant.size,
     price: variant.price,
+    cost: variant.cost,
     compareAtPrice: variant.compareAtPrice,
     stock: variant.stock,
   })),
@@ -108,6 +111,16 @@ class MemoryProductRepository implements ProductRepository {
     if (this.failImageRemove) throw new Error('storage remove failed')
     this.removedPaths.push(path)
   }
+
+  async deleteImage(id: string, imageId: string) {
+    this.events.push(`delete-image:${id}:${imageId}`)
+    this.imageCount = Math.max(0, this.imageCount - 1)
+    return `${id}/${imageId}.png`
+  }
+
+  async deleteProduct(id: string) {
+    this.events.push(`delete:${id}`)
+  }
 }
 
 function setup(
@@ -131,6 +144,40 @@ function setup(
 }
 
 describe('admin product actions', () => {
+  it('filters the management list by keyword, category, status and stock state', () => {
+    const products = [
+      { id: '1', name: '深海軍藍自在長褲', category: '褲裝', isPublished: true, totalStock: 8 },
+      { id: '2', name: '雲朵包屁衣', category: '幼兒服', isPublished: false, totalStock: 0 },
+    ]
+
+    expect(filterAdminProductSummaries(products, { query: '藍', category: '褲裝', status: 'published', stock: 'in_stock' }))
+      .toEqual([products[0]])
+    expect(filterAdminProductSummaries(products, { query: '', category: '', status: 'draft', stock: 'sold_out' }))
+      .toEqual([products[1]])
+  })
+
+  it('authorizes and removes a product image and its stored file', async () => {
+    const { actions, repository } = setup()
+    repository.imageCount = 2
+
+    const result = await actions.deleteProductImage(productId, 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee')
+
+    expect(result).toMatchObject({ ok: true, message: '商品圖片已刪除' })
+    expect(repository.events).toEqual([
+      'admin',
+      `delete-image:${productId}:eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee`,
+      `remove:${productId}/eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee.png`,
+    ])
+  })
+
+  it('authorizes and deletes the selected product', async () => {
+    const { actions, repository } = setup()
+
+    const result = await (actions as unknown as { deleteProduct: (id: string) => Promise<{ ok: boolean }> }).deleteProduct(productId)
+
+    expect(result).toMatchObject({ ok: true })
+    expect(repository.events).toEqual(['admin', `delete:${productId}`])
+  })
   it('rejects a stale edit after payment changes stock without restoring sold inventory', async () => {
     class VersionedProductRepository extends MemoryProductRepository {
       stock = 10
@@ -223,6 +270,18 @@ describe('admin product actions', () => {
 
     expect(result.ok).toBe(false)
     expect(repository.events).toEqual(['admin'])
+    expect(repository.savedProduct).toBeNull()
+  })
+
+  it('rejects a negative variant cost before saving', async () => {
+    const { actions, repository } = setup()
+
+    const result = await actions.createProduct({
+      ...newProduct,
+      variants: [{ ...newProduct.variants[0], cost: -1 }],
+    })
+
+    expect(result).toMatchObject({ ok: false })
     expect(repository.savedProduct).toBeNull()
   })
 
@@ -364,7 +423,7 @@ describe('admin product database contract', () => {
     expect(sql).toMatch(/public\.is_admin\(\)/)
     expect(actions).toMatch(/\.rpc\(['"]admin_create_product['"]/)
     expect(actions).toMatch(/\.rpc\(['"]admin_update_product['"]/)
-    expect(actions).not.toMatch(/existingBySku|insertedIds|upsert\(currentVariants|from\(['"]products['"]\)\.delete/)
+    expect(actions).not.toMatch(/existingBySku|insertedIds|upsert\(currentVariants/)
   })
 
   it('publishes atomically and inserts image positions under a product lock', () => {
@@ -391,12 +450,39 @@ describe('admin product database contract', () => {
       'utf8',
     )
 
-    expect(actions).toMatch(/product_variants\(id, sku, color, size, price, compare_at_price, stock, updated_at\)/)
+    expect(actions).toMatch(/product_variants\(id, sku, color, size, price, cost, compare_at_price, stock, updated_at\)/)
     expect(actions).toMatch(/updatedAt:\s*variant\.updated_at/)
   })
 })
 
 describe('admin product form', () => {
+  it('rejects a scheduled sale time in the past and exposes a minimum selectable time', () => {
+    const onSave = vi.fn().mockResolvedValue({ ok: true, productId })
+    const view = render(createElement(ProductForm, { initialProduct: product, onSave }))
+    const form = within(view.container)
+    const scheduledAt = form.getByLabelText(/預約開賣時間/)
+
+    expect(scheduledAt).toHaveAttribute('min')
+    fireEvent.change(scheduledAt, { target: { value: '2020-01-01T00:00' } })
+    fireEvent.click(form.getByRole('button', { name: '儲存商品' }))
+
+    expect(form.getByText('預約開賣時間必須晚於現在')).toBeInTheDocument()
+    expect(onSave).not.toHaveBeenCalled()
+    view.unmount()
+  })
+
+  it('keeps the category control in the same field rhythm as adjacent inputs', () => {
+    const view = render(createElement(ProductForm, { initialProduct: product, onSave: vi.fn() }))
+    const form = within(view.container)
+    const category = form.getByLabelText('分類')
+    const manageLink = form.getByRole('link', { name: /管理分類/ })
+
+    expect(category.parentElement).toHaveClass('admin-category-field')
+    expect(category.compareDocumentPosition(manageLink) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(category.parentElement?.querySelector('.admin-field-label-row')).toBeNull()
+    view.unmount()
+  })
+
   it('shows an actionable image error when Next rejects the Server Action body', async () => {
     const upload = vi.fn().mockRejectedValue(new Error('Body exceeded 1 MB limit'))
     const view = render(createElement(ImageUploader, { upload }))
@@ -421,7 +507,7 @@ describe('admin product form', () => {
       return createElement(VariantGrid, { variants, onChange: setVariants })
     }
 
-    render(createElement(VariantHarness))
+    const view = render(createElement(VariantHarness))
     expect(screen.getAllByLabelText('SKU')).toHaveLength(1)
 
     fireEvent.click(screen.getByRole('button', { name: '新增規格' }))
@@ -429,16 +515,117 @@ describe('admin product form', () => {
 
     fireEvent.click(screen.getAllByRole('button', { name: '移除規格' })[1])
     expect(screen.getAllByLabelText('SKU')).toHaveLength(1)
+    view.unmount()
   })
 
   it('has an explicit Save button and submits approved product fields', async () => {
-    const onSave = vi.fn().mockResolvedValue({ ok: true, productId })
-    render(createElement(ProductForm, { initialProduct: product, onSave }))
+    const onSave = vi.fn().mockResolvedValue({ ok: true, productId, message: '商品修改已儲存' })
+    const view = render(createElement(ProductForm, { initialProduct: product, onSave }))
+    const form = within(view.container)
 
-    fireEvent.change(screen.getByLabelText('商品名稱'), { target: { value: '彩色 Tee' } })
-    fireEvent.click(screen.getByRole('button', { name: '儲存商品' }))
+    fireEvent.change(form.getByLabelText('商品名稱'), { target: { value: '彩色 Tee' } })
+    fireEvent.click(form.getByRole('button', { name: '儲存商品' }))
 
     await vi.waitFor(() => expect(onSave).toHaveBeenCalledWith({ ...product, name: '彩色 Tee' }))
+    expect((await form.findAllByRole('status')).some((status) => status.textContent?.includes('商品修改已儲存'))).toBe(true)
+    view.unmount()
+  })
+
+  it('updates the create progress from content through variants and images', () => {
+    const onSave = vi.fn().mockResolvedValue({ ok: true, productId })
+    const view = render(createElement(ProductForm, {
+      initialProduct: {
+        ...newProduct,
+        name: '',
+        slug: '',
+        category: '',
+        ageBands: [],
+        description: '',
+        material: '',
+        careInstructions: '',
+        sizeGuide: '',
+        variants: [{ sku: '', color: '', size: '', price: 0, stock: 0 }],
+      },
+      onSave,
+      requireImage: true,
+    }))
+    const form = within(view.container)
+
+    expect(form.getByRole('progressbar', { name: '商品建立進度' })).toHaveAttribute('aria-valuenow', '0')
+    expect(form.getByText('01 商品內容')).toHaveAttribute('data-active', 'true')
+
+    fireEvent.change(form.getByLabelText('商品名稱'), { target: { value: '彩色口袋 Tee' } })
+    fireEvent.change(form.getByLabelText(/網址代稱/), { target: { value: 'color-pocket-tee' } })
+    fireEvent.change(form.getByLabelText('分類'), { target: { value: '上衣' } })
+    fireEvent.click(form.getByRole('checkbox', { name: /3-5/ }))
+    fireEvent.change(form.getByLabelText('商品說明'), { target: { value: '柔軟日常上衣' } })
+    fireEvent.change(form.getByLabelText('材質'), { target: { value: '100% 棉' } })
+    fireEvent.change(form.getByLabelText('尺寸指南'), { target: { value: '正常版型' } })
+    fireEvent.change(form.getByLabelText('洗滌說明'), { target: { value: '冷水洗滌' } })
+    expect(form.getByText('02 規格庫存')).toHaveAttribute('data-active', 'true')
+
+    fireEvent.change(form.getByLabelText('SKU'), { target: { value: 'TEE-Y-100' } })
+    fireEvent.change(form.getByLabelText('顏色'), { target: { value: '黃色' } })
+    fireEvent.change(form.getByLabelText('尺寸', { exact: true }), { target: { value: '100' } })
+    fireEvent.change(form.getByLabelText('售價'), { target: { value: '590' } })
+    fireEvent.change(form.getByLabelText('成本'), { target: { value: '260' } })
+    fireEvent.change(form.getByLabelText('庫存'), { target: { value: '3' } })
+    expect(form.getByText('03 商品圖片')).toHaveAttribute('data-active', 'true')
+
+    fireEvent.change(form.getByLabelText('商品圖片'), { target: { files: [imageFile('image/png')] } })
+    fireEvent.change(form.getByLabelText('圖片說明'), { target: { value: '黃色口袋 Tee 正面' } })
+    expect(form.getByText('04 確認建立')).toHaveAttribute('data-active', 'true')
+    expect(form.getByRole('progressbar', { name: '商品建立進度' })).toHaveAttribute('aria-valuenow', '100')
+    view.unmount()
+  })
+
+  it('points out unfinished product content before saving', () => {
+    const onSave = vi.fn().mockResolvedValue({ ok: true, productId })
+    const view = render(createElement(ProductForm, {
+      initialProduct: {
+        ...product,
+        description: '',
+        material: '',
+        careInstructions: '',
+        sizeGuide: '',
+      },
+      onSave,
+    }))
+
+    const form = within(view.container)
+    fireEvent.click(form.getByRole('button', { name: '儲存商品' }))
+
+    expect(form.getByRole('alert')).toHaveTextContent('商品內容尚未完成')
+    expect(form.getByText('請填寫商品說明')).toBeInTheDocument()
+    expect(form.getByText('請填寫商品材質')).toBeInTheDocument()
+    expect(form.getByText('請填寫尺寸指南')).toBeInTheDocument()
+    expect(form.getByText('請填寫洗滌說明')).toBeInTheDocument()
+    expect(onSave).not.toHaveBeenCalled()
+    view.unmount()
+  })
+
+  it('shows the exact single-variant error and saves after that field is corrected', async () => {
+    const onSave = vi.fn().mockResolvedValue({ ok: true, productId })
+    const view = render(createElement(ProductForm, {
+      initialProduct: {
+        ...newProduct,
+        variants: [{ ...newProduct.variants[0], compareAtPrice: 500 }],
+      },
+      onSave,
+    }))
+    const form = within(view.container)
+
+    fireEvent.click(form.getByRole('button', { name: '儲存商品' }))
+    expect(form.getByText('原價不可低於售價')).toBeInTheDocument()
+    expect(form.getByText('請修正上方紅色標示的規格欄位；只建立一種規格也可以儲存。'))
+      .toBeInTheDocument()
+    expect(onSave).not.toHaveBeenCalled()
+
+    fireEvent.change(form.getByLabelText('原價'), { target: { value: '' } })
+    expect(form.queryByText('原價不可低於售價')).not.toBeInTheDocument()
+    fireEvent.click(form.getByRole('button', { name: '儲存商品' }))
+    await vi.waitFor(() => expect(onSave).toHaveBeenCalledTimes(1))
+    view.unmount()
   })
 
   it('remounts with canonical IDs after adding and saving a new variant', async () => {
@@ -523,5 +710,9 @@ describe('admin product form', () => {
 
     expect(await form.findByRole('status')).toHaveTextContent('商品已上架')
     expect(form.queryByRole('alert')).not.toBeInTheDocument()
+    await vi.waitFor(
+      () => expect(form.queryByRole('status')).not.toBeInTheDocument(),
+      { timeout: 3500, interval: 100 },
+    )
   })
 })

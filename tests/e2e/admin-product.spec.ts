@@ -19,7 +19,7 @@ test.describe('admin product inventory', () => {
 
     await page.getByLabel('商品名稱').fill('E2E 彩色口袋 Tee')
     await page.getByLabel('網址代稱').fill(slug)
-    await page.getByLabel('分類').fill('tops')
+    await page.getByLabel('分類').selectOption('上衣')
     await page.getByLabel('3-5 歲').check()
     await page.getByLabel('SKU').fill(`E2E-TEE-${suffix}`)
     await page.getByLabel('顏色').fill('黃色')

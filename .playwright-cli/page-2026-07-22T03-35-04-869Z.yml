@@ -1,0 +1,259 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e2]:
+    - complementary [ref=f1e3]:
+      - link "mori store room" [ref=f1e4] [cursor=pointer]:
+        - /url: /admin
+        - text: mori
+        - generic [ref=f1e5]: store room
+      - generic [ref=f1e6]:
+        - generic [ref=f1e7]: 店
+        - generic [ref=f1e8]:
+          - strong [ref=f1e9]: mori 老闆
+          - generic [ref=f1e10]: 商店管理員
+      - navigation "商店後台導覽" [ref=f1e11]:
+        - link "總 商店總覽" [ref=f1e12] [cursor=pointer]:
+          - /url: /admin
+          - generic [ref=f1e13]: 總
+          - text: 商店總覽
+        - link "單 訂單管理" [ref=f1e14] [cursor=pointer]:
+          - /url: /admin/orders
+          - generic [ref=f1e15]: 單
+          - text: 訂單管理
+        - link "品 商品管理與庫存" [ref=f1e16] [cursor=pointer]:
+          - /url: /admin/products
+          - generic [ref=f1e17]: 品
+          - text: 商品管理與庫存
+        - link "類 商品分類" [ref=f1e18] [cursor=pointer]:
+          - /url: /admin/categories
+          - generic [ref=f1e19]: 類
+          - text: 商品分類
+        - link "客 會員管理" [ref=f1e20] [cursor=pointer]:
+          - /url: /admin/members
+          - generic [ref=f1e21]: 客
+          - text: 會員管理
+        - link "促 行銷推廣" [ref=f1e22] [cursor=pointer]:
+          - /url: /admin/marketing
+          - generic [ref=f1e23]: 促
+          - text: 行銷推廣
+        - link "報 報表分析" [ref=f1e24] [cursor=pointer]:
+          - /url: /admin/reports
+          - generic [ref=f1e25]: 報
+          - text: 報表分析
+        - link "設 商店設定" [ref=f1e26] [cursor=pointer]:
+          - /url: /admin/settings
+          - generic [ref=f1e27]: 設
+          - text: 商店設定
+        - link "↗ 返回商城" [ref=f1e28] [cursor=pointer]:
+          - /url: /
+          - generic [ref=f1e29]: ↗
+          - text: 返回商城
+      - button "登出" [ref=f1e32] [cursor=pointer]
+    - main [ref=f1e34]:
+      - paragraph [ref=f1e35]:
+        - link "← 返回商品列表" [ref=f1e36] [cursor=pointer]:
+          - /url: /admin/products
+      - generic [ref=f1e37]:
+        - generic [ref=f1e38]:
+          - paragraph [ref=f1e39]: admin / products / edit
+          - heading "編輯 有機棉小樹 T 恤" [level=1] [ref=f1e40]
+        - paragraph [ref=f1e41]: 完成商品資料、圖片與庫存後，再切換前台上架狀態。
+      - generic [ref=f1e42]:
+        - generic [ref=f1e43]:
+          - generic [ref=f1e44]: 目前狀態
+          - strong [ref=f1e45]: 已上架，顧客可以購買
+        - generic [ref=f1e46]:
+          - generic [ref=f1e47]: 已上架
+          - button "下架商品" [ref=f1e48] [cursor=pointer]
+      - generic [ref=f1e49]:
+        - generic [ref=f1e50]:
+          - generic [ref=f1e51]:
+            - generic [ref=f1e52]:
+              - generic [ref=f1e53]:
+                - generic [ref=f1e54]:
+                  - generic [ref=f1e55]: "01"
+                  - heading "基本資料" [level=2] [ref=f1e56]
+                - paragraph [ref=f1e57]: 顧客會先看到名稱、分類與適用年齡。
+              - generic [ref=f1e58]:
+                - generic [ref=f1e59]:
+                  - text: 商品名稱
+                  - textbox "商品名稱" [ref=f1e60]:
+                    - /placeholder: 例：有機棉小樹 T 恤
+                    - text: 有機棉小樹 T 恤
+                - generic [ref=f1e61]:
+                  - text: 網址代稱
+                  - textbox "網址代稱 使用英文小寫、數字與連字號，例如 mori-tree-tee" [ref=f1e62]:
+                    - /placeholder: mori-tree-tee
+                    - text: mori-organic-cotton-tee
+                  - generic [ref=f1e63]: 使用英文小寫、數字與連字號，例如 mori-tree-tee
+                - generic [ref=f1e64]:
+                  - generic [ref=f1e65]: 分類
+                  - combobox "分類" [ref=f1e66]:
+                    - option "請選擇分類"
+                    - option "上衣" [selected]
+                    - option "褲裝"
+                    - option "洋裝"
+                    - option "外套"
+                    - option "幼兒服"
+                  - link "管理分類" [ref=f1e67] [cursor=pointer]:
+                    - /url: /admin/categories
+                    - text: 管理分類 ↗
+                - generic [ref=f1e68]:
+                  - text: 預約開賣時間（選填）
+                  - textbox "預約開賣時間（選填） 只能選擇現在之後的時間；開賣前商品可瀏覽、不可購買。" [ref=f1e69]: 2026-07-24T11:08
+                  - generic [ref=f1e70]: 只能選擇現在之後的時間；開賣前商品可瀏覽、不可購買。
+              - group "適用年齡" [ref=f1e71]:
+                - generic [ref=f1e73]:
+                  - generic [ref=f1e74] [cursor=pointer]:
+                    - checkbox "0-2 歲" [ref=f1e75]
+                    - strong [ref=f1e76]: 0-2
+                    - generic [ref=f1e77]: 歲
+                  - generic [ref=f1e78] [cursor=pointer]:
+                    - checkbox "3-5 歲" [checked] [ref=f1e79]
+                    - strong [ref=f1e80]: 3-5
+                    - generic [ref=f1e81]: 歲
+                  - generic [ref=f1e82] [cursor=pointer]:
+                    - checkbox "6-9 歲" [checked] [ref=f1e83]
+                    - strong [ref=f1e84]: 6-9
+                    - generic [ref=f1e85]: 歲
+                  - generic [ref=f1e86] [cursor=pointer]:
+                    - checkbox "10-12 歲" [ref=f1e87]
+                    - strong [ref=f1e88]: 10-12
+                    - generic [ref=f1e89]: 歲
+            - generic [ref=f1e90]:
+              - generic [ref=f1e91]:
+                - generic [ref=f1e92]:
+                  - generic [ref=f1e93]: "02"
+                  - heading "商品內容" [level=2] [ref=f1e94]
+                - paragraph [ref=f1e95]: 說清楚穿著感、材質與照顧方式。
+              - generic [ref=f1e96]:
+                - generic [ref=f1e97]:
+                  - text: 商品說明
+                  - textbox "商品說明" [ref=f1e98]:
+                    - /placeholder: 描述版型、觸感與適合的穿著情境
+                    - text: 柔軟透氣的日常有機棉 T 恤。
+                - generic [ref=f1e99]:
+                  - text: 材質
+                  - textbox "材質" [ref=f1e100]:
+                    - /placeholder: 例：100% 有機棉
+                    - text: 100% 有機棉
+                - generic [ref=f1e101]:
+                  - text: 尺寸指南
+                  - textbox "尺寸指南" [ref=f1e102]:
+                    - /placeholder: 例：正常版型，依平常尺寸選購
+                    - text: 版型正常，請依孩子平常尺寸選購。
+                - generic [ref=f1e103]:
+                  - text: 洗滌說明
+                  - textbox "洗滌說明" [ref=f1e104]:
+                    - /placeholder: 例：反面裝洗衣袋，冷水柔洗並自然晾乾
+                    - text: 建議冷水洗滌，低溫烘乾。
+            - generic [ref=f1e105]:
+              - generic [ref=f1e106]:
+                - generic [ref=f1e107]:
+                  - generic [ref=f1e108]: "03"
+                  - heading "規格與庫存" [level=2] [ref=f1e109]
+                - paragraph [ref=f1e110]: 每個顏色與尺寸都需要獨立 SKU、售價和庫存。
+              - group "商品規格" [ref=f1e111]:
+                - paragraph [ref=f1e113]:
+                  - strong [ref=f1e114]: SKU 是什麼？
+                  - text: 它是每個「顏色＋尺寸」專用的內部庫存編號，顧客不會看到。例：
+                  - code [ref=f1e115]: MORI-TEE-GREEN-110
+                - generic [ref=f1e116]:
+                  - generic [ref=f1e117]: SKU
+                  - generic [ref=f1e118]: 顏色
+                  - generic [ref=f1e119]: 尺寸
+                  - generic [ref=f1e120]: 售價
+                  - generic [ref=f1e121]: 成本
+                  - generic [ref=f1e122]: 原價
+                  - generic [ref=f1e123]: 庫存
+                - generic [ref=f1e124]:
+                  - generic [ref=f1e125]:
+                    - text: SKU
+                    - textbox "SKU" [ref=f1e126]: MORI-E2E-SAGE-100
+                  - generic [ref=f1e127]:
+                    - text: 顏色
+                    - textbox "顏色" [ref=f1e128]: 鼠尾草綠
+                  - generic [ref=f1e129]:
+                    - text: 尺寸
+                    - textbox "尺寸" [ref=f1e130]: "100"
+                  - generic [ref=f1e131]:
+                    - text: 售價
+                    - spinbutton "售價" [ref=f1e132]: "680"
+                  - generic [ref=f1e133]:
+                    - text: 成本
+                    - spinbutton "成本" [ref=f1e134]: "306"
+                  - generic [ref=f1e135]:
+                    - text: 原價
+                    - spinbutton "原價" [ref=f1e136]: "780"
+                  - generic [ref=f1e137]:
+                    - text: 庫存
+                    - spinbutton "庫存" [ref=f1e138]: "12"
+                  - button "移除規格" [ref=f1e139] [cursor=pointer]
+                - generic [ref=f1e140]:
+                  - generic [ref=f1e141]:
+                    - text: SKU
+                    - textbox "SKU" [ref=f1e142]: MORI-E2E-SAGE-120
+                  - generic [ref=f1e143]:
+                    - text: 顏色
+                    - textbox "顏色" [ref=f1e144]: 鼠尾草綠
+                  - generic [ref=f1e145]:
+                    - text: 尺寸
+                    - textbox "尺寸" [ref=f1e146]: "120"
+                  - generic [ref=f1e147]:
+                    - text: 售價
+                    - spinbutton "售價" [ref=f1e148]: "680"
+                  - generic [ref=f1e149]:
+                    - text: 成本
+                    - spinbutton "成本" [ref=f1e150]: "306"
+                  - generic [ref=f1e151]:
+                    - text: 原價
+                    - spinbutton "原價" [ref=f1e152]: "780"
+                  - generic [ref=f1e153]:
+                    - text: 庫存
+                    - spinbutton "庫存" [ref=f1e154]: "8"
+                  - button "移除規格" [ref=f1e155] [cursor=pointer]
+                - button "新增規格" [ref=f1e156] [cursor=pointer]: ＋ 新增顏色／尺寸規格
+          - complementary [ref=f1e157]:
+            - generic [ref=f1e158]:
+              - paragraph [ref=f1e159]: publish check
+              - heading "儲存前檢查" [level=2] [ref=f1e160]
+              - list [ref=f1e161]:
+                - listitem [ref=f1e162]: ● 商品內容
+                - listitem [ref=f1e163]: ● 規格與庫存
+            - generic [ref=f1e164] [cursor=pointer]:
+              - checkbox "標記為新品 在前台商品卡顯示 NEW ARRIVAL" [checked] [ref=f1e165]
+              - generic [ref=f1e166]:
+                - strong [ref=f1e167]: 標記為新品
+                - generic [ref=f1e168]: 在前台商品卡顯示 NEW ARRIVAL
+            - paragraph [ref=f1e169]: 儲存修改不會自動變更目前的上架狀態。
+        - button "儲存商品" [ref=f1e171] [cursor=pointer]
+      - generic [ref=f1e172]:
+        - generic [ref=f1e173]:
+          - generic [ref=f1e174]:
+            - paragraph [ref=f1e175]: product gallery
+            - heading "商品圖片" [level=2] [ref=f1e176]
+          - paragraph [ref=f1e177]: 第一張圖片會作為商品列表主圖，其餘圖片會出現在商品頁輪播。
+        - list [ref=f1e178]:
+          - listitem [ref=f1e179]:
+            - generic [ref=f1e180]: 主圖
+            - img "鼠尾草綠有機棉小樹 T 恤" [ref=f1e181]
+            - paragraph [ref=f1e182]: 鼠尾草綠有機棉小樹 T 恤
+            - button "刪除圖片 1" [ref=f1e184] [cursor=pointer]: 刪除圖片
+        - generic [ref=f1e185]:
+          - generic [ref=f1e186]:
+            - generic [ref=f1e187]:
+              - paragraph [ref=f1e188]: upload image
+              - heading "新增商品圖片" [level=2] [ref=f1e189]
+            - generic [ref=f1e190]: JPEG／PNG／WebP，單張 5 MB 以內
+          - generic [ref=f1e191] [cursor=pointer]:
+            - button "圖片" [ref=f1e192]
+            - generic [ref=f1e193]: ＋
+            - strong [ref=f1e194]: 選擇商品圖片
+            - generic [ref=f1e195]: 建議使用直式 4:5 圖片，前台呈現最完整
+          - generic [ref=f1e196]:
+            - text: 圖片替代文字
+            - textbox "圖片替代文字" [ref=f1e197]:
+              - /placeholder: 例：孩子穿著鼠尾草綠 T 恤的正面照
+            - generic [ref=f1e198]: 這段文字會提供給看不到圖片的使用者，也有助於搜尋。
+          - button "上傳圖片" [ref=f1e199] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=f1e205] [cursor=pointer]
+  - alert [ref=f1e209]

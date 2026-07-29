@@ -1,29 +1,27 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import { ProductCard } from '@/features/catalog/product-card'
 import { listProducts } from '@/features/catalog/queries'
+import { getBannerSlides } from '@/features/storefront/banner-settings'
+import { HeroCarousel } from '@/features/storefront/hero-carousel'
+import { absoluteUrl } from '@/lib/site'
 
 const ageBands = ['0-2', '3-5', '6-9', '10-12']
 
 export const dynamic = 'force-dynamic'
 
+export const metadata: Metadata = {
+  description: '為 0–12 歲孩子挑選親膚、耐穿、好活動的日常童裝，台灣本島超商取貨、滿額免運。',
+  alternates: { canonical: absoluteUrl('/') },
+}
+
 export default async function StoreHomePage() {
-  const products = await listProducts({})
+  const [products, bannerSlides] = await Promise.all([listProducts({}), getBannerSlides()])
   const newProducts = products.filter((product) => product.isNew)
 
   return (
     <main>
-      <section className="hero" aria-labelledby="hero-title">
-        <div className="hero-copy">
-          <p className="eyebrow">mori summer edit · 2026</p>
-          <h1 id="hero-title">小小日常，<br />自在長大。</h1>
-          <p>替 0–12 歲孩子挑選柔軟、好活動、每天都願意穿的衣服。</p>
-          <div className="hero-actions">
-            <Link href="#new" className="button">選購本週新品</Link>
-            <Link href="/products" className="text-link">瀏覽所有商品 →</Link>
-          </div>
-        </div>
-        <div className="hero-image" role="img" aria-label="兩位穿著舒適童裝的孩子在庭院散步" />
-      </section>
+      <HeroCarousel slides={bannerSlides} />
 
       <section id="ages" className="section" aria-labelledby="ages-title">
         <header className="section-heading">

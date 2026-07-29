@@ -10,7 +10,14 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    if (new URL(origin).origin !== request.nextUrl.origin) {
+    const originUrl = new URL(origin)
+    const requestHost = request.headers.get('x-forwarded-host')?.split(',', 1)[0].trim()
+      || request.headers.get('host')
+      || request.nextUrl.host
+    const requestProtocol = request.headers.get('x-forwarded-proto')?.split(',', 1)[0].trim()
+      || request.nextUrl.protocol.slice(0, -1)
+
+    if (originUrl.host !== requestHost || originUrl.protocol !== `${requestProtocol}:`) {
       return Response.json({ error: '不允許的付款來源' }, { status: 403 })
     }
   } catch {
