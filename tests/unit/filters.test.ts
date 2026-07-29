@@ -129,6 +129,20 @@ describe('store navigation', () => {
     expect(screen.getByRole('link', { name: '會員訂單' })).toHaveAttribute('href', '/login?next=/account/orders')
     expect(screen.getByRole('link', { name: '訪客查單' })).toHaveAttribute('href', '/order-lookup')
   })
+
+  it('hides the admin backend link from non-admin visitors', () => {
+    render(createElement(SiteHeader, { isSignedIn: true }))
+
+    expect(screen.queryByRole('link', { name: '老闆後台' })).not.toBeInTheDocument()
+  })
+
+  it('reveals the admin backend link only to admin accounts', () => {
+    render(createElement(SiteHeader, { isSignedIn: true, isAdmin: true }))
+
+    const adminLinks = screen.getAllByRole('link', { name: '老闆後台' })
+    expect(adminLinks.length).toBeGreaterThan(0)
+    adminLinks.forEach((link) => expect(link).toHaveAttribute('href', '/admin'))
+  })
 })
 
 describe('ProductCard', () => {

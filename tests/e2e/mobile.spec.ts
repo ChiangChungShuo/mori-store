@@ -116,7 +116,8 @@ test('opens and closes the storefront navigation at 375 px', async ({ page }) =>
   await expect(categories).toHaveAttribute('open', '')
   await expect(categories.getByRole('link', { name: '上衣', exact: true })).toBeVisible()
   await expect(dialog.getByRole('link', { name: '訪客查單' })).toBeVisible()
-  await expect(dialog.getByRole('link', { name: '老闆後台' })).toBeVisible()
+  // The admin backend link is only shown to admin accounts, never to guests.
+  await expect(dialog.getByRole('link', { name: '老闆後台' })).toHaveCount(0)
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await expect(trigger.locator('i').first()).toHaveCSS('transition-duration', '0s')
   await expect(dialog.locator('.mobile-menu-panel')).toHaveCSS('animation-duration', '0s')

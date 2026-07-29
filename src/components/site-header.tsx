@@ -9,7 +9,7 @@ import { MobileHeaderSearch } from '@/components/mobile-header-search'
 import { DesktopHeaderSearch } from '@/components/desktop-header-search'
 import { AutoCloseDetails } from '@/components/auto-close-details'
 
-export function SiteHeader({ cart, isSignedIn = false, categories = [...defaultProductCategories] }: { cart?: ReactNode; isSignedIn?: boolean; categories?: string[] }) {
+export function SiteHeader({ cart, isSignedIn = false, isAdmin = false, categories = [...defaultProductCategories] }: { cart?: ReactNode; isSignedIn?: boolean; isAdmin?: boolean; categories?: string[] }) {
   return (
     <header id="top">
       <div className="announcement">
@@ -36,7 +36,7 @@ export function SiteHeader({ cart, isSignedIn = false, categories = [...defaultP
                 <h2 id="store-mobile-service-heading">服務</h2>
                 <Link href="/order-lookup">訪客查單</Link>
                 <Link href="/faq">常見問題</Link>
-                <Link href="/admin">老闆後台</Link>
+                {isAdmin ? <Link href="/admin">老闆後台</Link> : null}
               </section>
             </div>
           </MobileMenu>
@@ -87,7 +87,7 @@ export function SiteHeader({ cart, isSignedIn = false, categories = [...defaultP
                 <Link href="/login?next=/account/orders">會員訂單</Link>
               </>}
               <Link href="/order-lookup">訪客查單</Link>
-              <Link className="account-menu-admin" href="/admin">老闆後台</Link>
+              {isAdmin ? <Link className="account-menu-admin" href="/admin">老闆後台</Link> : null}
             </div>
           </AutoCloseDetails>
           <DesktopHeaderSearch />

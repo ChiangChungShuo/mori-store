@@ -7,19 +7,20 @@ import { WishlistAuthProvider } from '@/features/wishlist/wishlist-auth'
 import { getStorefrontSettings } from '@/features/checkout/settings'
 import { StorefrontTracker } from '@/features/analytics/storefront-tracker'
 import { getCurrentUser } from '@/lib/auth/require-user'
+import { isCurrentUserAdmin } from '@/lib/auth/require-admin'
 import { listProductCategories } from '@/features/catalog/categories'
 import { GoogleAnalytics } from '@/components/google-analytics'
 import { getPublicSiteSettings } from '@/features/admin/settings-actions'
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
-  const [settings, user, categories, { googleAnalyticsId }] = await Promise.all([getStorefrontSettings(), getCurrentUser(), listProductCategories(), getPublicSiteSettings()])
+  const [settings, user, isAdmin, categories, { googleAnalyticsId }] = await Promise.all([getStorefrontSettings(), getCurrentUser(), isCurrentUserAdmin(), listProductCategories(), getPublicSiteSettings()])
 
   return (
     <CartProvider>
       <WishlistAuthProvider isSignedIn={Boolean(user)}>
         <GoogleAnalytics measurementId={googleAnalyticsId} />
         <StorefrontTracker />
-        <SiteHeader cart={<CartDrawer settings={settings} />} categories={categories} isSignedIn={Boolean(user)} />
+        <SiteHeader cart={<CartDrawer settings={settings} />} categories={categories} isSignedIn={Boolean(user)} isAdmin={isAdmin} />
         {children}
         <SiteFooter />
         <BackToTop />
