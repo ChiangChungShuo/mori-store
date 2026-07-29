@@ -53,18 +53,18 @@ export function renderOrderConfirmationEmail(order: OrderConfirmationEmail): { s
 
   const rows = order.items.map((item) => `
     <tr>
-      <td style="padding:10px 0;border-bottom:1px solid #ece9e3;color:#4c4c4c;">
+      <td style="padding:10px 0;border-bottom:1px solid #dde5ea;color:#4c4c4c;">
         ${escapeHtml(item.productName)}<br>
         <span style="color:#8b8b8b;font-size:13px;">${escapeHtml(item.color)}／尺寸 ${escapeHtml(item.size)}　×${item.quantity}</span>
       </td>
-      <td style="padding:10px 0;border-bottom:1px solid #ece9e3;text-align:right;color:#4c4c4c;white-space:nowrap;">
+      <td style="padding:10px 0;border-bottom:1px solid #dde5ea;text-align:right;color:#4c4c4c;white-space:nowrap;">
         ${escapeHtml(formatTwd(item.unitPrice * item.quantity))}
       </td>
     </tr>`).join('')
 
   const bankBlock = bank ? `
-    <div style="margin-top:24px;padding:18px 20px;background:#f6f4ef;border-radius:8px;">
-      <p style="margin:0 0 10px;font-weight:700;color:#4c5a4a;">匯款資訊</p>
+    <div style="margin-top:24px;padding:18px 20px;background:#eef3f5;border-radius:8px;">
+      <p style="margin:0 0 10px;font-weight:700;color:#52667a;">匯款資訊</p>
       <p style="margin:4px 0;color:#4c4c4c;">銀行：${escapeHtml(bank.bankName)}（${escapeHtml(bank.bankCode)}）</p>
       <p style="margin:4px 0;color:#4c4c4c;">帳號：${escapeHtml(bank.accountNumber)}</p>
       <p style="margin:4px 0;color:#4c4c4c;">戶名：${escapeHtml(bank.accountName)}</p>
@@ -82,26 +82,26 @@ export function renderOrderConfirmationEmail(order: OrderConfirmationEmail): { s
   const subject = `【MORIMUR BABY】訂單成立通知 ${order.orderNumber}`
 
   const html = `
-  <div style="margin:0;padding:24px;background:#f3f1ec;font-family:'Helvetica Neue',Arial,'PingFang TC','Microsoft JhengHei',sans-serif;">
+  <div style="margin:0;padding:24px;background:#f0f4f6;font-family:'Helvetica Neue',Arial,'PingFang TC','Microsoft JhengHei',sans-serif;">
     <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;">
-      <div style="padding:28px 32px;background:#4c5a4a;color:#ffffff;">
-        <p style="margin:0;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#c9d3c2;">MORIMUR BABY</p>
+      <div style="padding:28px 32px;background:#6a7f90;color:#ffffff;">
+        <p style="margin:0;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#cdd9e2;">MORIMUR BABY</p>
         <h1 style="margin:6px 0 0;font-size:22px;font-weight:500;">訂單已成立，謝謝你的訂購！</h1>
       </div>
       <div style="padding:28px 32px;">
         <p style="margin:0 0 4px;color:#8b8b8b;font-size:13px;">訂單編號（請保留此編號以便查詢）</p>
-        <p style="margin:0 0 20px;font-size:20px;font-weight:700;color:#4c5a4a;letter-spacing:0.04em;">${escapeHtml(order.orderNumber)}</p>
+        <p style="margin:0 0 20px;font-size:20px;font-weight:700;color:#52667a;letter-spacing:0.04em;">${escapeHtml(order.orderNumber)}</p>
 
         <table style="width:100%;border-collapse:collapse;">
           <tbody>${rows}</tbody>
           <tfoot>
             <tr><td style="padding:10px 0 2px;color:#8b8b8b;">商品小計</td><td style="padding:10px 0 2px;text-align:right;color:#4c4c4c;">${escapeHtml(formatTwd(order.subtotal))}</td></tr>
             <tr><td style="padding:2px 0;color:#8b8b8b;">運費</td><td style="padding:2px 0;text-align:right;color:#4c4c4c;">${order.shippingFee === 0 ? '免運' : escapeHtml(formatTwd(order.shippingFee))}</td></tr>
-            <tr><td style="padding:8px 0 0;font-weight:700;color:#4c5a4a;">合計</td><td style="padding:8px 0 0;text-align:right;font-weight:700;color:#4c5a4a;">${escapeHtml(formatTwd(order.total))}</td></tr>
+            <tr><td style="padding:8px 0 0;font-weight:700;color:#52667a;">合計</td><td style="padding:8px 0 0;text-align:right;font-weight:700;color:#52667a;">${escapeHtml(formatTwd(order.total))}</td></tr>
           </tfoot>
         </table>
 
-        <div style="margin-top:22px;padding-top:18px;border-top:1px solid #ece9e3;">
+        <div style="margin-top:22px;padding-top:18px;border-top:1px solid #dde5ea;">
           <p style="margin:4px 0;color:#4c4c4c;"><span style="color:#8b8b8b;">取貨門市：</span>${storeLine}</p>
           <p style="margin:4px 0;color:#4c4c4c;"><span style="color:#8b8b8b;">付款方式：</span>${PAYMENT_LABEL[order.paymentMethod ?? ''] ?? '—'}</p>
         </div>
@@ -109,7 +109,7 @@ export function renderOrderConfirmationEmail(order: OrderConfirmationEmail): { s
         ${codBlock}
 
         <div style="margin-top:28px;text-align:center;">
-          <a href="${lookupUrl}" style="display:inline-block;padding:12px 26px;background:#5a6b7b;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:700;">查詢訂單進度</a>
+          <a href="${lookupUrl}" style="display:inline-block;padding:12px 26px;background:#6a7f90;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:700;">查詢訂單進度</a>
         </div>
         <p style="margin:18px 0 0;color:#8b8b8b;font-size:13px;text-align:center;">
           忘記訂單編號時，可用此 Email（${escapeHtml(order.email)}）與訂單編號到查詢頁查看。

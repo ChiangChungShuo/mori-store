@@ -1,18 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --forest: #63778e;
-  --moss: #7d90a3;
-  --sage: #aec3d8;
-  --oat: #e4edf6;
-  --sand: #cbd9e6;
-  --paper: #f8fbfd;
+  /* Soft baby-blue palette — muted, grayed pastels inspired by the reference. */
+  --forest: #6a7f90;  /* primary accent: soft grayed steel-blue (white text ~4.2:1) */
+  --moss: #869aa8;    /* hover / secondary accent */
+  --sage: #aabccb;    /* periwinkle-steel */
+  --oat: #e8eef2;     /* very pale blue-gray tint */
+  --sand: #c6d3d8;    /* pale ice-blue */
+  --paper: #f4f8f9;   /* page background */
   --white: #ffffff;
-  --ink: #455569;
-  --muted: #748292;
-  --line: #dce5ed;
-  --lime: #c8d9e8;
-  --shadow: 0 0.9rem 2.2rem rgb(73 96 121 / 13%);
+  --ink: #414e59;     /* primary text */
+  --muted: #7c8a96;   /* secondary text */
+  --line: #dde5ea;    /* borders */
+  --lime: #cfdadb;    /* pale ice accent */
+  --shadow: 0 0.9rem 2.2rem rgb(73 96 121 / 12%);
 }
 
 * { box-sizing: border-box; }
