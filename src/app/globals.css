@@ -1964,10 +1964,11 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .bank-transfer-instructions dl div { border-bottom: 1px solid var(--line); display: grid; gap: 1rem; grid-template-columns: 7rem 1fr; padding: 0.85rem 0; }
 .bank-transfer-instructions dd { font-weight: 800; margin: 0; overflow-wrap: anywhere; }
 .bank-transfer-warning { border-left: 3px solid #ae8a6d; color: #997051; margin: 0; padding-left: 0.75rem; }
-.bank-transfer-form { background: #ffffff; border: 1px solid var(--line); display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr) minmax(12rem, 16rem) auto; margin-top: 1rem; padding: clamp(1.25rem, 3vw, 2rem); }
+.bank-transfer-form { background: #ffffff; border: 1px solid var(--line); display: grid; gap: 1rem 1.25rem; grid-template-columns: minmax(0, 1fr) auto; align-items: end; margin-top: 1rem; padding: clamp(1.25rem, 3vw, 2rem); }
+.bank-transfer-form > div { grid-column: 1 / -1; }
 .bank-transfer-form label { display: grid; font-weight: 700; gap: 0.4rem; }
-.bank-transfer-form input { border: 1px solid var(--line); min-height: 3rem; padding: 0.75rem; }
-.bank-transfer-form .button { align-self: end; min-height: 3rem; }
+.bank-transfer-form input { border: 1px solid var(--line); min-height: 3rem; padding: 0.75rem; width: 100%; }
+.bank-transfer-form .button { align-self: end; min-height: 3rem; white-space: nowrap; }
 .bank-transfer-form-message { grid-column: 1 / -1; margin: 0; }
 .bank-transfer-form-message.success { color: #606a77; }
 .bank-transfer-form-message.error { color: #a46b6b; }
