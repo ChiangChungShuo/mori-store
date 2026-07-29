@@ -5,7 +5,7 @@ import { createPaymentAttempt } from '@/features/checkout/service'
 import { validateCoupon } from '@/features/checkout/coupons'
 import { CheckoutProgress } from '@/features/checkout/checkout-progress'
 import { CVS_STORE_COOKIE, type PickedStore } from '@/lib/checkout/cvs-map'
-import { requireUser } from '@/lib/auth/require-user'
+import { getCurrentUser } from '@/lib/auth/require-user'
 import { getAccountSummary } from '@/features/account/summary'
 import {
   CheckoutAttemptError,
@@ -21,13 +21,13 @@ type CheckoutPageProps = {
 }
 
 export default async function CheckoutPage({ searchParams }: CheckoutPageProps) {
-  const user = await requireUser('/checkout')
-  const account = await getAccountSummary(user)
-  const previousOrder = account.orders[0]
+  const user = await getCurrentUser()
+  const account = user ? await getAccountSummary(user) : null
+  const previousOrder = account?.orders[0]
   const initialValues = {
-    email: previousOrder?.email ?? account.email,
-    recipientName: previousOrder?.recipientName ?? account.displayName,
-    phone: previousOrder?.recipientPhone ?? account.phone ?? '',
+    email: previousOrder?.email ?? account?.email ?? '',
+    recipientName: previousOrder?.recipientName ?? account?.displayName ?? '',
+    phone: previousOrder?.recipientPhone ?? account?.phone ?? '',
     chain: previousOrder?.storeChain ?? 'seven_eleven' as const,
     storeName: previousOrder?.storeName ?? '',
     storeId: previousOrder?.storeId ?? '',
@@ -55,8 +55,6 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
     formData: FormData,
   ): Promise<CheckoutActionState> {
     'use server'
-
-    await requireUser('/checkout')
 
     let cart: CheckoutCartItem[] = []
     try {

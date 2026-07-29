@@ -263,7 +263,7 @@ describe('CartProvider', () => {
     expect(screen.getByText('運費').closest('p')).toHaveTextContent('運費NT$60')
     expect(screen.getByText('合計').closest('p')).toHaveTextContent('合計NT$740')
     expect(screen.getByLabelText('免運進度 45%')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '登入後結帳' })).toHaveAttribute('href', '/login?next=%2Fcheckout')
+    expect(screen.getByRole('link', { name: '前往結帳' })).toHaveAttribute('href', '/checkout')
   })
 
   it('opens after adding an item and updates quantity and totals in place', async () => {

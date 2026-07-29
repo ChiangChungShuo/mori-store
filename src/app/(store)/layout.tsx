@@ -19,7 +19,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <WishlistAuthProvider isSignedIn={Boolean(user)}>
         <GoogleAnalytics measurementId={googleAnalyticsId} />
         <StorefrontTracker />
-        <SiteHeader cart={<CartDrawer settings={settings} isSignedIn={Boolean(user)} />} categories={categories} isSignedIn={Boolean(user)} />
+        <SiteHeader cart={<CartDrawer settings={settings} />} categories={categories} isSignedIn={Boolean(user)} />
         {children}
         <SiteFooter />
         <BackToTop />

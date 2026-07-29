@@ -8,7 +8,7 @@ describe('storefront header source contract', () => {
 
     expect(layout).toContain('getCurrentUser')
     expect(layout).toContain('listProductCategories')
-    expect(layout).toMatch(/<SiteHeader cart=\{<CartDrawer settings=\{settings\} isSignedIn=\{Boolean\(user\)\} \/>\} categories=\{categories\} isSignedIn=\{Boolean\(user\)\}/)
+    expect(layout).toMatch(/<SiteHeader cart=\{<CartDrawer settings=\{settings\} \/>\} categories=\{categories\} isSignedIn=\{Boolean\(user\)\}/)
   })
 
   it('keeps the approved desktop controls and storefront breakpoint', () => {
@@ -26,6 +26,6 @@ describe('storefront header source contract', () => {
     expect(header).toMatch(/href=\{isSignedIn \? '\/account' : '\/login\?next=\/account'\}/)
     expect(header).not.toContain('store-mobile-search-heading')
     expect(header).not.toContain('store-mobile-account-heading')
-    expect(layout).toMatch(/cart=\{<CartDrawer settings=\{settings\} isSignedIn=\{Boolean\(user\)\} \/>\}/)
+    expect(layout).toMatch(/cart=\{<CartDrawer settings=\{settings\} \/>\}/)
   })
 })

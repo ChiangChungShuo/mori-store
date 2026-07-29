@@ -238,10 +238,10 @@ export function CartPageClient({ settings, isSignedIn = false, recommendedProduc
                 {appliedCoupon ? <p className="cart-discount"><span>優惠碼 {appliedCoupon.code}</span><strong>−{formatTwd(appliedCoupon.discount)}</strong></p> : null}
                 <p className="cart-total"><span>合計</span><strong>{formatTwd(payableTotal)}</strong></p>
                 <Link
-                  href={isSignedIn ? '/checkout' : '/login?next=%2Fcheckout'}
+                  href="/checkout"
                   className="button button-wide"
                 >
-                  {isSignedIn ? '前往結帳' : '登入後結帳'}
+                  前往結帳
                 </Link>
               </aside>
             </div>

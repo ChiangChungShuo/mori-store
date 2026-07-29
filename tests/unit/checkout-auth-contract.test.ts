@@ -2,17 +2,18 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-describe('checkout authentication contract', () => {
-  it('guards both checkout page rendering and order-attempt submission', () => {
+describe('checkout guest contract', () => {
+  it('does not gate checkout page rendering or order submission behind login', () => {
     const page = readFileSync(
       resolve(process.cwd(), 'src/app/(store)/checkout/page.tsx'),
       'utf8',
     )
 
-    expect(page.match(/await requireUser\('\/checkout'\)/g)).toHaveLength(2)
+    expect(page).not.toMatch(/requireUser\('\/checkout'\)/)
+    expect(page).toContain('getCurrentUser()')
   })
 
-  it('sends signed-out cart actions through login before checkout', () => {
+  it('sends shoppers straight to checkout from the cart (guests included)', () => {
     const cartPage = readFileSync(
       resolve(process.cwd(), 'src/features/cart/cart-page-client.tsx'),
       'utf8',
@@ -22,7 +23,7 @@ describe('checkout authentication contract', () => {
       'utf8',
     )
 
-    expect(cartPage).toContain("isSignedIn ? '/checkout' : '/login?next=%2Fcheckout'")
-    expect(cartDrawer).toContain("isSignedIn ? '/checkout' : '/login?next=%2Fcheckout'")
+    expect(cartPage).toContain('href="/checkout"')
+    expect(cartDrawer).toContain('href="/checkout"')
   })
 })

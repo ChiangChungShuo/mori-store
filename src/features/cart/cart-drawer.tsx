@@ -8,7 +8,7 @@ import { calculateCart } from '@/features/cart/totals'
 import type { StorefrontSettings } from '@/features/checkout/settings'
 import { formatTwd } from '@/lib/money'
 
-export function CartDrawer({ settings, isSignedIn = false }: { settings: StorefrontSettings; isSignedIn?: boolean }) {
+export function CartDrawer({ settings }: { settings: StorefrontSettings }) {
   const { items, dispatch } = useCart()
   const [bumping, setBumping] = useState(false)
   const [open, setOpen] = useState(false)
@@ -120,7 +120,7 @@ export function CartDrawer({ settings, isSignedIn = false }: { settings: Storefr
         ) : null}
         <div className="cart-drawer-actions">
           <Link href="/cart" className="button button-secondary" onClick={() => setOpen(false)}>查看購物車</Link>
-          {items.length > 0 ? <Link href={isSignedIn ? '/checkout' : '/login?next=%2Fcheckout'} className="button" onClick={() => setOpen(false)}>{isSignedIn ? '前往結帳' : '登入後結帳'}</Link> : null}
+          {items.length > 0 ? <Link href="/checkout" className="button" onClick={() => setOpen(false)}>前往結帳</Link> : null}
         </div>
       </div>
     </details>
