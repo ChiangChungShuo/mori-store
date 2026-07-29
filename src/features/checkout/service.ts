@@ -414,7 +414,7 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
     async getVariants(variantIds) {
       const { data, error } = await admin
         .from('product_variants')
-        .select('id, sku, color, size, price, stock, products!inner(name, is_published, available_at, product_images(storage_path, sort_order))')
+        .select('id, sku, color, size, price, stock, products!inner(name, is_published, available_at, product_images(storage_path, position))')
         .in('id', variantIds)
         .eq('is_active', true)
       if (error) throw error
@@ -424,9 +424,9 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
           name: string
           is_published: boolean
           available_at: string | null
-          product_images: Array<{ storage_path: string; sort_order: number }>
+          product_images: Array<{ storage_path: string; position: number }>
         }
-        const primaryImage = [...product.product_images].sort((a, b) => a.sort_order - b.sort_order)[0]
+        const primaryImage = [...product.product_images].sort((a, b) => a.position - b.position)[0]
         return {
           id: variant.id,
           productName: product.name,
