@@ -32,7 +32,7 @@ export default function ReturnsPage() {
         <section>
           <h2>退換貨流程</h2>
           <ul>
-            <li>來信 <a href="mailto:hello@mori.tw">hello@mori.tw</a>，附上訂單編號與退換原因（換貨請註明想更換的尺寸／顏色）。</li>
+            <li>來信 <a href="mailto:moribaby0612@gmail.com">moribaby0612@gmail.com</a>，附上訂單編號與退換原因（換貨請註明想更換的尺寸／顏色）。</li>
             <li>我們確認後回覆寄回方式。</li>
             <li>收到退回商品並檢查無誤後，換貨將重新出貨，退貨將辦理退款。</li>
           </ul>

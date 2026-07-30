@@ -10,7 +10,6 @@ export const dynamic = 'force-dynamic'
 
 export default async function AdminSettingsPage() {
   const [settings, bannerSlides] = await Promise.all([getStoreSettings(), getBannerSlides()])
-  const slideSlots = Math.min(5, Math.max(3, bannerSlides.length + 1))
 
   return (
     <main className="section admin-management-page">
@@ -62,7 +61,7 @@ export default async function AdminSettingsPage() {
       </section>
       <section className="admin-panel admin-banner-settings">
         <header><div><p className="eyebrow">homepage carousel</p><h2>首頁輪播圖</h2></div><p>可編輯每張主視覺的圖片、文案與站內連結；保留空白的新欄位不會建立輪播。</p></header>
-        <BannerSettingsEditor action={updateBannerSlidesFromForm} slides={bannerSlides} slideSlots={slideSlots} />
+        <BannerSettingsEditor action={updateBannerSlidesFromForm} slides={bannerSlides} />
       </section>
       <section className="admin-panel admin-integration-settings">
         <header><div><p className="eyebrow">payments, shipping & seo</p><h2>付款、物流與搜尋設定</h2></div><p>銀行資料由伺服器環境設定管理；超商正式門市地圖與物流單仍需申請服務。</p></header>

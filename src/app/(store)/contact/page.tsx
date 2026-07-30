@@ -18,10 +18,10 @@ export default function ContactPage() {
       </header>
 
       <div className="contact-grid">
-        <a className="contact-card" href="mailto:hello@mori.tw">
+        <a className="contact-card" href="mailto:moribaby0612@gmail.com">
           <span className="contact-card-icon" aria-hidden="true">✉</span>
           <h2>客服信箱</h2>
-          <p>hello@mori.tw</p>
+          <p>moribaby0612@gmail.com</p>
           <small>一般問題約 1–2 個工作天內回覆</small>
         </a>
         <div className="contact-card">

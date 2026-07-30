@@ -237,10 +237,9 @@ export function CheckoutForm({ action, couponAction, pickedStore, initialValues 
             <StorePicker chain={chain} storeName={storeName} storeId={storeId} storeAddress={storeAddress} errors={{ chain: errors.chain, storeName: errors.storeName, storeId: errors.storeId }} onChainChange={(value) => { setChain(value); setStoreName(''); setStoreId(''); setStoreAddress('') }} onStoreNameChange={(value) => { setStoreName(value); setStoreAddress('') }} onStoreIdChange={(value) => { setStoreId(value); setStoreAddress('') }} />
           </section>
           <section className="checkout-card checkout-payment-card">
-            <header><span>03</span><div><h2>付款方式</h2><p>可先匯款，或在超商取貨時付款。</p></div></header>
+            <header><span>03</span><div><h2>付款方式</h2><p>下單後以銀行匯款完成付款。</p></div></header>
             <div className="checkout-payment-options">
               <label className="checkout-payment-option"><input type="radio" name="paymentMethod" value="bank_transfer" defaultChecked /><span><strong>銀行匯款</strong><small>訂單送出後顯示匯款帳號；完成後請到訂單填寫帳號末 5 碼。</small></span></label>
-              <label className="checkout-payment-option"><input type="radio" name="paymentMethod" value="convenience_cod" /><span><strong>超商取貨付款</strong><small>商品抵達 7-ELEVEN／全家門市後，取貨時支付訂單金額。</small></span></label>
             </div>
           </section>
           <section className="checkout-card checkout-note-card">

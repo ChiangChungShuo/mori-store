@@ -25,7 +25,7 @@ const faqGroups: FaqGroup[] = [
     eyebrow: 'payment',
     heading: '付款方式',
     items: [
-      { q: '提供哪些付款方式？', a: '信用卡（VISA／MasterCard／JCB）與 ATM／銀行轉帳。' },
+      { q: '提供哪些付款方式？', a: '目前採用銀行匯款（ATM／網路銀行轉帳）。下單後會顯示收款帳號，完成匯款後請回報帳號末 5 碼供核對。' },
       { q: '轉帳後需要做什麼？', a: <>完成轉帳後，請至 <Link href="/order-lookup">訂單查詢</Link> 或會員中心回報帳號末五碼，我們核帳後即安排出貨。</> },
       { q: '有電子發票嗎？', a: '有，系統會開立電子發票；結帳時可填寫手機條碼載具或公司統編。' },
     ],
@@ -65,7 +65,7 @@ export default function FaqPage() {
       <header className="page-heading faq-heading">
         <p>help center</p>
         <h1>常見問題</h1>
-        <span>整理了大家最常詢問的配送、付款與退換貨問題。找不到答案的話，歡迎來信 <a href="mailto:hello@mori.tw">hello@mori.tw</a>。</span>
+        <span>整理了大家最常詢問的配送、付款與退換貨問題。找不到答案的話，歡迎來信 <a href="mailto:moribaby0612@gmail.com">moribaby0612@gmail.com</a>。</span>
       </header>
 
       <div className="faq-groups">
