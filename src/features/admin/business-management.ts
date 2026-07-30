@@ -76,19 +76,22 @@ export async function listMembers(): Promise<MemberRecord[]> {
     import('@/lib/supabase/admin'),
   ])
   const supabase = await createClient()
-  const [ordersResult, profilesResult, usersResult] = await Promise.all([
+  const [ordersResult, profilesResult, usersResult, memberProfilesResult] = await Promise.all([
     supabase.from('orders')
       .select('email, recipient_name, order_number, created_at, status, total')
       .order('created_at', { ascending: false }),
     supabase.from('profiles').select('id, phone, terms_accepted_at'),
     createAdminClient().auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    createAdminClient().from('member_profiles').select('email, tier, points, discount_percent'),
   ])
   if (ordersResult.error) throw ordersResult.error
   if (profilesResult.error) throw profilesResult.error
   if (usersResult.error) throw usersResult.error
+  if (memberProfilesResult.error) throw memberProfilesResult.error
 
   const orders = ordersResult.data ?? []
   const profiles = new Map((profilesResult.data ?? []).map((profile) => [profile.id, profile]))
+  const memberOverrides = new Map((memberProfilesResult.data ?? []).map((row) => [row.email, row]))
   const users = new Map(usersResult.data.users
     .filter((user) => user.email)
     .map((user) => [user.email!.toLowerCase(), user]))
@@ -102,6 +105,7 @@ export async function listMembers(): Promise<MemberRecord[]> {
     const profile = user ? profiles.get(user.id) : undefined
     const completedOrders = memberOrders.filter((order) => !['pending_payment', 'cancelled'].includes(order.status))
     const totalSpent = completedOrders.reduce((total, order) => total + order.total, 0)
+    const override = memberOverrides.get(email)
     return {
       id: user?.id ?? `guest:${email}`,
       email,
@@ -109,9 +113,9 @@ export async function listMembers(): Promise<MemberRecord[]> {
       termsAcceptedAt: profile?.terms_accepted_at ?? null,
       name: memberOrders[0]?.recipient_name ?? '尚未留下姓名',
       accountType: user ? '會員' as const : '訪客' as const,
-      tier: suggestedTier(totalSpent, completedOrders.length),
-      points: Math.floor(totalSpent / 10),
-      discountPercent: 0,
+      tier: (override?.tier as MemberTier | undefined) ?? suggestedTier(totalSpent, completedOrders.length),
+      points: override?.points ?? Math.floor(totalSpent / 10),
+      discountPercent: override?.discount_percent ?? 0,
       orderCount: memberOrders.length,
       totalSpent,
       orders: memberOrders.map((order) => ({
@@ -131,23 +135,44 @@ const memberUpdateSchema = z.object({
   discountPercent: z.coerce.number().int().min(0).max(100),
 })
 
-export async function updateMemberFromForm(formData: FormData) {
+export type MemberUpdateState = { ok: boolean; message: string }
+
+export async function updateMemberFromForm(
+  _previousState: MemberUpdateState,
+  formData: FormData,
+): Promise<MemberUpdateState> {
   'use server'
   await requireAdmin()
-  const input = memberUpdateSchema.parse({
+  const parsed = memberUpdateSchema.safeParse({
     email: formData.get('email'),
     tier: formData.get('tier'),
     points: formData.get('points'),
     discountPercent: formData.get('discountPercent'),
   })
-  if (!isE2EMode()) throw new Error('正式會員分級需先套用會員資料庫 migration')
-  const { getE2EStore } = await import('@/testing/e2e-store')
-  getE2EStore().memberProfiles.set(input.email, {
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? '資料格式有誤' }
+  const input = parsed.data
+
+  if (isE2EMode()) {
+    const { getE2EStore } = await import('@/testing/e2e-store')
+    getE2EStore().memberProfiles.set(input.email, {
+      tier: input.tier,
+      points: input.points,
+      discountPercent: input.discountPercent,
+    })
+    revalidatePath('/admin/members')
+    return { ok: true, message: '會員資料已更新' }
+  }
+
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const { error } = await createAdminClient().from('member_profiles').upsert({
+    email: input.email,
     tier: input.tier,
     points: input.points,
-    discountPercent: input.discountPercent,
-  })
+    discount_percent: input.discountPercent,
+  }, { onConflict: 'email' })
+  if (error) return { ok: false, message: '目前無法更新，請稍後再試' }
   revalidatePath('/admin/members')
+  return { ok: true, message: '會員資料已更新' }
 }
 
 export type Promotion = ReturnType<typeof promotionSchema.parse> & { id: string }

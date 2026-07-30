@@ -1002,6 +1002,8 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-member-card dd { margin: 0; color: var(--forest); font-weight: 800; }
 .member-settings-form { display: grid; grid-template-columns: 1.2fr 0.8fr 0.8fr auto; gap: 0.55rem; align-items: end; }
 .member-settings-form button { min-height: 2.75rem; }
+.member-settings-status { grid-column: 1 / -1; margin: 0.3rem 0 0; font-size: 0.74rem; font-weight: 700; color: #a15954; }
+.member-settings-status[data-success="true"] { color: #4c6a52; }
 .admin-member-card details { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 0.8rem; }
 .admin-member-card summary { color: var(--forest); cursor: pointer; font-size: 0.72rem; font-weight: 800; }
 .admin-member-card details ul { margin: 0.75rem 0 0; padding: 0; list-style: none; }

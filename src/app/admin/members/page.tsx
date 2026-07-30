@@ -1,9 +1,9 @@
 import Link from 'next/link'
 import { listMembers, memberTierLabels, updateMemberFromForm } from '@/features/admin/business-management'
+import { MemberSettingsForm } from '@/features/admin/member-settings-form'
 import { orderStatusLabels } from '@/features/orders/status'
 import { formatTaipeiDateTime } from '@/lib/date-time'
 import { formatTwd } from '@/lib/money'
-import { isE2EMode } from '@/testing/e2e-mode'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,15 +38,14 @@ export default async function AdminMembersPage() {
                   <div><dt>訂單</dt><dd>{member.orderCount} 筆</dd></div>
                   <div><dt>消費</dt><dd>{formatTwd(member.totalSpent)}</dd></div>
                 </dl>
-                {isE2EMode() ? (
-                  <form action={updateMemberFromForm} className="member-settings-form">
-                    <input name="email" type="hidden" value={member.email} />
-                    <label>等級<select defaultValue={member.tier} name="tier">{Object.entries(memberTierLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-                    <label>紅利點數<input defaultValue={member.points} min="0" name="points" type="number" /></label>
-                    <label>專屬折扣 %<input defaultValue={member.discountPercent} max="100" min="0" name="discountPercent" type="number" /></label>
-                    <button type="submit">更新會員</button>
-                  </form>
-                ) : <p>{memberTierLabels[member.tier]} · {member.points} 點</p>}
+                <MemberSettingsForm
+                  action={updateMemberFromForm}
+                  discountPercent={member.discountPercent}
+                  email={member.email}
+                  labels={memberTierLabels}
+                  points={member.points}
+                  tier={member.tier}
+                />
                 <details>
                   <summary>查看訂單紀錄</summary>
                   {member.orders.length === 0 ? <p>尚無訂單。</p> : <ul>{member.orders.map((order) => (
