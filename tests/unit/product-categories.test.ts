@@ -11,38 +11,37 @@ afterEach(() => {
   vi.unstubAllEnvs()
 })
 
-function configureQuery(data: Array<{ category: string | null }>) {
-  const order = vi.fn().mockResolvedValue({ data, error: null })
-  const eq = vi.fn().mockReturnValue({ order })
-  const select = vi.fn().mockReturnValue({ eq })
+function configureQuery(data: Array<{ name: string | null }>) {
+  const orderByCreated = vi.fn().mockResolvedValue({ data, error: null })
+  const orderByPosition = vi.fn().mockReturnValue({ order: orderByCreated })
+  const select = vi.fn().mockReturnValue({ order: orderByPosition })
   const from = vi.fn().mockReturnValue({ select })
   createClient.mockResolvedValue({ from })
-  return { eq, from, order, select }
+  return { from, select, orderByPosition, orderByCreated }
 }
 
 describe('listProductCategories', () => {
-  it('reads published product categories through the typed products query', async () => {
+  it('reads the managed product_categories table in position order', async () => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://example.supabase.co')
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'publishable-key')
     const query = configureQuery([
-      { category: '褲裝' },
-      { category: ' 上衣 ' },
-      { category: '褲裝' },
-      { category: '' },
-      { category: null },
+      { name: '上衣' },
+      { name: ' 褲裝 ' },
+      { name: '' },
+      { name: null },
     ])
 
     await expect(listProductCategories()).resolves.toEqual(['上衣', '褲裝'])
-    expect(query.from).toHaveBeenCalledWith('products')
-    expect(query.select).toHaveBeenCalledWith('category')
-    expect(query.eq).toHaveBeenCalledWith('is_published', true)
-    expect(query.order).toHaveBeenCalledWith('category')
+    expect(query.from).toHaveBeenCalledWith('product_categories')
+    expect(query.select).toHaveBeenCalledWith('name')
+    expect(query.orderByPosition).toHaveBeenCalledWith('position')
+    expect(query.orderByCreated).toHaveBeenCalledWith('created_at')
   })
 
-  it('falls back to defaults when the query has no usable categories', async () => {
+  it('falls back to defaults when the table has no usable categories', async () => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://example.supabase.co')
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'publishable-key')
-    configureQuery([{ category: '  ' }, { category: null }])
+    configureQuery([{ name: '  ' }, { name: null }])
 
     await expect(listProductCategories()).resolves.toEqual(['上衣', '褲裝', '洋裝', '外套', '幼兒服'])
   })
