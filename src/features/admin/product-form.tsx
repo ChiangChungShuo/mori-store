@@ -7,8 +7,7 @@ import { availableAtError, getProductValidationErrors, productSchema, slugifyPro
 import { VariantGrid } from './variant-grid'
 import { defaultProductCategories } from '@/features/catalog/category-defaults'
 import { AGE_BANDS } from '@/lib/age-bands'
-
-const PRODUCT_DRAFT_KEY = 'mori-product-draft'
+import type { SaveDraftState } from '@/features/admin/product-drafts'
 
 type ProductActionResult = {
   ok: boolean
@@ -25,6 +24,8 @@ type ProductFormProps = {
   categories?: string[]
   materialPresets?: string[]
   carePresets?: string[]
+  draftId?: string | null
+  saveDraft?: (draftId: string | null, product: ProductInput) => Promise<SaveDraftState>
 }
 
 
@@ -124,8 +125,9 @@ export function DeleteProductImageForm({
   }}><button aria-label={`刪除圖片 ${imageNumber}`} disabled={pending} type="submit">{pending ? '刪除中…' : '刪除圖片'}</button></form>
 }
 
-export function ProductForm({ initialProduct, onSave, requireImage = false, categories = [...defaultProductCategories], materialPresets = [], carePresets = [] }: ProductFormProps) {
+export function ProductForm({ initialProduct, onSave, requireImage = false, categories = [...defaultProductCategories], materialPresets = [], carePresets = [], draftId: initialDraftId = null, saveDraft }: ProductFormProps) {
   const [product, setProduct] = useState(initialProduct)
+  const [draftId, setDraftId] = useState<string | null>(initialDraftId)
   const [slugEdited, setSlugEdited] = useState(Boolean(initialProduct.slug))
   const [result, setResult] = useState<ProductActionResult | null>(null)
   const [pending, startTransition] = useTransition()
@@ -202,9 +204,6 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
         outcome = await onSave(parsed.data, imageData)
       }
       setResult(outcome)
-      if (outcome.ok) {
-        try { window.localStorage.removeItem(PRODUCT_DRAFT_KEY) } catch { /* ignore */ }
-      }
     })
   }
 
@@ -226,29 +225,13 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
     setProduct((current) => ({ ...current, tags }))
   }
 
-  function saveDraft() {
-    try {
-      window.localStorage.setItem(PRODUCT_DRAFT_KEY, JSON.stringify({ product, imageAlt }))
-      setResult({ ok: true, message: '草稿已儲存到這台裝置（圖片需在完成時重新選擇）。' })
-    } catch {
-      setResult({ ok: false, message: '無法儲存草稿，請確認瀏覽器允許儲存。' })
-    }
-  }
-
-  function restoreDraft() {
-    try {
-      const raw = window.localStorage.getItem(PRODUCT_DRAFT_KEY)
-      if (!raw) { setResult({ ok: false, message: '找不到已儲存的草稿。' }); return }
-      const draft = JSON.parse(raw) as { product?: ProductInput; imageAlt?: string }
-      if (draft.product) {
-        setProduct(draft.product)
-        setSlugEdited(Boolean(draft.product.slug))
-      }
-      if (typeof draft.imageAlt === 'string') setImageAlt(draft.imageAlt)
-      setResult({ ok: true, message: '已還原草稿，請重新選擇商品圖片後再建立。' })
-    } catch {
-      setResult({ ok: false, message: '草稿資料毀損，無法還原。' })
-    }
+  function handleSaveDraft() {
+    if (!saveDraft) return
+    startTransition(async () => {
+      const outcome = await saveDraft(draftId, product)
+      if (outcome.ok && outcome.id) setDraftId(outcome.id)
+      setResult({ ok: outcome.ok, message: outcome.message })
+    })
   }
 
   function applyPreset(field: 'material' | 'careInstructions', value: string) {
@@ -352,10 +335,9 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
       <div className="admin-product-savebar">
         <div>{result?.ok ? <p className="admin-save-success" role={requireImage ? 'status' : undefined}>{result.message ?? '商品已儲存'}</p> : result?.message ? <p className="admin-save-error" role="alert">{result.message}</p> : null}</div>
         <div className="admin-savebar-actions">
-          {requireImage ? <>
-            <button type="button" className="button button-secondary" onClick={saveDraft}>儲存草稿</button>
-            <button type="button" className="button button-secondary" onClick={restoreDraft}>還原草稿</button>
-          </> : null}
+          {requireImage && saveDraft ? (
+            <button type="button" className="button button-secondary" disabled={pending} onClick={handleSaveDraft}>儲存草稿</button>
+          ) : null}
           <button aria-label={requireImage ? '儲存並建立商品' : '儲存商品'} className="button" type="submit" disabled={pending}>{pending ? '儲存中…' : requireImage ? '儲存並建立商品' : '儲存商品'}</button>
         </div>
       </div>

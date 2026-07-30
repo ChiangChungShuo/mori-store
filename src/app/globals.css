@@ -919,6 +919,18 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-product-savebar p { margin: 0; font-size: 0.72rem; }
 .admin-product-savebar a { color: var(--forest); font-size: 0.68rem; font-weight: 800; }
 .admin-product-savebar > .admin-savebar-actions { flex-wrap: wrap; justify-content: flex-end; }
+.admin-draft-panel { margin-bottom: 1.5rem; border: 1px dashed var(--sage); background: var(--oat); padding: 1rem 1.2rem; }
+.admin-draft-panel > header { display: flex; flex-wrap: wrap; gap: 0.3rem 0.75rem; align-items: baseline; margin-bottom: 0.6rem; }
+.admin-draft-panel > header strong { color: var(--forest); font-size: 0.85rem; }
+.admin-draft-panel > header small { color: var(--muted); font-size: 0.72rem; }
+.admin-draft-panel ul { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.admin-draft-panel li { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; justify-content: space-between; align-items: center; border: 1px solid var(--line); background: var(--white); padding: 0.6rem 0.85rem; }
+.admin-draft-panel li > div:first-child { display: grid; gap: 0.15rem; }
+.admin-draft-panel li strong { font-size: 0.82rem; color: var(--ink); }
+.admin-draft-panel li small { color: var(--muted); font-size: 0.7rem; }
+.admin-draft-actions { display: flex; gap: 0.5rem; align-items: center; }
+.admin-draft-delete { border: 1px solid var(--line); background: transparent; color: var(--muted); padding: 0.35rem 0.7rem; font-size: 0.68rem; font-weight: 700; cursor: pointer; }
+.admin-draft-delete:hover { border-color: #d9b3b3; background: #f3e4e4; color: #a15954; }
 .admin-preset-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin: -0.35rem 0 0.35rem; }
 .admin-preset-chips > span { color: var(--muted); font-size: 0.66rem; font-weight: 700; }
 .admin-preset-chips button { border: 1px dashed var(--sage); background: var(--oat); color: var(--forest); padding: 0.3rem 0.6rem; font-size: 0.66rem; font-weight: 700; cursor: pointer; }

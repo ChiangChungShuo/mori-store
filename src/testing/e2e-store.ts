@@ -98,6 +98,7 @@ export type E2EStoreState = {
   bannerSlides: BannerSlide[]
   productCategories: string[]
   contentPresets: { material: string[]; care: string[] }
+  productDrafts: Array<{ id: string; label: string; data: unknown; updatedAt: string }>
   products: CatalogProduct[]
   variantCosts: Map<string, number>
   publishedProductIds: Set<string>
@@ -218,6 +219,7 @@ export function createE2EStore(): E2EStoreState {
     ],
     productCategories: [...defaultProductCategories],
     contentPresets: { material: [...defaultMaterialPresets], care: [...defaultCarePresets] },
+    productDrafts: [],
     products: [],
     variantCosts: new Map(),
     publishedProductIds: new Set(),
@@ -253,6 +255,7 @@ export function getE2EStore() {
   fixtureGlobal.__moriE2EStore.products ??= []
   fixtureGlobal.__moriE2EStore.productCategories ??= [...defaultProductCategories]
   fixtureGlobal.__moriE2EStore.contentPresets ??= { material: [...defaultMaterialPresets], care: [...defaultCarePresets] }
+  fixtureGlobal.__moriE2EStore.productDrafts ??= []
   fixtureGlobal.__moriE2EStore.variantCosts ??= new Map()
   fixtureGlobal.__moriE2EStore.publishedProductIds ??= new Set()
   fixtureGlobal.__moriE2EStore.uploadedProductImages ??= new Map()

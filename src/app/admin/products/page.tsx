@@ -4,6 +4,8 @@ import { deleteProduct, filterAdminProductSummaries, listAdminProducts, setProdu
 import { DeleteProductForm, ProductPublishForm } from '@/features/admin/product-form'
 import { formatTwd } from '@/lib/money'
 import { listProductCategories } from '@/features/catalog/categories'
+import { listProductDrafts, deleteProductDraftFromForm } from '@/features/admin/product-drafts'
+import { formatTaipeiDateTime } from '@/lib/date-time'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,7 +27,7 @@ export default async function AdminProductsPage({
     status: status === 'published' || status === 'draft' ? status : '',
     stock: stock === 'in_stock' || stock === 'low_stock' || stock === 'sold_out' ? stock : '',
   }
-  const [allProducts, categories] = await Promise.all([listAdminProducts(), listProductCategories()])
+  const [allProducts, categories, drafts] = await Promise.all([listAdminProducts(), listProductCategories(), listProductDrafts()])
   const products = filterAdminProductSummaries(allProducts, filters)
 
   return (
@@ -35,6 +37,22 @@ export default async function AdminProductsPage({
         <p>查看庫存、編輯商品，或直接切換前台上架狀態。</p>
       </header>
       <div className="admin-product-toolbar"><div><Link className="button" href="/admin/products/new">＋ 新增商品</Link><Link className="admin-secondary-link" href="/admin/categories">管理商品分類 →</Link></div><span>顯示 {products.length}／{allProducts.length} 件商品</span></div>
+      {drafts.length > 0 ? (
+        <section className="admin-draft-panel" aria-label="未完成的商品草稿">
+          <header><strong>未完成草稿</strong><small>尚未建立、可隨時繼續編輯（不會顯示在前台）</small></header>
+          <ul>
+            {drafts.map((draft) => (
+              <li key={draft.id}>
+                <div><strong>{draft.label}</strong><small>最後編輯 {formatTaipeiDateTime(draft.updatedAt)}</small></div>
+                <div className="admin-draft-actions">
+                  <Link className="admin-inline-action" href={`/admin/products/new?draft=${draft.id}`}>繼續編輯</Link>
+                  <form action={deleteProductDraftFromForm}><input name="id" type="hidden" value={draft.id} /><button className="admin-draft-delete" type="submit">刪除</button></form>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       <form action="/admin/products" className="admin-product-filters" method="get">
         <label>搜尋商品<input defaultValue={filters.query} name="query" placeholder="商品名稱" type="search" /></label>
         <label>分類<select defaultValue={filters.category} name="category"><option value="">全部分類</option>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
