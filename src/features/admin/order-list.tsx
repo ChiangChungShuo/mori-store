@@ -76,7 +76,7 @@ export function AdminOrderList({
         </label>
         <div className="filter-actions">
           <button className="button" disabled={pending} type="submit">篩選</button>
-          <button disabled={pending} name="clear" type="submit" value="1">清除</button>
+          <button className="filter-clear-button" disabled={pending} name="clear" type="submit" value="1"><span aria-hidden="true">↺</span> 清除</button>
         </div>
       </form>
       {state.orders.length === 0 ? (

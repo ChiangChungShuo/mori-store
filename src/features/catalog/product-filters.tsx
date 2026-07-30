@@ -20,12 +20,12 @@ export function ProductFilters({ filters, categories = [...defaultProductCategor
 
       <label>
         尺寸
-        <input name="size" defaultValue={filters.size ?? ''} inputMode="numeric" />
+        <input name="size" defaultValue={filters.size ?? ''} inputMode="numeric" placeholder="例：100" />
       </label>
 
       <label>
         顏色
-        <input name="color" defaultValue={filters.color ?? ''} />
+        <input name="color" defaultValue={filters.color ?? ''} placeholder="例：白色" />
       </label>
 
       <label>

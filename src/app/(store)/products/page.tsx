@@ -36,7 +36,7 @@ export default async function ProductsPage({
       </nav>
       <ProductFilters categories={categories} filters={filters} />
       <ProductSearchTracker query={filters.q} resultCount={products.length} />
-      <p aria-live="polite">共 {products.length} 件商品</p>
+      <p aria-live="polite" className="catalog-count">共 {products.length} 件商品</p>
       {products.length === 0 ? (
         <div className="catalog-empty">
           <h2>目前沒有符合條件的商品</h2>
