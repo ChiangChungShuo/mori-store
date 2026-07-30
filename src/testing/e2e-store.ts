@@ -7,6 +7,7 @@ import type { CatalogProduct } from '@/features/catalog/queries'
 import type { BannerSlide } from '@/features/storefront/banner-settings'
 import { defaultProductCategories } from '@/features/catalog/category-defaults'
 import { defaultMaterialPresets, defaultCarePresets, defaultSizePresets } from '@/features/catalog/content-preset-defaults'
+import type { ProductSeries } from '@/features/catalog/product-series'
 
 export type E2EUser = {
   id: string
@@ -97,6 +98,8 @@ export type E2EStoreState = {
   }
   bannerSlides: BannerSlide[]
   productCategories: string[]
+  productSeries: ProductSeries[]
+  productSeriesProducts: Array<{ productId: string; seriesId: string }>
   contentPresets: { material: string[]; care: string[]; size: string[] }
   productDrafts: Array<{ id: string; label: string; data: unknown; updatedAt: string }>
   products: CatalogProduct[]
@@ -218,6 +221,17 @@ export function createE2EStore(): E2EStoreState {
       },
     ],
     productCategories: [...defaultProductCategories],
+    productSeries: [
+      { id: '10000000-0000-4000-8000-000000000001', categoryName: '上衣', name: 'Mori flora 漫花系列', position: 0 },
+      { id: '10000000-0000-4000-8000-000000000002', categoryName: '上衣', name: 'Mori forest 森林系列', position: 1 },
+      { id: '10000000-0000-4000-8000-000000000003', categoryName: '褲裝', name: 'Mori daily 日常系列', position: 0 },
+    ],
+    productSeriesProducts: [
+      { productId: '00000000-0000-4000-8000-000000000000', seriesId: '10000000-0000-4000-8000-000000000001' },
+      { productId: '00000000-0000-4000-8000-000000000500', seriesId: '10000000-0000-4000-8000-000000000001' },
+      { productId: '00000000-0000-4000-8000-000000000600', seriesId: '10000000-0000-4000-8000-000000000002' },
+      { productId: '00000000-0000-4000-8000-000000000200', seriesId: '10000000-0000-4000-8000-000000000003' },
+    ],
     contentPresets: { material: [...defaultMaterialPresets], care: [...defaultCarePresets], size: [...defaultSizePresets] },
     productDrafts: [],
     products: [],
@@ -254,6 +268,8 @@ export function getE2EStore() {
   fixtureGlobal.__moriE2EStore.settings ??= createE2EStore().settings
   fixtureGlobal.__moriE2EStore.products ??= []
   fixtureGlobal.__moriE2EStore.productCategories ??= [...defaultProductCategories]
+  fixtureGlobal.__moriE2EStore.productSeries ??= createE2EStore().productSeries
+  fixtureGlobal.__moriE2EStore.productSeriesProducts ??= createE2EStore().productSeriesProducts
   fixtureGlobal.__moriE2EStore.contentPresets ??= { material: [...defaultMaterialPresets], care: [...defaultCarePresets], size: [...defaultSizePresets] }
   fixtureGlobal.__moriE2EStore.productDrafts ??= []
   fixtureGlobal.__moriE2EStore.variantCosts ??= new Map()

@@ -144,6 +144,71 @@ export type Database = {
         }
         Relationships: []
       }
+      product_series: {
+        Row: {
+          category_name: string
+          created_at: string
+          id: string
+          name: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          category_name: string
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          category_name?: string
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'product_series_category_name_fkey'
+            columns: ['category_name']
+            isOneToOne: false
+            referencedRelation: 'product_categories'
+            referencedColumns: ['name']
+          },
+        ]
+      }
+      product_series_products: {
+        Row: {
+          product_id: string
+          series_id: string
+        }
+        Insert: {
+          product_id: string
+          series_id: string
+        }
+        Update: {
+          product_id?: string
+          series_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'product_series_products_product_id_fkey'
+            columns: ['product_id']
+            isOneToOne: false
+            referencedRelation: 'products'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'product_series_products_series_id_fkey'
+            columns: ['series_id']
+            isOneToOne: false
+            referencedRelation: 'product_series'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       order_items: {
         Row: {
           color: string
