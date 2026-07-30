@@ -88,6 +88,20 @@ export function SignupForm({
     },
     initialOtpState,
   )
+  const otpInputRef = useRef<HTMLInputElement>(null)
+
+  async function pasteOtp() {
+    try {
+      const text = await navigator.clipboard.readText()
+      const digits = text.replace(/\D/g, '').slice(0, 10)
+      if (digits && otpInputRef.current) {
+        otpInputRef.current.value = digits
+        otpInputRef.current.focus()
+      }
+    } catch {
+      otpInputRef.current?.focus()
+    }
+  }
 
   useEffect(() => {
     if (verificationOpen) verificationHeadingRef.current?.focus()
@@ -271,16 +285,20 @@ export function SignupForm({
               <input name="email" type="hidden" value={verifiedContact.email} />
               <div className="auth-field">
                 <label htmlFor="signup-otp">Email 驗證碼</label>
-                <input
-                  aria-describedby={otpState.fieldErrors?.token || otpState.message ? 'signup-otp-error' : undefined}
-                  autoComplete="one-time-code"
-                  id="signup-otp"
-                  inputMode="numeric"
-                  maxLength={6}
-                  name="token"
-                  pattern="[0-9]{6}"
-                  placeholder="請輸入 6 位數驗證碼"
-                />
+                <div className="signup-otp-input-row">
+                  <input
+                    ref={otpInputRef}
+                    aria-describedby={otpState.fieldErrors?.token || otpState.message ? 'signup-otp-error' : undefined}
+                    autoComplete="one-time-code"
+                    id="signup-otp"
+                    inputMode="numeric"
+                    maxLength={10}
+                    name="token"
+                    pattern="[0-9]{6,10}"
+                    placeholder="請輸入信件中的驗證碼"
+                  />
+                  <button type="button" className="signup-otp-paste" onClick={pasteOtp}>貼上</button>
+                </div>
                 {(otpState.fieldErrors?.token || otpState.message) && (
                   <p id="signup-otp-error" role="alert">{otpState.fieldErrors?.token?.[0] ?? otpState.message}</p>
                 )}

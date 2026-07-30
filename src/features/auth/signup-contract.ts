@@ -20,7 +20,7 @@ export const signupContactSchema = z.object({
 
 export const signupOtpSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
-  token: z.string().trim().regex(/^\d{6}$/, '請輸入 6 位數驗證碼'),
+  token: z.string().trim().regex(/^\d{6,10}$/, '請輸入信件中的數字驗證碼'),
 })
 
 export const signupPasswordSchema = z.object({

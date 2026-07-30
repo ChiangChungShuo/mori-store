@@ -78,7 +78,7 @@ describe('Email OTP signup form', () => {
     expect(screen.getByText(/pa\*\*\*@example\.com/)).toBeInTheDocument()
     expect(screen.getByLabelText('設定密碼')).toBeInTheDocument()
     expect(screen.getByLabelText('Email 驗證碼')).toHaveAttribute('inputmode', 'numeric')
-    expect(screen.getByLabelText('Email 驗證碼')).toHaveAttribute('placeholder', '請輸入 6 位數驗證碼')
+    expect(screen.getByLabelText('Email 驗證碼')).toHaveAttribute('placeholder', '請輸入信件中的驗證碼')
     expect(screen.getByText('本機驗證碼：123456')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /重新寄送/ })).toBeDisabled()
 
