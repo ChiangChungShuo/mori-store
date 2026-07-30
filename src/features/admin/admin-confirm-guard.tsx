@@ -19,9 +19,12 @@ export function AdminConfirmGuard() {
       if (!(form instanceof HTMLFormElement)) return
       if (confirmed.current.has(form)) { confirmed.current.delete(form); return }
       if (form.dataset.noConfirm !== undefined) return
-      const method = (form.getAttribute('method') || 'get').toLowerCase()
+      // Default: every admin form submit (create/save/delete server actions)
+      // asks for confirmation. React action forms carry no method attribute,
+      // so only explicitly-declared GET forms (filters/search) are exempt.
+      const method = (form.getAttribute('method') || '').toLowerCase()
       const optIn = form.dataset.confirm !== undefined
-      if (method !== 'post' && !optIn) return
+      if (method === 'get' && !optIn) return
 
       const submitter = (event as SubmitEvent).submitter as HTMLElement | null
       const label = (submitter?.getAttribute('aria-label') || submitter?.textContent || '').trim()

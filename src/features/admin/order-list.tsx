@@ -60,7 +60,7 @@ export function AdminOrderList({
           </table></div>
         )}
       </section>
-      <form action={formAction} className="product-filters" key={`${state.query}:${state.status}`}>
+      <form action={formAction} className="product-filters" data-no-confirm key={`${state.query}:${state.status}`}>
         <label>
           訂單編號、收件人或 Email
           <input defaultValue={state.query} name="query" type="search" />

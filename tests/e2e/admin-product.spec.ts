@@ -23,9 +23,9 @@ test.describe('admin product inventory', () => {
     await page.getByLabel('3-5 歲').check()
     await page.getByLabel('SKU').fill(`E2E-TEE-${suffix}`)
     await page.getByLabel('顏色').fill('黃色')
-    await page.getByLabel('尺寸').fill('100')
+    await page.getByLabel('尺寸', { exact: true }).selectOption('100')
     await page.getByLabel('售價').fill('590')
-    await page.getByLabel('庫存').fill('3')
+    await page.getByLabel('庫存').selectOption('3')
     await page.getByRole('button', { name: '儲存商品' }).click()
     await page.getByRole('button', { name: '確定儲存' }).click()
     await expect(page.getByRole('status')).toContainText(/已儲存/)
@@ -46,9 +46,11 @@ test.describe('admin product inventory', () => {
     })
     await page.getByLabel('圖片替代文字').fill('E2E 彩色口袋 Tee 正面')
     await page.getByRole('button', { name: '上傳圖片' }).click()
+    await page.getByRole('button', { name: '確定儲存' }).click()
     await expect(page.getByText(/圖片已上傳/)).toBeVisible()
 
     await page.getByRole('button', { name: '上架商品' }).click()
+    await page.getByRole('button', { name: '確定儲存' }).click()
     await expect(page.getByText('商品已上架', { exact: true })).toBeVisible()
 
     await page.goto(`/products/${slug}`)

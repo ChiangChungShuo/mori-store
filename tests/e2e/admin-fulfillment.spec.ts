@@ -106,10 +106,13 @@ test.describe('admin order fulfillment', () => {
     await page.getByRole('link', { name: paidOrderNumber }).click()
 
     await page.getByRole('button', { name: '開始備貨' }).click()
+    await page.getByRole('button', { name: '確定儲存' }).click()
     await expect(page.getByText('目前狀態：備貨中')).toBeVisible()
     await page.getByRole('button', { name: '標記已出貨' }).click()
+    await page.getByRole('button', { name: '確定儲存' }).click()
     await expect(page.getByText('目前狀態：已出貨')).toBeVisible()
     await page.getByRole('button', { name: '標記已取貨' }).click()
+    await page.getByRole('button', { name: '確定儲存' }).click()
     await expect(page.getByText('目前狀態：已取貨')).toBeVisible()
     await expect(page.getByRole('button', { name: '開始備貨' })).toHaveCount(0)
   })
