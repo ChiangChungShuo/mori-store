@@ -1,4 +1,5 @@
 .superpowers/
+.worktrees/
 .next/
 node_modules/
 .env.local
