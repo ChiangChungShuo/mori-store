@@ -166,7 +166,10 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
       let productId: string
       try {
         productId = await dependencies.repository.createProduct(data)
-      } catch {
+      } catch (error) {
+        if (databaseErrorMessage(error).includes('product_series_category_mismatch')) {
+          return { ok: false, message: '商品系列與分類不相符，請重新選擇' }
+        }
         return { ok: false, message: '目前無法建立商品，請稍後再試' }
       }
       await refreshAfterMutation(productId)
@@ -195,6 +198,9 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
         }
         if (message.includes('stale_product_variant')) {
           return { ok: false, message: '商品庫存或規格已更新，請重新載入後再儲存' }
+        }
+        if (message.includes('product_series_category_mismatch')) {
+          return { ok: false, message: '商品系列與分類不相符，請重新選擇' }
         }
         return { ok: false, message: '目前無法更新商品，請稍後再試' }
       }
@@ -405,8 +411,25 @@ function createSupabaseProductRepository(): ProductRepository {
 }
 
 function createFixtureProductRepository(): ProductRepository {
+  function validateSeries(input: ProductInput) {
+    const store = getE2EStore()
+    const valid = input.seriesIds.every((seriesId) => store.productSeries.some((series) => (
+      series.id === seriesId && series.categoryName === input.category
+    )))
+    if (!valid) throw new Error('product_series_category_mismatch')
+  }
+
+  function replaceSeriesAssignments(productId: string, seriesIds: string[]) {
+    const store = getE2EStore()
+    store.productSeriesProducts = [
+      ...store.productSeriesProducts.filter((assignment) => assignment.productId !== productId),
+      ...[...new Set(seriesIds)].map((seriesId) => ({ productId, seriesId })),
+    ]
+  }
+
   return {
     async createProduct(input) {
+      validateSeries(input)
       const id = crypto.randomUUID()
       const variants = input.variants.map((variant) => {
         const variantId = crypto.randomUUID()
@@ -441,9 +464,11 @@ function createFixtureProductRepository(): ProductRepository {
         imageAlt: input.name,
         variants,
       })
+      replaceSeriesAssignments(id, input.seriesIds)
       return id
     },
     async updateProduct(productId, input) {
+      validateSeries(input)
       const products = getMutableE2EProducts()
       const index = products.findIndex((product) => product.id === productId)
       if (index < 0) throw new Error('product_not_found')
@@ -486,6 +511,7 @@ function createFixtureProductRepository(): ProductRepository {
           }
         }),
       }
+      replaceSeriesAssignments(productId, input.seriesIds)
     },
     async setPublished(productId, published) {
       const product = getMutableE2EProducts().find((candidate) => candidate.id === productId)
@@ -534,6 +560,8 @@ function createFixtureProductRepository(): ProductRepository {
       if (index < 0) throw new Error('product_not_found')
       for (const variant of products[index].variants) getE2EStore().variantCosts.delete(variant.id)
       products.splice(index, 1)
+      getE2EStore().productSeriesProducts = getE2EStore().productSeriesProducts
+        .filter((assignment) => assignment.productId !== productId)
       getE2EStore().publishedProductIds.delete(productId)
       for (const path of getE2EStore().uploadedProductImages.keys()) {
         if (path.startsWith(`${productId}/`)) getE2EStore().uploadedProductImages.delete(path)
@@ -597,6 +625,9 @@ export async function getAdminProduct(productId: string): Promise<AdminProductDe
         name: product.name,
         slug: product.slug,
         category: product.category,
+        seriesIds: getE2EStore().productSeriesProducts
+          .filter((assignment) => assignment.productId === product.id)
+          .map((assignment) => assignment.seriesId),
         ageBands: [...product.ageBands],
         description: product.description,
         summary: product.summary ?? '',
@@ -632,6 +663,7 @@ export async function getAdminProduct(productId: string): Promise<AdminProductDe
       id, name, slug, category, age_bands, description,
       summary, tags, seo_title, seo_description, material,
       care_instructions, size_guide, is_new, is_published, available_at,
+      product_series_products(series_id),
       product_images(id, storage_path, alt_text, position),
       product_variants(id, sku, color, size, price, cost, compare_at_price, stock, updated_at)
     `)
@@ -648,6 +680,7 @@ export async function getAdminProduct(productId: string): Promise<AdminProductDe
       name: data.name,
       slug: data.slug,
       category: data.category,
+      seriesIds: data.product_series_products.map((assignment) => assignment.series_id),
       ageBands: data.age_bands,
       description: data.description,
       summary: data.summary ?? '',

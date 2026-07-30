@@ -21,6 +21,7 @@ export const productSchema = z.object({
   name: z.string().trim().min(1, '商品名稱為必填'),
   slug: z.string().trim().default(''),
   category: z.string().trim().min(1, '分類為必填'),
+  seriesIds: z.array(z.string().uuid('商品系列格式錯誤')).default([]),
   ageBands: z.array(ageBandSchema).min(1, '至少選擇一個年齡層'),
   description: z.string().default(''),
   summary: z.string().trim().max(200, '簡短描述請控制在 200 字以內').optional(),

@@ -30,6 +30,16 @@ function imageFile(type: 'image/jpeg' | 'image/png' | 'image/webp', size?: numbe
 }
 
 describe('productSchema', () => {
+  it('accepts multiple series IDs and defaults missing assignments to none', () => {
+    const firstSeriesId = '10000000-0000-4000-8000-000000000001'
+    const secondSeriesId = '10000000-0000-4000-8000-000000000002'
+
+    expect(productSchema.parse({ ...validProduct, seriesIds: [firstSeriesId, secondSeriesId] }).seriesIds)
+      .toEqual([firstSeriesId, secondSeriesId])
+    expect(productSchema.parse(validProduct).seriesIds).toEqual([])
+    expect(productSchema.safeParse({ ...validProduct, seriesIds: ['not-a-uuid'] }).success).toBe(false)
+  })
+
   it('accepts the approved product fields', () => {
     expect(productSchema.safeParse(validProduct).success).toBe(true)
   })
