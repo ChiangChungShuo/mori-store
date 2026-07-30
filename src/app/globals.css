@@ -136,8 +136,11 @@ header#top { position: sticky; z-index: 60; top: 0; background: var(--paper); bo
 .desktop-category-column > a, .desktop-category-item > a, .desktop-series-column a { display: flex; min-height: 2.65rem; align-items: center; justify-content: space-between; padding: 0.65rem 0.75rem; font-size: 0.72rem; }
 .desktop-category-column > a:hover, .desktop-category-item:hover > a, .desktop-category-item:focus-within > a, .desktop-series-column a:hover { background: var(--oat); color: var(--forest); }
 .desktop-category-item { position: static; }
-.desktop-series-column { position: absolute; top: 0; left: 100%; display: none; width: 14rem; min-height: 17rem; align-content: start; padding: 0.85rem; }
-.desktop-category-item:first-of-type .desktop-series-column, .desktop-category-item:hover .desktop-series-column, .desktop-category-item:focus-within .desktop-series-column { display: grid; }
+.desktop-series-column { position: absolute; top: 0; left: 100%; display: none; width: 14rem; min-height: 17rem; align-content: start; padding: 0.85rem; background: var(--white); }
+.desktop-category-item:hover .desktop-series-column, .desktop-category-item:focus-within .desktop-series-column { display: grid; }
+/* Show the first category's panel by default, but only while no other
+   category is hovered/focused — otherwise two panels stack and overlap. */
+.desktop-category-column:not(:has(.desktop-category-item:hover, .desktop-category-item:focus-within)) .desktop-category-item:first-of-type .desktop-series-column { display: grid; }
 .desktop-series-column strong { padding: 0.35rem 0.75rem 0.65rem; color: var(--forest); font-size: 0.7rem; letter-spacing: 0.08em; }
 
 .hero {
