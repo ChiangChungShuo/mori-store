@@ -49,6 +49,8 @@ test('registered customer pays and owner sees the same order', async ({ browser 
   await page.getByRole('button', { name: '送出資料，確認訂單' }).click()
   await expect(page.getByRole('heading', { name: '訂單確認' })).toBeVisible()
   await page.getByRole('button', { name: '確認資料並送出訂單' }).click()
+  await page.getByRole('checkbox', { name: /我已確認/ }).check()
+  await page.getByRole('button', { name: '確認送出訂單' }).click()
   await expect(page).toHaveURL(/\/order-complete\/MORI-DEMO-/)
   await expect(page.getByRole('heading', { name: '訂單完成' })).toBeVisible()
   await expect(page.getByRole('heading', { name: '匯款資訊' })).toBeVisible()

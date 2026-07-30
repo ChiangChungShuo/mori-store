@@ -48,6 +48,8 @@ test('completes the local fixture checkout without Supabase', async ({ page }) =
   await expect(page).toHaveURL(/\/checkout\/payment\/[0-9a-f-]+$/)
 
   await page.getByRole('button', { name: '確認資料並送出訂單' }).click()
+  await page.getByRole('checkbox', { name: /我已確認/ }).check()
+  await page.getByRole('button', { name: '確認送出訂單' }).click()
 
   await expect(page).toHaveURL(/\/order-complete\/MORI-DEMO-/)
   await expect(page.getByRole('heading', { name: '訂單完成' })).toBeVisible()

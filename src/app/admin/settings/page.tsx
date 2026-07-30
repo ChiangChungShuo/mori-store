@@ -64,7 +64,7 @@ export default async function AdminSettingsPage() {
         <BannerSettingsEditor action={updateBannerSlidesFromForm} slides={bannerSlides} />
       </section>
       <section className="admin-panel admin-integration-settings">
-        <header><div><p className="eyebrow">payments, shipping & seo</p><h2>付款、物流與搜尋設定</h2></div><p>銀行資料由伺服器環境設定管理；超商正式門市地圖與物流單仍需申請服務。</p></header>
+        <header><div><p className="eyebrow">payments, shipping & seo</p><h2>付款、物流與搜尋設定</h2></div></header>
         <div className="integration-grid">
           <article><span data-status="active">目前可用</span><h3>7-ELEVEN／全家取貨</h3><p>前台可選擇測試門市；正式電子地圖與物流單仍需串接物流服務。</p></article>
           <article><span data-status="active">目前可用</span><h3>銀行匯款</h3><p>送出訂單後顯示收款帳號，會員可回報帳號末 5 碼供後台核對。</p></article>

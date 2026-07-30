@@ -69,7 +69,7 @@ export default async function TestPaymentPage({ params }: TestPaymentPageProps) 
             <h2>金額明細</h2>
             <dl><div><dt>商品小計</dt><dd>{formatTwd(payment.subtotal)}</dd></div><div><dt>超商運費</dt><dd>{payment.shippingFee === 0 ? '免運' : formatTwd(payment.shippingFee)}</dd></div>{discount > 0 ? <div className="payment-discount"><dt>優惠折抵</dt><dd>−{formatTwd(discount)}</dd></div> : null}<div className="payment-grand-total"><dt>應付合計</dt><dd>{formatTwd(payment.total)}</dd></div></dl>
           </section>
-          <OrderSubmitPanel attemptId={attemptId} paymentMethod={payment.paymentMethod} />
+          <OrderSubmitPanel attemptId={attemptId} paymentMethod={payment.paymentMethod} items={payment.items.map((item) => ({ productName: item.productName, color: item.color, size: item.size, quantity: item.quantity }))} />
         </aside>
       </div>
     </main>
