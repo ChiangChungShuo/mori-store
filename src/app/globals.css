@@ -292,7 +292,8 @@ header#top { position: sticky; z-index: 60; top: 0; background: var(--paper); bo
 .product-availability { position: absolute; right: 0; bottom: 0; left: 0; padding: 0.65rem 1rem; background: rgb(93 109 128 / 82%); color: var(--white); font-size: 0.86rem; font-weight: 800; letter-spacing: 0.08em; text-align: center; backdrop-filter: blur(0.15rem); }
 .product-availability[data-status="coming_soon"] { display: grid; gap: 0.08rem; border-top: 1px solid rgb(93 109 128 / 18%); background: rgb(241 236 230 / 95%); color: var(--forest); letter-spacing: 0.04em; }
 .product-availability[data-status="coming_soon"] small { font-size: 0.55rem; font-weight: 800; letter-spacing: 0.18em; }
-.product-image-link:has(.product-availability) .product-card-action { display: none; }
+.product-availability[data-status="preorder"] { right: auto; bottom: auto; top: 0.6rem; left: 0.6rem; padding: 0.3rem 0.65rem; border-radius: 999px; background: rgb(106 127 144 / 92%); font-size: 0.66rem; letter-spacing: 0.12em; backdrop-filter: none; }
+.product-image-link:has(.product-availability:not([data-status="preorder"])) .product-card-action { display: none; }
 .product-card[data-availability="sold_out"] .product-image-link { cursor: pointer; }
 .product-card[data-availability="sold_out"] .product-image-link::after { position: absolute; inset: 0 0 2.65rem; background: rgb(255 255 255 / 52%); content: ""; }
 .product-card[data-availability="sold_out"] .product-image { filter: grayscale(0.75); opacity: 0.72; }
@@ -1266,6 +1267,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .product-detail-availability p { display: flex; flex-wrap: wrap; gap: 0.25rem 0.55rem; align-items: baseline; margin: 0; }
 .product-detail-availability small { color: var(--muted); font-size: 0.63rem; font-weight: 700; letter-spacing: 0.08em; }
 .product-detail-availability strong { font-size: 0.76rem; font-weight: 700; }
+.product-detail-availability[data-variant="preorder"] { border-color: var(--sage); background: var(--oat); }
 .product-detail-availability time { color: var(--moss); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18rem; }
 
 .add-to-cart-button { width: 100%; gap: 0.65rem; margin-top: 0.4rem; }

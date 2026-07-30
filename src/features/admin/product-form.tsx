@@ -7,6 +7,7 @@ import { availableAtError, getProductValidationErrors, productSchema, slugifyPro
 import { VariantGrid } from './variant-grid'
 import { defaultProductCategories } from '@/features/catalog/category-defaults'
 import { AGE_BANDS } from '@/lib/age-bands'
+import { PREORDER_TAG, PREORDER_STOCK, isPreorder } from '@/lib/preorder'
 import type { SaveDraftState } from '@/features/admin/product-drafts'
 
 type ProductActionResult = {
@@ -129,6 +130,7 @@ export function DeleteProductImageForm({
 export function ProductForm({ initialProduct, onSave, requireImage = false, categories = [...defaultProductCategories], materialPresets = [], carePresets = [], sizeOptions = [], draftId: initialDraftId = null, saveDraft }: ProductFormProps) {
   const [product, setProduct] = useState(initialProduct)
   const [draftId, setDraftId] = useState<string | null>(initialDraftId)
+  const [preorder, setPreorder] = useState(isPreorder(initialProduct.tags))
   const [slugEdited, setSlugEdited] = useState(Boolean(initialProduct.slug))
   const [result, setResult] = useState<ProductActionResult | null>(null)
   const [pending, startTransition] = useTransition()
@@ -194,15 +196,20 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
       window.requestAnimationFrame(() => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus())
       return
     }
+    // Pre-order products stay sellable without real stock: force a high stock
+    // on every variant. The 預購 tag itself is toggled onto product.tags.
+    const finalProduct = preorder
+      ? { ...parsed.data, variants: parsed.data.variants.map((variant) => ({ ...variant, stock: PREORDER_STOCK })) }
+      : parsed.data
     startTransition(async () => {
       let outcome: ProductActionResult
       if (!requireImage) {
-        outcome = await onSave(parsed.data)
+        outcome = await onSave(finalProduct)
       } else {
         const imageData = new FormData()
         imageFiles.forEach((file) => imageData.append('file', file))
         imageData.set('alt', imageAlt)
-        outcome = await onSave(parsed.data, imageData)
+        outcome = await onSave(finalProduct, imageData)
       }
       setResult(outcome)
     })
@@ -330,6 +337,15 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
         <aside className="admin-product-form-aside">
           <section><p className="eyebrow">publish check</p><h2>儲存前檢查</h2><ul><li data-complete={contentComplete}>商品內容</li><li data-complete={variantsComplete}>規格與庫存</li>{requireImage ? <li data-complete={imageComplete}>商品圖片與說明</li> : null}{requireImage ? <li data-complete={activeStep === 4}>可以建立商品</li> : null}</ul></section>
           <label className="admin-new-toggle"><input type="checkbox" checked={product.isNew} onChange={(event) => setProduct((current) => ({ ...current, isNew: event.target.checked }))} /><span><strong>標記為新品</strong><small>在前台商品卡顯示 NEW ARRIVAL</small></span></label>
+          <label className="admin-new-toggle"><input type="checkbox" checked={preorder} onChange={(event) => {
+            const next = event.target.checked
+            setPreorder(next)
+            setResult(null)
+            setProduct((current) => {
+              const others = (current.tags ?? []).filter((tag) => tag !== PREORDER_TAG)
+              return { ...current, tags: next ? [...others, PREORDER_TAG] : others }
+            })
+          }} /><span><strong>預購商品</strong><small>庫存不需管理，前台顯示「約 14–21 天出貨」並可直接下單</small></span></label>
           <p className="admin-draft-note">{requireImage ? '商品資料、規格與主圖會一次建立。建立後先保留為草稿，確認內容無誤再上架。' : '儲存修改不會自動變更目前的上架狀態。'}</p>
         </aside>
       </div>

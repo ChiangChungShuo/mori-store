@@ -3,6 +3,7 @@ import { formatTwd } from '@/lib/money'
 import type { CatalogProduct } from '@/features/catalog/queries'
 import { WishlistButton } from '@/features/wishlist/wishlist-button'
 import { getProductAvailability } from '@/features/catalog/availability'
+import { isPreorder } from '@/lib/preorder'
 
 export function ProductCard({ product }: { product: CatalogProduct }) {
   const colors = new Set(product.variants.map((variant) => variant.color))
@@ -10,6 +11,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
     .sort((a, b) => a.localeCompare(b, 'zh-Hant', { numeric: true }))
   const minimumPrice = Math.min(...product.variants.map((variant) => variant.price))
   const availability = getProductAvailability(product)
+  const preorder = isPreorder(product.tags)
   const soldOut = availability === 'sold_out'
   const comingSoonDate = availability === 'coming_soon' && product.availableAt
     ? new Intl.DateTimeFormat('zh-TW', { month: 'numeric', day: 'numeric' }).format(new Date(product.availableAt))
@@ -22,6 +24,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
       <span className="product-image-placeholder" aria-hidden="true">mori</span>
     )}
     {soldOut ? <span className="product-availability" data-status="sold_out">售完</span> : null}
+    {!soldOut && preorder ? <span className="product-availability" data-status="preorder">預購</span> : null}
     {availability === 'coming_soon' ? <span className="product-availability" data-status="coming_soon"><small>即將上架</small>預計 {comingSoonDate} 開賣</span> : null}
     <span className="product-card-action">查看商品 <span aria-hidden="true">↗</span></span>
   </>

@@ -10,6 +10,7 @@ import { WishlistButton } from '@/features/wishlist/wishlist-button'
 import { ProductGallery } from '@/features/catalog/product-gallery'
 import { ProductShareButtons } from '@/components/social-share-menu'
 import { getProductAvailability } from '@/features/catalog/availability'
+import { isPreorder, PREORDER_NOTE } from '@/lib/preorder'
 import { absoluteUrl } from '@/lib/site'
 
 export const dynamic = 'force-dynamic'
@@ -117,6 +118,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <div><p className="product-kicker">{product.category} · {product.ageBands.join('／')} 歲</p><h1>{product.name}</h1></div>
           </div>
           {saleDate ? <div className="product-detail-availability" role="status"><span aria-hidden="true">◷</span><p><small>預計開賣</small><strong>商品將於 <time dateTime={product.availableAt!}>{saleDate}</time> 開始販售</strong></p></div> : null}
+          {isPreorder(product.tags) ? <div className="product-detail-availability" data-variant="preorder" role="status"><span aria-hidden="true">◷</span><p><small>預購商品</small><strong>{PREORDER_NOTE}</strong></p></div> : null}
           <div className="product-price-row"><p className="product-price">{formatTwd(minimumPrice)} 起</p>{compareAtPrice > minimumPrice && <del>{formatTwd(compareAtPrice)}</del>}</div>
           <p className="product-lead">{product.summary || product.description}</p>
           {product.tags && product.tags.length > 0 ? <ul className="product-tags" aria-label="商品標籤">{product.tags.map((tag) => <li key={tag}>{tag}</li>)}</ul> : null}
