@@ -8,8 +8,10 @@ import { MobileMenu } from '@/components/mobile-menu'
 import { MobileHeaderSearch } from '@/components/mobile-header-search'
 import { DesktopHeaderSearch } from '@/components/desktop-header-search'
 import { AutoCloseDetails } from '@/components/auto-close-details'
+import { CategorySeriesMenu } from '@/components/category-series-menu'
+import type { ProductSeries } from '@/features/catalog/product-series'
 
-export function SiteHeader({ cart, isSignedIn = false, isAdmin = false, categories = [...defaultProductCategories] }: { cart?: ReactNode; isSignedIn?: boolean; isAdmin?: boolean; categories?: string[] }) {
+export function SiteHeader({ cart, isSignedIn = false, isAdmin = false, categories = [...defaultProductCategories], series = [] }: { cart?: ReactNode; isSignedIn?: boolean; isAdmin?: boolean; categories?: string[]; series?: ProductSeries[] }) {
   return (
     <header id="top">
       <div className="announcement">
@@ -26,9 +28,7 @@ export function SiteHeader({ cart, isSignedIn = false, isAdmin = false, categori
                 <Link href="/#ages">依年齡</Link>
                 <details className="store-mobile-categories">
                   <summary>商品分類 <span aria-hidden="true">⌄</span></summary>
-                  <div>
-                    {categories.map((category) => <Link href={`/products?category=${encodeURIComponent(category)}`} key={category}>{category}</Link>)}
-                  </div>
+                  <CategorySeriesMenu categories={categories} series={series} variant="mobile" />
                 </details>
                 <Link href="/#story">品牌故事</Link>
               </section>
@@ -61,10 +61,7 @@ export function SiteHeader({ cart, isSignedIn = false, isAdmin = false, categori
           <Link href="/#ages">依年齡</Link>
           <AutoCloseDetails className="nav-category-menu">
             <summary>全部分類 <span aria-hidden="true">⌄</span></summary>
-            <div>
-              <Link href="/products">所有商品</Link>
-              {categories.map((category) => <Link href={`/products?category=${encodeURIComponent(category)}`} key={category}>{category}</Link>)}
-            </div>
+            <CategorySeriesMenu categories={categories} series={series} variant="desktop" />
           </AutoCloseDetails>
           <Link href="/#story">品牌故事</Link>
         </div>
