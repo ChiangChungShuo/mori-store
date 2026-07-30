@@ -66,7 +66,7 @@ describe('product category management', () => {
     repository.remove = async () => { throw new Error('category_in_use') }
     await expect(actions.remove('褲裝')).resolves.toEqual({
       ok: false,
-      message: '仍有商品使用此分類，請先調整商品分類後再刪除',
+      message: '仍有商品或系列使用此分類，請先調整後再刪除',
     })
   })
 })

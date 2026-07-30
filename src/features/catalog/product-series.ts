@@ -207,3 +207,49 @@ export async function listProductSeries(categoryName?: string) {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) return []
   return liveRepository().list(categoryName)
 }
+
+async function revalidateProductSeriesPaths() {
+  const { revalidatePath } = await import('next/cache')
+  for (const path of ['/', '/products', '/admin/categories', '/admin/products', '/admin/products/new']) {
+    revalidatePath(path)
+  }
+}
+
+function serverActions() {
+  return createProductSeriesActions({
+    repository: resolvedProductSeriesRepository(),
+    requireAdmin: async () => {
+      const { requireAdmin } = await import('@/lib/auth/require-admin')
+      return requireAdmin()
+    },
+    onChanged: revalidateProductSeriesPaths,
+  })
+}
+
+export async function createProductSeriesFromForm(
+  _state: SeriesActionState,
+  formData: FormData,
+) {
+  'use server'
+  return serverActions().create(
+    String(formData.get('categoryName') ?? ''),
+    String(formData.get('name') ?? ''),
+  )
+}
+
+export async function moveProductSeriesFromForm(
+  _state: SeriesActionState,
+  formData: FormData,
+) {
+  'use server'
+  const direction = formData.get('direction') === 'up' ? 'up' : 'down'
+  return serverActions().move(String(formData.get('id') ?? ''), direction)
+}
+
+export async function deleteProductSeriesFromForm(
+  _state: SeriesActionState,
+  formData: FormData,
+) {
+  'use server'
+  return serverActions().remove(String(formData.get('id') ?? ''))
+}
