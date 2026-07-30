@@ -41,7 +41,6 @@ export default function PrivacyPage() {
           <h2>你的權利</h2>
           <p>你可隨時要求查詢、更正或刪除你的個人資料，或撤回行銷同意。請來信 <a href="mailto:moribaby0612@gmail.com">moribaby0612@gmail.com</a>，我們將盡快協助處理。</p>
         </section>
-        <p className="legal-updated">本政策為示範內容，正式上線前請依實際營運與當地法規（如個資法）調整。</p>
       </div>
     </main>
   )

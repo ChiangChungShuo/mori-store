@@ -41,7 +41,6 @@ export default function TermsPage() {
           <h2>條款修改</h2>
           <p>我們可能不定期更新本條款，修改後將於本頁公告，恕不另行個別通知。</p>
         </section>
-        <p className="legal-updated">本條款為示範內容，正式上線前請依實際營運與當地法規調整。</p>
       </div>
     </main>
   )

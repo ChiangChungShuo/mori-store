@@ -51,8 +51,8 @@ export default async function AdminMarketingPage() {
             <label className="check-label"><input defaultChecked={dashboard.reminder.enabled} name="enabled" type="checkbox" />啟用提醒排程</label>
             <div className="form-split"><label>延遲時數<input defaultValue={dashboard.reminder.delayHours} max="168" min="1" name="delayHours" type="number" /></label><label>信件主旨<input defaultValue={dashboard.reminder.subject} name="subject" required /></label></div>
             <button type="submit">儲存提醒設定</button>
-            <p className="admin-panel-note">本機模式可儲存排程與信件內容；正式寄送需再連接 Resend 或 SendGrid 等郵件服務。</p>
-          </form> : <p>正式提醒信尚未串接郵件服務。</p>}
+            <p className="admin-panel-note">訂單確認信已可正常寄送（Resend）；此「未結帳自動提醒」的排程功能仍在規劃中。</p>
+          </form> : <p className="admin-panel-note">訂單確認信已可正常寄送（Resend）。此「未結帳自動提醒」的自動排程功能仍在規劃中，敬請期待。</p>}
         </section>
       </div>
     </main>

@@ -46,7 +46,6 @@ export default function ReturnsPage() {
           <p>若收到商品有瑕疵或出貨錯誤，請於到貨 7 天內來信並附上照片，我們將負擔往返運費為你更換或退款。</p>
         </section>
         <p>更多常見問題請見 <Link href="/faq">常見問題</Link>。</p>
-        <p className="legal-updated">本政策為示範內容，正式上線前請依實際營運調整。</p>
       </div>
     </main>
   )

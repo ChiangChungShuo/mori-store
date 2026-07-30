@@ -67,7 +67,7 @@ export function OrderSubmitPanel({
         <div className="confirm-modal-backdrop" role="presentation" onClick={() => !pending && setConfirmOpen(false)}>
           <div className="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title" onClick={(event) => event.stopPropagation()}>
             <p className="confirm-modal-kicker">order confirmation</p>
-            <h2 id="confirm-modal-title">請務必再次確認【付款方式、商品顏色尺寸數量】哦！</h2>
+            <h2 id="confirm-modal-title">請務必再次確認【付款方式、商品顏色尺寸數量】</h2>
             <div className="confirm-modal-facts">
               <p><span>付款方式</span><strong>{paymentMethodLabels[paymentMethod]}</strong></p>
             </div>
