@@ -1,20 +1,28 @@
 import Link from 'next/link'
 import { CategoryManager } from '@/features/admin/category-manager'
+import { PresetManager } from '@/features/admin/preset-manager'
 import { createProductCategory, deleteProductCategory, listProductCategories } from '@/features/catalog/categories'
+import { createContentPresetFromForm, deleteContentPresetFromForm, listContentPresets } from '@/features/catalog/content-presets'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminCategoriesPage() {
-  const categories = await listProductCategories()
+  const [categories, materialPresets, carePresets] = await Promise.all([
+    listProductCategories(),
+    listContentPresets('material'),
+    listContentPresets('care'),
+  ])
 
   return (
     <main className="section admin-management-page admin-categories-page">
       <header className="admin-page-heading">
-        <div><p className="eyebrow">admin / categories</p><h1>商品分類</h1></div>
-        <p>集中管理前台商品導覽使用的分類，新增後即可在商品資料中選用。</p>
+        <div><p className="eyebrow">admin / catalog</p><h1>商品分類與預設值</h1></div>
+        <p>集中管理前台分類，以及新增商品時可一鍵帶入的材質與洗滌說明。</p>
       </header>
       <div className="admin-category-toolbar"><Link href="/admin/products">← 返回商品與庫存</Link><span>目前共 {categories.length} 個分類</span></div>
       <CategoryManager categories={categories} createCategory={createProductCategory} deleteCategory={deleteProductCategory} />
+      <PresetManager kind="material" title="常用材質" placeholder="例：100% 有機棉" presets={materialPresets} createAction={createContentPresetFromForm} deleteAction={deleteContentPresetFromForm} />
+      <PresetManager kind="care" title="常用洗滌說明" placeholder="例：冷水手洗，請勿漂白" presets={carePresets} createAction={createContentPresetFromForm} deleteAction={deleteContentPresetFromForm} />
     </main>
   )
 }

@@ -8,6 +8,8 @@ import { VariantGrid } from './variant-grid'
 import { defaultProductCategories } from '@/features/catalog/category-defaults'
 import { AGE_BANDS } from '@/lib/age-bands'
 
+const PRODUCT_DRAFT_KEY = 'mori-product-draft'
+
 type ProductActionResult = {
   ok: boolean
   message?: string
@@ -21,6 +23,8 @@ type ProductFormProps = {
   onSave: (product: ProductInput, image?: FormData) => Promise<ProductActionResult>
   requireImage?: boolean
   categories?: string[]
+  materialPresets?: string[]
+  carePresets?: string[]
 }
 
 
@@ -120,7 +124,7 @@ export function DeleteProductImageForm({
   }}><button aria-label={`刪除圖片 ${imageNumber}`} disabled={pending} type="submit">{pending ? '刪除中…' : '刪除圖片'}</button></form>
 }
 
-export function ProductForm({ initialProduct, onSave, requireImage = false, categories = [...defaultProductCategories] }: ProductFormProps) {
+export function ProductForm({ initialProduct, onSave, requireImage = false, categories = [...defaultProductCategories], materialPresets = [], carePresets = [] }: ProductFormProps) {
   const [product, setProduct] = useState(initialProduct)
   const [slugEdited, setSlugEdited] = useState(Boolean(initialProduct.slug))
   const [result, setResult] = useState<ProductActionResult | null>(null)
@@ -188,14 +192,19 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
       return
     }
     startTransition(async () => {
+      let outcome: ProductActionResult
       if (!requireImage) {
-        setResult(await onSave(parsed.data))
-        return
+        outcome = await onSave(parsed.data)
+      } else {
+        const imageData = new FormData()
+        imageFiles.forEach((file) => imageData.append('file', file))
+        imageData.set('alt', imageAlt)
+        outcome = await onSave(parsed.data, imageData)
       }
-      const imageData = new FormData()
-      imageFiles.forEach((file) => imageData.append('file', file))
-      imageData.set('alt', imageAlt)
-      setResult(await onSave(parsed.data, imageData))
+      setResult(outcome)
+      if (outcome.ok) {
+        try { window.localStorage.removeItem(PRODUCT_DRAFT_KEY) } catch { /* ignore */ }
+      }
     })
   }
 
@@ -215,6 +224,40 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
     setResult(null)
     const tags = value.split(/[,，、\n]/).map((tag) => tag.trim()).filter(Boolean).slice(0, 20)
     setProduct((current) => ({ ...current, tags }))
+  }
+
+  function saveDraft() {
+    try {
+      window.localStorage.setItem(PRODUCT_DRAFT_KEY, JSON.stringify({ product, imageAlt }))
+      setResult({ ok: true, message: '草稿已儲存到這台裝置（圖片需在完成時重新選擇）。' })
+    } catch {
+      setResult({ ok: false, message: '無法儲存草稿，請確認瀏覽器允許儲存。' })
+    }
+  }
+
+  function restoreDraft() {
+    try {
+      const raw = window.localStorage.getItem(PRODUCT_DRAFT_KEY)
+      if (!raw) { setResult({ ok: false, message: '找不到已儲存的草稿。' }); return }
+      const draft = JSON.parse(raw) as { product?: ProductInput; imageAlt?: string }
+      if (draft.product) {
+        setProduct(draft.product)
+        setSlugEdited(Boolean(draft.product.slug))
+      }
+      if (typeof draft.imageAlt === 'string') setImageAlt(draft.imageAlt)
+      setResult({ ok: true, message: '已還原草稿，請重新選擇商品圖片後再建立。' })
+    } catch {
+      setResult({ ok: false, message: '草稿資料毀損，無法還原。' })
+    }
+  }
+
+  function applyPreset(field: 'material' | 'careInstructions', value: string) {
+    setResult(null)
+    setProduct((current) => {
+      const existing = current[field].trim()
+      const separator = field === 'careInstructions' ? '\n' : '、'
+      return { ...current, [field]: existing ? `${existing}${separator}${value}` : value }
+    })
   }
 
   function toggleAgeBand(ageBand: ProductInput['ageBands'][number], checked: boolean) {
@@ -249,8 +292,10 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
               <label className="admin-field-wide">簡短描述（選填）<textarea aria-invalid={attempted && Boolean(result?.fieldErrors?.summary)} value={product.summary ?? ''} onChange={(event) => setText('summary', event.target.value)} placeholder="一句話突出主要賣點，會顯示在商品列表卡片上" rows={2} maxLength={200} />{result?.fieldErrors?.summary && <small>{result.fieldErrors.summary[0]}</small>}<small className="admin-field-hint">最多 200 字；留白時列表會改用完整說明開頭。</small></label>
               <label className="admin-field-wide">商品說明<textarea aria-invalid={attempted && Boolean(result?.fieldErrors?.description)} value={product.description} onChange={(event) => setText('description', event.target.value)} placeholder="描述版型、觸感與適合的穿著情境（可換行分段）" rows={5} required />{result?.fieldErrors?.description && <small>{result.fieldErrors.description[0]}</small>}</label>
               <label>材質<input aria-invalid={attempted && Boolean(result?.fieldErrors?.material)} value={product.material} onChange={(event) => setText('material', event.target.value)} placeholder="例：100% 有機棉" required />{result?.fieldErrors?.material && <small>{result.fieldErrors.material[0]}</small>}</label>
+              {materialPresets.length ? <div className="admin-preset-chips admin-field-wide"><span>常用材質：</span>{materialPresets.map((preset) => <button type="button" key={preset} onClick={() => applyPreset('material', preset)}>＋ {preset}</button>)}</div> : null}
               <label>尺寸指南<textarea aria-invalid={attempted && Boolean(result?.fieldErrors?.sizeGuide)} value={product.sizeGuide} onChange={(event) => setText('sizeGuide', event.target.value)} placeholder="例：正常版型，依平常尺寸選購" rows={3} required />{result?.fieldErrors?.sizeGuide && <small>{result.fieldErrors.sizeGuide[0]}</small>}</label>
               <label className="admin-field-wide">洗滌說明<textarea aria-invalid={attempted && Boolean(result?.fieldErrors?.careInstructions)} value={product.careInstructions} onChange={(event) => setText('careInstructions', event.target.value)} placeholder="例：反面裝洗衣袋，冷水柔洗並自然晾乾" rows={3} required />{result?.fieldErrors?.careInstructions && <small>{result.fieldErrors.careInstructions[0]}</small>}</label>
+              {carePresets.length ? <div className="admin-preset-chips admin-field-wide"><span>常用洗滌說明：</span>{carePresets.map((preset) => <button type="button" key={preset} onClick={() => applyPreset('careInstructions', preset)}>＋ {preset}</button>)}</div> : null}
               <label className="admin-field-wide">標籤（選填）<input aria-invalid={attempted && Boolean(result?.fieldErrors?.tags)} value={(product.tags ?? []).join('、')} onChange={(event) => setTags(event.target.value)} placeholder="例：休閒、夏日、純棉（用、或逗號分隔）" />{result?.fieldErrors?.tags && <small>{result.fieldErrors.tags[0]}</small>}<small className="admin-field-hint">用頓號或逗號分隔，最多 20 個；顯示在商品頁，方便顧客瀏覽。</small></label>
             </div>
           </section>
@@ -306,7 +351,13 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
       </div>
       <div className="admin-product-savebar">
         <div>{result?.ok ? <p className="admin-save-success" role={requireImage ? 'status' : undefined}>{result.message ?? '商品已儲存'}</p> : result?.message ? <p className="admin-save-error" role="alert">{result.message}</p> : null}</div>
-        <button aria-label={requireImage ? '儲存並建立商品' : '儲存商品'} className="button" type="submit" disabled={pending}>{pending ? '儲存中…' : requireImage ? '儲存並建立商品' : '儲存商品'}</button>
+        <div className="admin-savebar-actions">
+          {requireImage ? <>
+            <button type="button" className="button button-secondary" onClick={saveDraft}>儲存草稿</button>
+            <button type="button" className="button button-secondary" onClick={restoreDraft}>還原草稿</button>
+          </> : null}
+          <button aria-label={requireImage ? '儲存並建立商品' : '儲存商品'} className="button" type="submit" disabled={pending}>{pending ? '儲存中…' : requireImage ? '儲存並建立商品' : '儲存商品'}</button>
+        </div>
       </div>
       {requireImage && result?.ok && result.productId ? <div className="admin-success-modal" role="dialog" aria-modal="true" aria-labelledby="product-create-success-title">
         <div>

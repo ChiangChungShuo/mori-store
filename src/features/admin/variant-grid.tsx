@@ -21,7 +21,7 @@ const emptyVariant: Variant = {
 }
 
 const SIZE_OPTIONS = ['80', '90', '100', '110', '120', '130', '140']
-const STOCK_OPTIONS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
+const STOCK_OPTIONS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
 
 // Best-effort next SKU when duplicating: increment the trailing number so the
 // copy isn't an immediate duplicate. The admin can still edit it.
@@ -54,7 +54,6 @@ export function VariantGrid({ variants, onChange, errors = [] }: VariantGridProp
     <fieldset className="admin-variant-fieldset">
       <legend className="sr-only">商品規格</legend>
       <p className="admin-sku-help"><strong>SKU 是什麼？</strong>它是每個「顏色＋尺寸」專用的內部庫存編號，顧客不會看到。例：<code>MORI-TEE-GREEN-110</code>。填好一個後可按「複製此規格」快速新增同色不同尺寸。</p>
-      <datalist id="variant-stock-options">{STOCK_OPTIONS.map((stock) => <option key={stock} value={stock} />)}</datalist>
       <div className="admin-variant-labels" aria-hidden="true"><span>SKU</span><span>顏色</span><span>尺寸</span><span>售價</span><span>成本</span><span>原價</span><span>庫存</span><span /></div>
       {variants.map((variant, index) => (
         <div className="admin-variant-row" data-invalid={Boolean(errors[index] && Object.keys(errors[index]).length > 0)} key={variant.id ?? index}>
@@ -144,17 +143,18 @@ export function VariantGrid({ variants, onChange, errors = [] }: VariantGridProp
           </label>
           <label>
             庫存
-            <input
+            <select
               aria-label="庫存"
               aria-invalid={Boolean(errors[index]?.stock)}
-              type="number"
-              min="0"
-              step="1"
-              list="variant-stock-options"
-              value={variant.stock}
-              onChange={(event) => update(index, 'stock', event.target.valueAsNumber)}
+              value={String(variant.stock)}
+              onChange={(event) => update(index, 'stock', Number(event.target.value))}
               required
-            />
+            >
+              {STOCK_OPTIONS.map((stock) => <option key={stock} value={stock}>{stock}</option>)}
+              {STOCK_OPTIONS.includes(String(variant.stock))
+                ? null
+                : <option value={String(variant.stock)}>{variant.stock}</option>}
+            </select>
             {errors[index]?.stock ? <small>{errors[index].stock?.[0]}</small> : null}
           </label>
           <div className="admin-variant-actions">

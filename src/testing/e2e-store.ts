@@ -6,6 +6,7 @@ import type { StorefrontEvent } from '@/features/analytics/insights'
 import type { CatalogProduct } from '@/features/catalog/queries'
 import type { BannerSlide } from '@/features/storefront/banner-settings'
 import { defaultProductCategories } from '@/features/catalog/category-defaults'
+import { defaultMaterialPresets, defaultCarePresets } from '@/features/catalog/content-preset-defaults'
 
 export type E2EUser = {
   id: string
@@ -96,6 +97,7 @@ export type E2EStoreState = {
   }
   bannerSlides: BannerSlide[]
   productCategories: string[]
+  contentPresets: { material: string[]; care: string[] }
   products: CatalogProduct[]
   variantCosts: Map<string, number>
   publishedProductIds: Set<string>
@@ -215,6 +217,7 @@ export function createE2EStore(): E2EStoreState {
       },
     ],
     productCategories: [...defaultProductCategories],
+    contentPresets: { material: [...defaultMaterialPresets], care: [...defaultCarePresets] },
     products: [],
     variantCosts: new Map(),
     publishedProductIds: new Set(),
@@ -249,6 +252,7 @@ export function getE2EStore() {
   fixtureGlobal.__moriE2EStore.settings ??= createE2EStore().settings
   fixtureGlobal.__moriE2EStore.products ??= []
   fixtureGlobal.__moriE2EStore.productCategories ??= [...defaultProductCategories]
+  fixtureGlobal.__moriE2EStore.contentPresets ??= { material: [...defaultMaterialPresets], care: [...defaultCarePresets] }
   fixtureGlobal.__moriE2EStore.variantCosts ??= new Map()
   fixtureGlobal.__moriE2EStore.publishedProductIds ??= new Set()
   fixtureGlobal.__moriE2EStore.uploadedProductImages ??= new Map()
