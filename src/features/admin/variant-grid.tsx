@@ -9,6 +9,7 @@ type VariantGridProps = {
   variants: Variant[]
   onChange: (variants: Variant[]) => void
   errors?: ProductVariantErrors
+  sizeOptions?: string[]
 }
 
 const emptyVariant: Variant = {
@@ -20,7 +21,7 @@ const emptyVariant: Variant = {
   stock: 0,
 }
 
-const SIZE_OPTIONS = ['80', '90', '100', '110', '120', '130', '140']
+const DEFAULT_SIZE_OPTIONS = ['80', '90', '100', '110', '120', '130', '140']
 const STOCK_OPTIONS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
 
 // Best-effort next SKU when duplicating: increment the trailing number so the
@@ -35,7 +36,8 @@ function bumpSku(sku: string): string {
   return sku ? `${sku}-2` : ''
 }
 
-export function VariantGrid({ variants, onChange, errors = [] }: VariantGridProps) {
+export function VariantGrid({ variants, onChange, errors = [], sizeOptions }: VariantGridProps) {
+  const SIZE_OPTIONS = sizeOptions && sizeOptions.length > 0 ? sizeOptions : DEFAULT_SIZE_OPTIONS
   function update(index: number, field: keyof Variant, value: string | number | undefined) {
     onChange(variants.map((variant, variantIndex) => (
       variantIndex === index ? { ...variant, [field]: value } : variant

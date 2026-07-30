@@ -912,6 +912,17 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-variant-row .admin-variant-duplicate:hover { background: var(--sage); color: var(--white); }
 .admin-variant-row .admin-variant-remove { display: grid; place-items: center; width: 2.2rem; flex: 0 0 auto; min-height: 2.2rem; padding: 0; border-color: #d5d7da; color: var(--muted); }
 .admin-variant-row .admin-variant-remove:hover:not(:disabled) { border-color: #d9b3b3; background: #f3e4e4; color: #a15954; }
+/* Tablet (incl. iPad): the 8-column variant row is too cramped, so stack each
+   variant's fields into a labelled 2-column card. */
+@media (max-width: 1100px) {
+  .admin-variant-labels { display: none; }
+  .admin-variant-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem 0.9rem; padding: 2.4rem 0.9rem 0.9rem; }
+  .admin-variant-row > p { position: absolute; top: 0.6rem; left: 0.9rem; display: block; margin: 0; color: var(--forest); font-size: 0.72rem; font-weight: 800; }
+  .admin-variant-row label { font-size: 0.68rem; }
+  .admin-variant-row input, .admin-variant-row select { min-height: 2.6rem; font-size: 0.9rem; padding: 0.55rem; }
+  .admin-variant-actions { grid-column: 1 / -1; }
+  .admin-variant-row .admin-variant-duplicate { font-size: 0.72rem; }
+}
 .admin-add-variant { width: 100%; border-style: dashed; }
 .admin-variant-error { margin: 0.75rem 0 0; color: #a15954; font-size: 0.68rem; }
 .admin-product-savebar { position: sticky; z-index: 3; bottom: 0.75rem; display: flex; min-height: 4.5rem; justify-content: space-between; gap: 1rem; align-items: center; padding: 0.75rem 0.85rem 0.75rem 1.2rem; border: 1px solid #d0d2d5; background: rgb(249 249 250 / 96%); box-shadow: 0 0.7rem 2rem rgb(81 88 98 / 14%); backdrop-filter: blur(10px); }

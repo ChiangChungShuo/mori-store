@@ -24,6 +24,7 @@ type ProductFormProps = {
   categories?: string[]
   materialPresets?: string[]
   carePresets?: string[]
+  sizeOptions?: string[]
   draftId?: string | null
   saveDraft?: (draftId: string | null, product: ProductInput) => Promise<SaveDraftState>
 }
@@ -125,7 +126,7 @@ export function DeleteProductImageForm({
   }}><button aria-label={`刪除圖片 ${imageNumber}`} disabled={pending} type="submit">{pending ? '刪除中…' : '刪除圖片'}</button></form>
 }
 
-export function ProductForm({ initialProduct, onSave, requireImage = false, categories = [...defaultProductCategories], materialPresets = [], carePresets = [], draftId: initialDraftId = null, saveDraft }: ProductFormProps) {
+export function ProductForm({ initialProduct, onSave, requireImage = false, categories = [...defaultProductCategories], materialPresets = [], carePresets = [], sizeOptions = [], draftId: initialDraftId = null, saveDraft }: ProductFormProps) {
   const [product, setProduct] = useState(initialProduct)
   const [draftId, setDraftId] = useState<string | null>(initialDraftId)
   const [slugEdited, setSlugEdited] = useState(Boolean(initialProduct.slug))
@@ -293,7 +294,7 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
 
           <section className="admin-form-card admin-variants-card">
             <header><div><span>03</span><h2>規格與庫存</h2></div><p>每個顏色與尺寸都需要獨立 SKU、售價和庫存。</p></header>
-            <VariantGrid variants={product.variants} onChange={(variants) => { setResult(null); setProduct((current) => ({ ...current, variants })) }} errors={attempted ? result?.variantErrors : undefined} />
+            <VariantGrid variants={product.variants} onChange={(variants) => { setResult(null); setProduct((current) => ({ ...current, variants })) }} errors={attempted ? result?.variantErrors : undefined} sizeOptions={sizeOptions} />
             {attempted && result?.fieldErrors?.variants ? <p className="admin-variant-error" role="alert">請修正上方紅色標示的規格欄位；只建立一種規格也可以儲存。</p> : null}
           </section>
 

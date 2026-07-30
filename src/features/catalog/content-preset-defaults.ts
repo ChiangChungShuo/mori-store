@@ -1,4 +1,4 @@
-export type ContentPresetKind = 'material' | 'care'
+export type ContentPresetKind = 'material' | 'care' | 'size'
 
 export const defaultMaterialPresets = [
   '100% 純棉',
@@ -14,12 +14,16 @@ export const defaultCarePresets = [
   '深淺色分開洗滌',
 ]
 
+export const defaultSizePresets = ['80', '90', '100', '110', '120', '130', '140']
+
 export const contentPresetDefaults: Record<ContentPresetKind, string[]> = {
   material: defaultMaterialPresets,
   care: defaultCarePresets,
+  size: defaultSizePresets,
 }
 
 export const contentPresetLabels: Record<ContentPresetKind, string> = {
   material: '常用材質',
   care: '常用洗滌說明',
+  size: '尺寸選項',
 }

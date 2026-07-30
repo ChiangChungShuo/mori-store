@@ -25,10 +25,11 @@ type NewProductPageProps = {
 
 export default async function NewAdminProductPage({ searchParams }: NewProductPageProps) {
   const { draft: draftId } = await searchParams
-  const [categories, materialPresets, carePresets, draftData] = await Promise.all([
+  const [categories, materialPresets, carePresets, sizeOptions, draftData] = await Promise.all([
     listProductCategories(),
     listContentPresets('material'),
     listContentPresets('care'),
+    listContentPresets('size'),
     draftId ? getProductDraft(draftId) : Promise.resolve(null),
   ])
   const initialProduct: ProductInput = draftData
@@ -51,6 +52,7 @@ export default async function NewAdminProductPage({ searchParams }: NewProductPa
         onSave={createProductWithImage}
         requireImage
         saveDraft={saveProductDraft}
+        sizeOptions={sizeOptions}
       />
     </main>
   )

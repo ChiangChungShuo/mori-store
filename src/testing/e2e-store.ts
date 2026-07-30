@@ -6,7 +6,7 @@ import type { StorefrontEvent } from '@/features/analytics/insights'
 import type { CatalogProduct } from '@/features/catalog/queries'
 import type { BannerSlide } from '@/features/storefront/banner-settings'
 import { defaultProductCategories } from '@/features/catalog/category-defaults'
-import { defaultMaterialPresets, defaultCarePresets } from '@/features/catalog/content-preset-defaults'
+import { defaultMaterialPresets, defaultCarePresets, defaultSizePresets } from '@/features/catalog/content-preset-defaults'
 
 export type E2EUser = {
   id: string
@@ -97,7 +97,7 @@ export type E2EStoreState = {
   }
   bannerSlides: BannerSlide[]
   productCategories: string[]
-  contentPresets: { material: string[]; care: string[] }
+  contentPresets: { material: string[]; care: string[]; size: string[] }
   productDrafts: Array<{ id: string; label: string; data: unknown; updatedAt: string }>
   products: CatalogProduct[]
   variantCosts: Map<string, number>
@@ -218,7 +218,7 @@ export function createE2EStore(): E2EStoreState {
       },
     ],
     productCategories: [...defaultProductCategories],
-    contentPresets: { material: [...defaultMaterialPresets], care: [...defaultCarePresets] },
+    contentPresets: { material: [...defaultMaterialPresets], care: [...defaultCarePresets], size: [...defaultSizePresets] },
     productDrafts: [],
     products: [],
     variantCosts: new Map(),
@@ -254,7 +254,7 @@ export function getE2EStore() {
   fixtureGlobal.__moriE2EStore.settings ??= createE2EStore().settings
   fixtureGlobal.__moriE2EStore.products ??= []
   fixtureGlobal.__moriE2EStore.productCategories ??= [...defaultProductCategories]
-  fixtureGlobal.__moriE2EStore.contentPresets ??= { material: [...defaultMaterialPresets], care: [...defaultCarePresets] }
+  fixtureGlobal.__moriE2EStore.contentPresets ??= { material: [...defaultMaterialPresets], care: [...defaultCarePresets], size: [...defaultSizePresets] }
   fixtureGlobal.__moriE2EStore.productDrafts ??= []
   fixtureGlobal.__moriE2EStore.variantCosts ??= new Map()
   fixtureGlobal.__moriE2EStore.publishedProductIds ??= new Set()

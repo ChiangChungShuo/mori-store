@@ -21,11 +21,12 @@ export default async function EditAdminProductPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const [product, categories, materialPresets, carePresets] = await Promise.all([
+  const [product, categories, materialPresets, carePresets, sizeOptions] = await Promise.all([
     getAdminProduct(id),
     listProductCategories(),
     listContentPresets('material'),
     listContentPresets('care'),
+    listContentPresets('size'),
   ])
   if (!product) notFound()
 
@@ -46,7 +47,7 @@ export default async function EditAdminProductPage({
         <p>完成商品資料、圖片與庫存後，再切換前台上架狀態。</p>
       </header>
       <div className="admin-edit-status"><div><span>目前狀態</span><strong>{product.isPublished ? '已上架，顧客可以購買' : '草稿，前台不會顯示'}</strong></div><ProductPublishForm isPublished={product.isPublished} onToggle={togglePublished} /></div>
-      <ProductForm key={variantSignature} carePresets={carePresets} categories={categories} initialProduct={product.product} materialPresets={materialPresets} onSave={save} />
+      <ProductForm key={variantSignature} carePresets={carePresets} categories={categories} initialProduct={product.product} materialPresets={materialPresets} onSave={save} sizeOptions={sizeOptions} />
       <section className="admin-product-images-section">
         <header><div><p className="eyebrow">product gallery</p><h2>商品圖片</h2></div><p>第一張圖片會作為商品列表主圖，其餘圖片會出現在商品頁輪播。</p></header>
         {product.images.length === 0 ? (

@@ -6,7 +6,7 @@ export type { ContentPresetKind }
 type PresetState = { ok: boolean; message: string }
 
 function parseKind(value: FormDataEntryValue | null): ContentPresetKind | null {
-  return value === 'material' || value === 'care' ? value : null
+  return value === 'material' || value === 'care' || value === 'size' ? value : null
 }
 
 export async function listContentPresets(kind: ContentPresetKind): Promise<string[]> {

@@ -13,7 +13,7 @@ export function PresetManager({
   createAction,
   deleteAction,
 }: {
-  kind: 'material' | 'care'
+  kind: 'material' | 'care' | 'size'
   title: string
   placeholder: string
   presets: string[]
