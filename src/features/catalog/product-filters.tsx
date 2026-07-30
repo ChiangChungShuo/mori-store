@@ -1,11 +1,16 @@
+'use client'
+
 import Link from 'next/link'
+import { useState } from 'react'
 import { type ProductFilters as ProductFilterValues } from '@/features/catalog/queries'
 import { defaultProductCategories } from '@/features/catalog/category-defaults'
 import { AGE_BANDS } from '@/lib/age-bands'
 
 export function ProductFilters({ filters, categories = [...defaultProductCategories] }: { filters: ProductFilterValues; categories?: string[] }) {
+  const [category, setCategory] = useState(filters.category ?? '')
   return (
     <form action="/products" method="get" aria-label="篩選商品" className="product-filters">
+      {filters.series && category === filters.category ? <input name="series" type="hidden" value={filters.series} /> : null}
       <label className="product-search-field">
         搜尋商品
         <input name="q" defaultValue={filters.q ?? ''} placeholder="輸入商品名稱" type="search" />
@@ -30,7 +35,7 @@ export function ProductFilters({ filters, categories = [...defaultProductCategor
 
       <label>
         分類
-        <select name="category" defaultValue={filters.category ?? ''}>
+        <select name="category" value={category} onChange={(event) => setCategory(event.target.value)}>
           <option value="">全部分類</option>
           {categories.map((category) => <option value={category} key={category}>{category}</option>)}
         </select>

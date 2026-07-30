@@ -454,6 +454,7 @@ function createFixtureProductRepository(): ProductRepository {
         seoTitle: input.seoTitle ?? '',
         seoDescription: input.seoDescription ?? '',
         category: input.category,
+        series: [],
         ageBands: input.ageBands,
         material: input.material,
         careInstructions: input.careInstructions,

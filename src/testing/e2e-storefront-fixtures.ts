@@ -13,6 +13,7 @@ const TREE_TEE: CatalogProduct = {
   seoTitle: '有機棉小樹 T 恤 - mori 童裝',
   seoDescription: '100% 有機棉、親膚透氣的兒童日常 T 恤，柔軟耐穿好活動；台灣本島超商取貨、滿額免運。',
   category: '上衣',
+  series: [],
   ageBands: ['3-6', '6-12'],
   material: '100% 有機棉',
   careInstructions: '建議冷水洗滌，低溫烘乾。',
@@ -48,6 +49,7 @@ const CLOUD_ROMPER: CatalogProduct = {
   name: '雲朵包屁衣',
   description: '親膚棉紗搭配方便穿脫的肩領與底部按扣。',
   category: '幼兒服',
+  series: [],
   ageBands: ['0-3'],
   material: '100% 有機棉紗',
   careInstructions: '裝洗衣袋冷水柔洗，自然晾乾。',
@@ -83,6 +85,7 @@ const EVERYDAY_PANTS: CatalogProduct = {
   name: '自在長褲',
   description: '柔軟挺度剛好的寬鬆長褲，適合每天活動。',
   category: '褲裝',
+  series: [],
   ageBands: ['3-6', '6-12'],
   material: '棉 70%、麻 30%',
   careInstructions: '冷水反面洗滌，陰涼處吊掛晾乾。',
@@ -127,6 +130,7 @@ const MEADOW_DRESS: CatalogProduct = {
   name: '花野洋裝',
   description: '細緻小花布搭配自然裙襬，日常與出遊都舒適。',
   category: '洋裝',
+  series: [],
   ageBands: ['3-6', '6-12'],
   material: '100% 棉',
   careInstructions: '冷水柔洗，避免長時間浸泡。',
@@ -162,6 +166,7 @@ const WIND_JACKET: CatalogProduct = {
   name: '輕風防風外套',
   description: '輕薄防潑水布料，應付早晚涼風與短暫細雨。',
   category: '外套',
+  series: [],
   ageBands: ['6-12'],
   material: '再生尼龍 100%',
   careInstructions: '冷水手洗，不可烘乾與熨燙。',
@@ -197,6 +202,7 @@ const KNIT_VEST: CatalogProduct = {
   name: '燕麥針織背心',
   description: '柔軟棉質針織，換季時方便疊穿增加暖度。',
   category: '上衣',
+  series: [],
   ageBands: ['0-3', '3-6'],
   material: '100% 精梳棉',
   careInstructions: '冷水手洗，平放晾乾。',
@@ -232,6 +238,7 @@ const POCKET_SHIRT: CatalogProduct = {
   name: '陶土口袋襯衫',
   description: '柔軟斜紋布襯衫，胸前口袋收進實用小細節。',
   category: '上衣',
+  series: [],
   ageBands: ['6-12'],
   material: '100% 棉',
   careInstructions: '反面冷水洗滌，低溫整燙。',
@@ -267,6 +274,7 @@ const DENIM_OVERALLS: CatalogProduct = {
   name: '水洗丹寧吊帶褲',
   description: '柔軟水洗丹寧與可調式肩帶，活動自在又耐穿。',
   category: '褲裝',
+  series: [],
   ageBands: ['0-3', '3-6'],
   material: '棉 98%、彈性纖維 2%',
   careInstructions: '與相近色衣物反面冷水洗滌。',
@@ -336,6 +344,9 @@ function matchesProduct(product: CatalogProduct, filters: ProductFilters) {
     && (!filters.size || product.variants.some((variant) => variant.size === filters.size))
     && (!filters.color || product.variants.some((variant) => variant.color.includes(filters.color!)))
     && (!filters.category || product.category === filters.category)
+    && (!filters.series || product.series.some((series) => (
+      series.categoryName === filters.category && series.name === filters.series
+    )))
     && (!filters.inStock || product.variants.some((variant) => variant.stock > 0))
 }
 
@@ -357,16 +368,28 @@ function toCartSnapshot(
 
 export function listE2EProducts(filters: ProductFilters) {
   const store = getE2EStore()
-  return getMutableE2EProducts().filter((product) => (
+  return getMutableE2EProducts().map((product) => attachProductSeries(product, store)).filter((product) => (
     store.publishedProductIds.has(product.id) && matchesProduct(product, filters)
   ))
 }
 
 export function getE2EProduct(slug: string) {
   const store = getE2EStore()
-  return getMutableE2EProducts().find((product) => (
+  return getMutableE2EProducts().map((product) => attachProductSeries(product, store)).find((product) => (
     store.publishedProductIds.has(product.id) && product.slug === slug
   )) ?? null
+}
+
+function attachProductSeries(product: CatalogProduct, store: E2EStoreState) {
+  const seriesIds = store.productSeriesProducts
+    .filter((assignment) => assignment.productId === product.id)
+    .map((assignment) => assignment.seriesId)
+  return {
+    ...product,
+    series: store.productSeries
+      .filter((series) => seriesIds.includes(series.id))
+      .sort((first, second) => first.position - second.position),
+  }
 }
 
 export function getE2ECartVariants(variantIds: string[]): CartVariantSnapshot[] {
