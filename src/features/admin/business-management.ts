@@ -264,6 +264,24 @@ export async function togglePromotionFromForm(formData: FormData) {
   revalidatePath('/admin/marketing')
 }
 
+export async function deletePromotionFromForm(formData: FormData) {
+  'use server'
+  await requireAdmin()
+  const id = formData.get('id')?.toString()
+  if (!id) return
+  if (!isE2EMode()) {
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const { error } = await createAdminClient().from('promotions').delete().eq('id', id)
+    if (error) throw error
+    revalidatePath('/admin/marketing')
+    return
+  }
+  const { getE2EStore } = await import('@/testing/e2e-store')
+  const store = getE2EStore()
+  store.promotions = store.promotions.filter((candidate) => candidate.id !== id)
+  revalidatePath('/admin/marketing')
+}
+
 export async function updateReminderFromForm(formData: FormData) {
   'use server'
   await requireAdmin()

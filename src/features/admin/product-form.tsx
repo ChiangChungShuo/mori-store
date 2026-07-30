@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { availableAtError, getProductValidationErrors, productSchema, type ProductInput, type ProductVariantErrors } from '@/lib/validation/product'
+import { availableAtError, getProductValidationErrors, productSchema, slugifyProductName, type ProductInput, type ProductVariantErrors } from '@/lib/validation/product'
 import { VariantGrid } from './variant-grid'
 import { defaultProductCategories } from '@/features/catalog/category-defaults'
 
@@ -122,6 +122,7 @@ export function DeleteProductImageForm({
 
 export function ProductForm({ initialProduct, onSave, requireImage = false, categories = [...defaultProductCategories] }: ProductFormProps) {
   const [product, setProduct] = useState(initialProduct)
+  const [slugEdited, setSlugEdited] = useState(Boolean(initialProduct.slug))
   const [result, setResult] = useState<ProductActionResult | null>(null)
   const [pending, startTransition] = useTransition()
   const [attempted, setAttempted] = useState(false)
@@ -142,7 +143,6 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
 
   const contentComplete = Boolean(
     product.name.trim()
-    && product.slug.trim()
     && product.category.trim()
     && product.ageBands.length
     && product.description.trim()
@@ -201,7 +201,14 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
 
   function setText(field: 'name' | 'slug' | 'category' | 'description' | 'summary' | 'seoTitle' | 'seoDescription' | 'material' | 'careInstructions' | 'sizeGuide', value: string) {
     setResult(null)
-    setProduct((current) => ({ ...current, [field]: value }))
+    if (field === 'slug') setSlugEdited(value.trim().length > 0)
+    setProduct((current) => {
+      // Auto-fill the slug from the name until the admin edits it themselves.
+      if (field === 'name' && !slugEdited) {
+        return { ...current, name: value, slug: slugifyProductName(value) }
+      }
+      return { ...current, [field]: value }
+    })
   }
 
   function setTags(value: string) {
@@ -229,7 +236,7 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
             <header><div><span>01</span><h2>基本資料</h2></div><p>顧客會先看到名稱、分類與適用年齡。</p></header>
             <div className="admin-form-grid">
               <label className="admin-field-wide">商品名稱<input aria-invalid={attempted && Boolean(result?.fieldErrors?.name)} value={product.name} onChange={(event) => setText('name', event.target.value)} placeholder="例：有機棉小樹 T 恤" required />{result?.fieldErrors?.name && <small>{result.fieldErrors.name[0]}</small>}</label>
-              <label>網址代稱<input aria-invalid={attempted && Boolean(result?.fieldErrors?.slug)} value={product.slug} onChange={(event) => setText('slug', event.target.value)} placeholder="mori-tree-tee" required />{result?.fieldErrors?.slug && <small>{result.fieldErrors.slug[0]}</small>}<small className="admin-field-hint">使用英文小寫、數字與連字號，例如 mori-tree-tee</small></label>
+              <label>網址代稱（留空自動產生）<input aria-invalid={attempted && Boolean(result?.fieldErrors?.slug)} value={product.slug} onChange={(event) => setText('slug', event.target.value)} placeholder="留空會依商品名稱自動產生" />{result?.fieldErrors?.slug && <small>{result.fieldErrors.slug[0]}</small>}<small className="admin-field-hint">商品的網址代稱，留空系統會自動產生；也可自訂英文小寫、數字與連字號，例如 mori-tree-tee</small></label>
               <div className="admin-form-field admin-category-field"><label htmlFor="product-category">分類</label><select id="product-category" aria-invalid={attempted && Boolean(result?.fieldErrors?.category)} value={product.category} onChange={(event) => setText('category', event.target.value)} required><option value="">請選擇分類</option>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</select>{result?.fieldErrors?.category && <small>{result.fieldErrors.category[0]}</small>}<Link className="admin-field-link" href="/admin/categories" target="_blank">管理分類 <span aria-hidden="true">↗</span></Link></div>
               <label>預約開賣時間（選填）<input aria-invalid={attempted && Boolean(result?.fieldErrors?.availableAt)} min={minimumAvailableAt} suppressHydrationWarning type="datetime-local" value={product.availableAt ? toDateTimeLocalValue(product.availableAt) : ''} onChange={(event) => { setResult(null); setProduct((current) => ({ ...current, availableAt: event.target.value ? new Date(event.target.value).toISOString() : null })) }} />{result?.fieldErrors?.availableAt && <small>{result.fieldErrors.availableAt[0]}</small>}<small className="admin-field-hint">只能選擇現在之後的時間；開賣前商品可瀏覽、不可購買。</small></label>
             </div>

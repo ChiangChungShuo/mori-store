@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { CategoryManager } from '@/features/admin/category-manager'
-import { createProductCategory, listProductCategories } from '@/features/catalog/categories'
+import { createProductCategory, deleteProductCategory, listProductCategories } from '@/features/catalog/categories'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,7 +14,7 @@ export default async function AdminCategoriesPage() {
         <p>集中管理前台商品導覽使用的分類，新增後即可在商品資料中選用。</p>
       </header>
       <div className="admin-category-toolbar"><Link href="/admin/products">← 返回商品與庫存</Link><span>目前共 {categories.length} 個分類</span></div>
-      <CategoryManager categories={categories} createCategory={createProductCategory} />
+      <CategoryManager categories={categories} createCategory={createProductCategory} deleteCategory={deleteProductCategory} />
     </main>
   )
 }

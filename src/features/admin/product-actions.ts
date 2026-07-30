@@ -4,6 +4,7 @@ import {
   productSchema,
   getProductValidationErrors,
   availableAtError,
+  generateProductSlug,
   type ProductVariantErrors,
   type ProductInput,
 } from '@/lib/validation/product'
@@ -142,10 +143,15 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
       if (parsed.data.variants.some((variant) => variant.id)) {
         return { ok: false, message: '新商品不可包含既有商品規格編號' }
       }
+      // Auto-generate the URL slug when the admin leaves it blank, so adding
+      // many products doesn't require inventing a slug each time.
+      const data = parsed.data.slug
+        ? parsed.data
+        : { ...parsed.data, slug: generateProductSlug(parsed.data.name, randomUUID()) }
 
       let productId: string
       try {
-        productId = await dependencies.repository.createProduct(parsed.data)
+        productId = await dependencies.repository.createProduct(data)
       } catch {
         return { ok: false, message: '目前無法建立商品，請稍後再試' }
       }
@@ -161,6 +167,9 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
         return parsed.success
           ? { ok: false, message: '商品不存在' }
           : validationFailure(parsed.error)
+      }
+      if (!parsed.data.slug) {
+        return { ok: false, message: '網址代稱不可為空', fieldErrors: { slug: ['網址代稱不可為空'] } }
       }
 
       try {

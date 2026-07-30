@@ -15,6 +15,10 @@ class MemoryCategoryRepository implements ProductCategoryRepository {
     if (this.categories.includes(name)) throw new Error('duplicate')
     this.categories.push(name)
   }
+
+  async remove(name: string) {
+    this.categories = this.categories.filter((category) => category !== name)
+  }
 }
 
 describe('product category management', () => {
@@ -44,5 +48,25 @@ describe('product category management', () => {
 
     await expect(actions.create(' ')).resolves.toEqual({ ok: false, message: '請輸入分類名稱' })
     await expect(actions.create('上衣')).resolves.toEqual({ ok: false, message: '這個分類已經存在' })
+  })
+
+  it('deletes a category and reports categories still in use', async () => {
+    const repository = new MemoryCategoryRepository()
+    const events: string[] = []
+    const actions = createProductCategoryActions({
+      repository,
+      requireAdmin: async () => { events.push('admin') },
+      onChanged: async () => { events.push('changed') },
+    })
+
+    await expect(actions.remove(' 上衣 ')).resolves.toEqual({ ok: true, message: '分類「上衣」已刪除' })
+    await expect(repository.list()).resolves.toEqual(['褲裝'])
+    expect(events).toEqual(['admin', 'changed'])
+
+    repository.remove = async () => { throw new Error('category_in_use') }
+    await expect(actions.remove('褲裝')).resolves.toEqual({
+      ok: false,
+      message: '仍有商品使用此分類，請先調整商品分類後再刪除',
+    })
   })
 })

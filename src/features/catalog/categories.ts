@@ -4,6 +4,7 @@ import { defaultProductCategories } from '@/features/catalog/category-defaults'
 export interface ProductCategoryRepository {
   list(): Promise<string[]>
   create(name: string): Promise<void>
+  remove(name: string): Promise<void>
 }
 
 type CategoryDependencies = {
@@ -33,6 +34,23 @@ export function createProductCategoryActions(dependencies: CategoryDependencies)
       await dependencies.onChanged?.()
       return { ok: true, message: `分類「${name}」已新增` }
     },
+
+    async remove(input: string) {
+      await dependencies.requireAdmin()
+      const name = input.trim()
+      if (!name) return { ok: false, message: '請選擇要刪除的分類' }
+
+      try {
+        await dependencies.repository.remove(name)
+      } catch (error) {
+        if (error instanceof Error && error.message === 'category_in_use') {
+          return { ok: false, message: '仍有商品使用此分類，請先調整商品分類後再刪除' }
+        }
+        return { ok: false, message: '目前無法刪除分類，請稍後再試' }
+      }
+      await dependencies.onChanged?.()
+      return { ok: true, message: `分類「${name}」已刪除` }
+    },
   }
 }
 
@@ -45,6 +63,12 @@ function fixtureRepository(): ProductCategoryRepository {
     async create(name) {
       const { getE2EStore } = await import('@/testing/e2e-store')
       getE2EStore().productCategories.push(name)
+    },
+    async remove(name) {
+      const { getE2EStore } = await import('@/testing/e2e-store')
+      const categories = getE2EStore().productCategories
+      const index = categories.indexOf(name)
+      if (index >= 0) categories.splice(index, 1)
     },
   }
 }
@@ -74,6 +98,18 @@ function liveRepository(): ProductCategoryRepository {
         .from('product_categories')
         .insert({ name, position })
       if (insertError) throw insertError
+    },
+    async remove(name) {
+      const { createAdminClient } = await import('@/lib/supabase/admin')
+      const admin = createAdminClient()
+      const { count, error: countError } = await admin
+        .from('products')
+        .select('id', { count: 'exact', head: true })
+        .eq('category', name)
+      if (countError) throw countError
+      if ((count ?? 0) > 0) throw new Error('category_in_use')
+      const { error } = await admin.from('product_categories').delete().eq('name', name)
+      if (error) throw error
     },
   }
 }
@@ -119,4 +155,21 @@ export async function createProductCategory(
     },
   })
   return actions.create(String(formData.get('name') ?? ''))
+}
+
+export async function deleteProductCategory(
+  _previousState: { ok: boolean; message: string },
+  formData: FormData,
+) {
+  'use server'
+  const { requireAdmin } = await import('@/lib/auth/require-admin')
+  const actions = createProductCategoryActions({
+    repository: resolvedRepository(),
+    requireAdmin,
+    onChanged: async () => {
+      const { revalidatePath } = await import('next/cache')
+      for (const path of ['/', '/products', '/admin/categories', '/admin/products', '/admin/products/new']) revalidatePath(path)
+    },
+  })
+  return actions.remove(String(formData.get('name') ?? ''))
 }

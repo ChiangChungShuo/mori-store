@@ -19,7 +19,7 @@ const variantSchema = z.object({
 
 export const productSchema = z.object({
   name: z.string().trim().min(1, '商品名稱為必填'),
-  slug: z.string().trim().min(1, '網址代稱為必填'),
+  slug: z.string().trim().default(''),
   category: z.string().trim().min(1, '分類為必填'),
   ageBands: z.array(ageBandSchema).min(1, '至少選擇一個年齡層'),
   description: z.string().default(''),
@@ -119,6 +119,25 @@ export const productImageSchema = z.object({
 }).strict()
 
 export type ProductInput = z.infer<typeof productSchema>
+
+// Turns a product name into an ASCII slug fragment. Non-latin names (e.g. all
+// Chinese) reduce to an empty string, which the caller handles with a fallback.
+export function slugifyProductName(name: string): string {
+  return name
+    .normalize('NFKD')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+}
+
+// Builds a unique-enough slug when the admin leaves the field blank. The random
+// token (derived from a UUID) keeps it collision-safe without a database probe.
+export function generateProductSlug(name: string, uniqueToken: string): string {
+  const base = slugifyProductName(name)
+  const suffix = uniqueToken.replace(/[^a-z0-9]/gi, '').slice(0, 6).toLowerCase() || 'id'
+  return base ? `${base}-${suffix}` : `mori-${suffix}`
+}
 
 export const scheduledSaleMessage = '預約開賣時間必須晚於現在'
 

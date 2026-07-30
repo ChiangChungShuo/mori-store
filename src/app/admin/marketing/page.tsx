@@ -1,4 +1,4 @@
-import { createPromotionFromForm, getMarketingDashboard, togglePromotionFromForm, updateReminderFromForm } from '@/features/admin/business-management'
+import { createPromotionFromForm, deletePromotionFromForm, getMarketingDashboard, togglePromotionFromForm, updateReminderFromForm } from '@/features/admin/business-management'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,7 +25,10 @@ export default async function AdminMarketingPage() {
             <article key={promotion.id}>
               <span>{promotionTypeLabels[promotion.type]}</span>
               <div><strong>{promotion.name}</strong><small>{promotion.code || promotion.giftName || `條件 ${promotion.conditionValue}`}</small></div>
-              <form action={togglePromotionFromForm}><input name="id" type="hidden" value={promotion.id} /><button data-active={promotion.active} type="submit">{promotion.active ? '啟用中' : '已停用'}</button></form>
+              <div className="promotion-actions">
+                <form action={togglePromotionFromForm}><input name="id" type="hidden" value={promotion.id} /><button data-active={promotion.active} type="submit">{promotion.active ? '啟用中' : '已停用'}</button></form>
+                <form action={deletePromotionFromForm}><input name="id" type="hidden" value={promotion.id} /><button aria-label={`刪除 ${promotion.name}`} className="promotion-delete" type="submit">刪除</button></form>
+              </div>
             </article>
           ))}</div>
         </section>
