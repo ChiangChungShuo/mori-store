@@ -43,14 +43,15 @@ test('owner creates a product with one complete variant in local fixture mode', 
   await expect(page.getByRole('progressbar', { name: '商品建立進度' })).toHaveAttribute('aria-valuenow', '100')
   await page.getByRole('button', { name: '儲存並建立商品' }).click()
   await page.getByRole('button', { name: '確定建立' }).click()
-  await expect(page.getByRole('dialog', { name: '商品建立完成' })).toBeVisible()
-  await expect(page.getByRole('dialog')).toContainText('商品與 2 張圖片已建立')
+  // Creation returns to the inventory list with a floating toast.
+  await expect(page).toHaveURL(/\/admin\/products$/)
   await expect(page.getByText(/完整填寫每個規格/)).toHaveCount(0)
 
-  await page.getByRole('dialog').getByRole('link', { name: '前往編輯商品', exact: true }).click()
+  await page.getByRole('row').filter({ has: page.getByRole('rowheader', { name: productName }) })
+    .getByRole('link', { name: '編輯' }).click()
   await expect(page.locator('.admin-product-image-grid img')).toHaveCount(2)
-  page.once('dialog', (dialog) => dialog.accept())
   await page.getByRole('button', { name: '刪除圖片 2' }).click()
+  await page.getByRole('button', { name: '確定刪除' }).click()
   await expect(page.locator('.admin-product-image-grid img')).toHaveCount(1)
 
   const updatedName = `${productName} 已更新`

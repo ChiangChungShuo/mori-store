@@ -2,6 +2,7 @@
 
 import { useActionState, useRef, useState } from 'react'
 import { HeroCarousel } from '@/features/storefront/hero-carousel'
+import { useActionToast } from '@/components/toast'
 import type { BannerSaveState, BannerSlide } from '@/features/storefront/banner-settings'
 
 const MAX_SLIDES = 5
@@ -20,6 +21,7 @@ export function BannerSettingsEditor({
   action: (state: BannerSaveState, formData: FormData) => Promise<BannerSaveState>
 }) {
   const [state, formAction, pending] = useActionState(action, { ok: false, message: '' })
+  useActionToast(state)
   const initialRows = slides.length ? slides : [emptySlide]
   const nextKeyRef = useRef(initialRows.length)
   const [drafts, setDrafts] = useState<DraftRow[]>(() =>
@@ -89,7 +91,6 @@ export function BannerSettingsEditor({
         ? <button type="button" className="button button-secondary admin-banner-add" onClick={addSlide}>＋ 新增一張輪播（最多 {MAX_SLIDES} 張）</button>
         : <p className="admin-field-hint">已達最多 {MAX_SLIDES} 張輪播。</p>}
       <p className="admin-field-hint">首頁需要 2 張以上才會自動輪播；只有 1 張時會顯示為固定主視覺。每張都需填寫完整欄位並選擇圖片。</p>
-      {state.message ? <p aria-live="polite" data-success={state.ok} className="admin-banner-status">{state.message}</p> : null}
       <button className="button" type="submit" disabled={pending}>{pending ? '儲存中…' : '儲存首頁輪播'}</button>
     </form>
   )

@@ -9,6 +9,7 @@ import { defaultProductCategories } from '@/features/catalog/category-defaults'
 import { AGE_BANDS } from '@/lib/age-bands'
 import { PREORDER_TAG, PREORDER_STOCK, isPreorder } from '@/lib/preorder'
 import { ConfirmModal } from '@/components/confirm-modal'
+import { showToast } from '@/components/toast'
 import type { SaveDraftState } from '@/features/admin/product-drafts'
 
 type ProductActionResult = {
@@ -62,21 +63,15 @@ export function ProductPublishForm({
   onToggle: (published: boolean) => Promise<ProductActionResult>
   compact?: boolean
 }) {
-  const [result, setResult] = useState<ProductActionResult | null>(null)
   const [published, setPublished] = useState(isPublished)
   const [pending, startTransition] = useTransition()
-
-  useEffect(() => {
-    if (!result?.message) return
-    const timer = window.setTimeout(() => setResult(null), 2400)
-    return () => window.clearTimeout(timer)
-  }, [result])
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     startTransition(async () => {
       const nextResult = await onToggle(!published)
-      setResult(nextResult)
+      if (nextResult.message) showToast(nextResult.message, nextResult.ok)
+      else if (nextResult.ok) showToast(published ? '商品已下架' : '商品已上架')
       if (nextResult.ok) setPublished((current) => !current)
     })
   }
@@ -87,24 +82,21 @@ export function ProductPublishForm({
       <button className={compact ? 'admin-inline-action' : 'button button-secondary'} type="submit" disabled={pending}>
         {pending ? '處理中…' : compact ? (published ? '下架' : '上架') : (published ? '下架商品' : '上架商品')}
       </button>
-      {!result?.ok && result?.message && <p className="admin-action-toast" role="alert">{result.message}</p>}
-      {result?.ok && result.message && <p className="admin-action-toast" role="status">{result.message}</p>}
     </form>
   )
 }
 
 export function DeleteProductForm({ onDelete }: { onDelete: () => Promise<ProductActionResult> }) {
   const router = useRouter()
-  const [result, setResult] = useState<ProductActionResult | null>(null)
   const [pending, startTransition] = useTransition()
   return <form data-confirm="danger" onSubmit={(event) => {
     event.preventDefault()
     startTransition(async () => {
       const nextResult = await onDelete()
-      setResult(nextResult)
-      if (nextResult.ok) window.setTimeout(() => router.refresh(), 900)
+      showToast(nextResult.message ?? (nextResult.ok ? '商品已刪除' : '刪除失敗'), nextResult.ok)
+      if (nextResult.ok) window.setTimeout(() => router.refresh(), 600)
     })
-  }}><button className="admin-inline-action admin-delete-action" disabled={pending} type="submit">{pending ? '刪除中…' : '刪除'}</button>{result?.message ? <p className="admin-action-toast" role={result.ok ? 'status' : 'alert'}>{result.message}</p> : null}</form>
+  }}><button className="admin-inline-action admin-delete-action" disabled={pending} type="submit">{pending ? '刪除中…' : '刪除'}</button></form>
 }
 
 export function DeleteProductImageForm({
@@ -121,6 +113,7 @@ export function DeleteProductImageForm({
     event.preventDefault()
     startTransition(async () => {
       const nextResult = await onDelete()
+      showToast(nextResult.message ?? (nextResult.ok ? '商品圖片已刪除' : '刪除失敗'), nextResult.ok)
       if (nextResult.ok) router.refresh()
     })
   }}><button aria-label={`刪除圖片 ${imageNumber}`} disabled={pending} type="submit">{pending ? '刪除中…' : '刪除圖片'}</button></form>
@@ -145,11 +138,6 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
   useEffect(() => { imagePreviewsRef.current = imagePreviews }, [imagePreviews])
   useEffect(() => () => { imagePreviewsRef.current.forEach((preview) => URL.revokeObjectURL(preview)) }, [])
 
-  useEffect(() => {
-    if (requireImage || !result?.ok) return
-    const timer = window.setTimeout(() => setResult(null), 2600)
-    return () => window.clearTimeout(timer)
-  }, [requireImage, result])
 
   const contentComplete = Boolean(
     product.name.trim()
@@ -220,9 +208,14 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
         imageData.set('alt', imageAlt)
         outcome = await onSave(finalProduct, imageData)
       }
-      setResult(outcome)
-      // New products: return to the inventory list after a successful create.
-      if (outcome.ok && requireImage) router.push('/admin/products')
+      if (outcome.ok) {
+        setResult(null)
+        showToast(outcome.message ?? (requireImage ? '商品已建立，先保留為草稿' : '商品修改已儲存'))
+        // New products: return to the inventory list after a successful create.
+        if (requireImage) router.push('/admin/products')
+      } else {
+        setResult(outcome)
+      }
     })
   }
 
@@ -249,7 +242,7 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
     startTransition(async () => {
       const outcome = await saveDraft(draftId, product)
       if (outcome.ok && outcome.id) setDraftId(outcome.id)
-      setResult({ ok: outcome.ok, message: outcome.message })
+      showToast(outcome.message, outcome.ok)
     })
   }
 
@@ -353,7 +346,7 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
         </aside>
       </div>
       <div className="admin-product-savebar">
-        <div>{result?.ok ? <p className="admin-save-success" role={requireImage ? 'status' : undefined}>{result.message ?? '商品已儲存'}</p> : result?.message ? <p className="admin-save-error" role="alert">{result.message}</p> : null}</div>
+        <div>{result?.message ? <p className="admin-save-error" role="alert">{result.message}</p> : null}</div>
         <div className="admin-savebar-actions">
           {requireImage && saveDraft ? (
             <button type="button" className="button button-secondary" disabled={pending} onClick={handleSaveDraft}>儲存草稿</button>
@@ -361,16 +354,6 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
           <button aria-label={requireImage ? '儲存並建立商品' : '儲存商品'} className="button" type="submit" disabled={pending}>{pending ? '儲存中…' : requireImage ? '儲存並建立商品' : '儲存商品'}</button>
         </div>
       </div>
-      {requireImage && result?.ok && result.productId ? <div className="admin-success-modal" role="dialog" aria-modal="true" aria-labelledby="product-create-success-title">
-        <div>
-          <span aria-hidden="true">✓</span>
-          <p className="eyebrow">product created</p>
-          <h2 id="product-create-success-title">商品建立完成</h2>
-          <p>{result.message}，目前先保留為草稿。你可以繼續檢查內容，確認後再上架。</p>
-          <div><Link className="button" href={`/admin/products/${result.productId}/edit`}>前往編輯商品</Link><Link className="button button-secondary" href="/admin/products">返回商品列表</Link></div>
-        </div>
-      </div> : null}
-      {!requireImage && result?.ok ? <div className="admin-edit-save-toast" role="status"><span aria-hidden="true">✓</span><div><strong>{result.message ?? '商品修改已儲存'}</strong><small>前台與後台資料已同步更新</small></div></div> : null}
       <ConfirmModal
         open={pendingSave !== null}
         title={requireImage ? '確定要建立這件商品嗎？' : '確定要儲存修改嗎？'}

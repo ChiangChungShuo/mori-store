@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { useActionToast } from '@/components/toast'
 import type { MemberUpdateState } from '@/features/admin/business-management'
 
 export function MemberSettingsForm({
@@ -19,6 +20,7 @@ export function MemberSettingsForm({
   action: (state: MemberUpdateState, formData: FormData) => Promise<MemberUpdateState>
 }) {
   const [state, formAction, pending] = useActionState(action, { ok: false, message: '' })
+  useActionToast(state)
 
   return (
     <form action={formAction} className="member-settings-form">
@@ -27,7 +29,6 @@ export function MemberSettingsForm({
       <label>紅利點數<input defaultValue={points} min="0" name="points" type="number" /></label>
       <label>專屬折扣 %<input defaultValue={discountPercent} max="100" min="0" name="discountPercent" type="number" /></label>
       <button type="submit" disabled={pending}>{pending ? '更新中…' : '更新會員'}</button>
-      {state.message ? <p aria-live="polite" data-success={state.ok} className="member-settings-status">{state.message}</p> : null}
     </form>
   )
 }

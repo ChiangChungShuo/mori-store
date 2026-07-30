@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { useActionToast } from '@/components/toast'
 
 type CategoryState = { ok: boolean; message: string }
 type CategoryAction = (state: CategoryState, formData: FormData) => Promise<CategoryState>
@@ -16,6 +17,8 @@ export function CategoryManager({
 }) {
   const [state, formAction, pending] = useActionState(createCategory, { ok: false, message: '' })
   const [deleteState, deleteFormAction, deletePending] = useActionState(deleteCategory, { ok: false, message: '' })
+  useActionToast(state)
+  useActionToast(deleteState)
 
   return (
     <section className="admin-panel admin-category-manager">
@@ -30,11 +33,10 @@ export function CategoryManager({
             </form>
           ))}
         </div>
-        {deleteState.message ? <p aria-live="polite" data-success={deleteState.ok}>{deleteState.message}</p> : null}
         <form action={formAction}>
           <label htmlFor="new-category-name">新增分類</label>
           <div><input id="new-category-name" maxLength={24} name="name" placeholder="例：親子配件" required /><button className="button" disabled={pending} type="submit">{pending ? '新增中…' : '新增分類'}</button></div>
-          {state.message ? <p aria-live="polite" data-success={state.ok}>{state.message}</p> : <small>最多 24 個字，新增後即可在商品資料中選用。</small>}
+          <small>最多 24 個字，新增後即可在商品資料中選用。</small>
         </form>
       </div>
     </section>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
+import { showToast } from '@/components/toast'
 
 type UploadResult = { ok: boolean; message?: string }
 
@@ -24,6 +25,7 @@ export function ImageUploader({
         const nextResult = await upload(new FormData(form))
         setResult(nextResult)
         if (nextResult.ok) {
+          showToast(nextResult.message ?? '圖片已上傳，可繼續新增下一張')
           form.reset()
           setPreview('')
           setFileName('')
@@ -50,7 +52,6 @@ export function ImageUploader({
       <label className="admin-image-alt">圖片替代文字<input aria-label="圖片替代文字" name="alt" placeholder="例：孩子穿著鼠尾草綠 T 恤的正面照" required /><small>這段文字會提供給看不到圖片的使用者，也有助於搜尋。</small></label>
       <button className="button" type="submit" disabled={pending}>{pending ? '圖片上傳中…' : '上傳圖片'}</button>
       {result?.message && !result.ok ? <p className="admin-upload-error" role="alert">{result.message}</p> : null}
-      {result?.ok ? <p className="admin-upload-success" role="status"><strong>圖片已上傳</strong><span>，可繼續新增下一張。</span></p> : null}
     </form>
   )
 }

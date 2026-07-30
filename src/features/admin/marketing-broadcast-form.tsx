@@ -2,6 +2,7 @@
 
 import { useActionState, useRef, useState } from 'react'
 import { ConfirmModal } from '@/components/confirm-modal'
+import { useActionToast } from '@/components/toast'
 import type { BroadcastState } from '@/features/admin/marketing-broadcast'
 
 export function MarketingBroadcastForm({
@@ -12,6 +13,7 @@ export function MarketingBroadcastForm({
   action: (state: BroadcastState, formData: FormData) => Promise<BroadcastState>
 }) {
   const [state, formAction, pending] = useActionState(action, { ok: false, message: '' })
+  useActionToast(state)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
 
@@ -31,7 +33,6 @@ export function MarketingBroadcastForm({
         <button type="button" className="button" disabled={pending || subscriberCount === 0} onClick={requestSend}>
           {pending ? '寄送中…' : subscriberCount === 0 ? '目前沒有訂閱會員' : `寄送給 ${subscriberCount} 位訂閱會員`}
         </button>
-        {state.message ? <p aria-live="polite" data-success={state.ok} className="admin-banner-status">{state.message}</p> : null}
         <p className="admin-field-hint">只會寄給註冊時勾選「接收新品優惠消息」的會員；寄件人為 noreply@moribebe.com。</p>
       </form>
       <ConfirmModal

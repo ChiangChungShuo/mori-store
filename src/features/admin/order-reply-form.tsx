@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useState } from 'react'
+import { useActionToast } from '@/components/toast'
 
 type ReplyState = { ok: boolean; message: string }
 
@@ -13,6 +14,7 @@ export function OrderReplyForm({
 }) {
   const [state, formAction, pending] = useActionState(reply, { ok: false, message: '' })
   const [value, setValue] = useState(initialReply)
+  useActionToast(state)
 
   // Clear the input the moment a reply is saved, so the box is ready for the
   // next note. Uses React's render-time "adjust state on change" pattern
@@ -40,7 +42,6 @@ export function OrderReplyForm({
         <small>回覆會顯示在會員訂單與訪客訂單查詢結果。</small>
         <button className="button" disabled={pending} type="submit">{pending ? '儲存中…' : '儲存回覆'}</button>
       </div>
-      {state.message ? <p aria-live="polite" data-success={state.ok}>{state.message}</p> : null}
     </form>
   )
 }

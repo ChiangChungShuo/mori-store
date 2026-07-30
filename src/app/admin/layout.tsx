@@ -4,6 +4,7 @@ import { signOut } from '@/features/auth/actions'
 import { BrandLogo } from '@/components/brand-logo'
 import { MobileMenu } from '@/components/mobile-menu'
 import { AdminConfirmGuard } from '@/features/admin/admin-confirm-guard'
+import { Toaster } from '@/components/toast'
 
 function AdminNavigationLinks() {
   return <>
@@ -46,6 +47,7 @@ export default async function AdminLayout({ children }: Readonly<{ children: Rea
       </aside>
       <div className="admin-workspace">{children}</div>
       <AdminConfirmGuard />
+      <Toaster />
     </div>
   )
 }

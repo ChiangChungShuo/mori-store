@@ -11,6 +11,7 @@ import {
 import type { ProductInput } from '@/lib/validation/product'
 import { ImageUploader } from '@/features/admin/image-uploader'
 import { ProductForm, ProductPublishForm } from '@/features/admin/product-form'
+import { Toaster } from '@/components/toast'
 import { VariantGrid } from '@/features/admin/variant-grid'
 
 const productId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
@@ -543,7 +544,10 @@ describe('admin product form', () => {
 
   it('has an explicit Save button and submits approved product fields', async () => {
     const onSave = vi.fn().mockResolvedValue({ ok: true, productId, message: '商品修改已儲存' })
-    const view = render(createElement(ProductForm, { initialProduct: product, onSave }))
+    const view = render(createElement('div', null,
+      createElement(ProductForm, { initialProduct: product, onSave }),
+      createElement(Toaster),
+    ))
     const form = within(view.container)
 
     fireEvent.change(form.getByLabelText('商品名稱'), { target: { value: '彩色 Tee' } })
@@ -551,6 +555,7 @@ describe('admin product form', () => {
     fireEvent.click(await form.findByRole('button', { name: '確定儲存' }))
 
     await vi.waitFor(() => expect(onSave).toHaveBeenCalledWith({ ...product, name: '彩色 Tee' }))
+    // Success now surfaces as a floating toast instead of inline savebar text.
     expect((await form.findAllByRole('status')).some((status) => status.textContent?.includes('商品修改已儲存'))).toBe(true)
     view.unmount()
   })
@@ -730,26 +735,33 @@ describe('admin product form', () => {
       ok: false,
       message: '商品至少需要一張圖片才能上架',
     })
-    render(createElement(ProductPublishForm, { isPublished: false, onToggle }))
+    render(createElement('div', null,
+      createElement(ProductPublishForm, { isPublished: false, onToggle }),
+      createElement(Toaster),
+    ))
 
     fireEvent.click(screen.getByRole('button', { name: '上架商品' }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('商品至少需要一張圖片才能上架')
+    // Errors now surface as a floating toast.
+    expect(await screen.findByRole('status')).toHaveTextContent('商品至少需要一張圖片才能上架')
     expect(onToggle).toHaveBeenCalledWith(true)
   })
 
   it('shows the publish success message returned by the action', async () => {
     const onToggle = vi.fn().mockResolvedValue({ ok: true, message: '商品已上架' })
-    const view = render(createElement(ProductPublishForm, { isPublished: false, onToggle }))
+    const view = render(createElement('div', null,
+      createElement(ProductPublishForm, { isPublished: false, onToggle }),
+      createElement(Toaster),
+    ))
     const form = within(view.container)
 
     fireEvent.click(form.getByRole('button', { name: '上架商品' }))
 
+    // Success now surfaces as a floating toast that auto-dismisses.
     expect(await form.findByRole('status')).toHaveTextContent('商品已上架')
-    expect(form.queryByRole('alert')).not.toBeInTheDocument()
     await vi.waitFor(
       () => expect(form.queryByRole('status')).not.toBeInTheDocument(),
-      { timeout: 3500, interval: 100 },
+      { timeout: 4000, interval: 100 },
     )
   })
 })

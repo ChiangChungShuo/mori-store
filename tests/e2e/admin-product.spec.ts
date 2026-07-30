@@ -28,13 +28,13 @@ test.describe('admin product inventory', () => {
     await page.getByLabel('庫存').fill('3')
     await page.getByRole('button', { name: '儲存商品' }).click()
     await page.getByRole('button', { name: '確定儲存' }).click()
-    await expect(page.getByRole('status')).toContainText('商品已儲存')
+    await expect(page.getByRole('status')).toContainText(/已儲存/)
     await page.getByRole('link', { name: '前往商品圖片與上架設定' }).click()
 
     await page.getByLabel('商品名稱').fill('E2E 彩色口袋 Tee 已編輯')
     await page.getByRole('button', { name: '儲存商品' }).click()
     await page.getByRole('button', { name: '確定儲存' }).click()
-    await expect(page.getByRole('status')).toContainText('商品已儲存')
+    await expect(page.getByRole('status')).toContainText(/已儲存/)
 
     await page.getByLabel('圖片').setInputFiles({
       name: 'product.png',
@@ -46,7 +46,7 @@ test.describe('admin product inventory', () => {
     })
     await page.getByLabel('圖片替代文字').fill('E2E 彩色口袋 Tee 正面')
     await page.getByRole('button', { name: '上傳圖片' }).click()
-    await expect(page.getByText('圖片已上傳', { exact: true })).toBeVisible()
+    await expect(page.getByText(/圖片已上傳/)).toBeVisible()
 
     await page.getByRole('button', { name: '上架商品' }).click()
     await expect(page.getByText('商品已上架', { exact: true })).toBeVisible()

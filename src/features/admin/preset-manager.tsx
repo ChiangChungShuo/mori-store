@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { useActionToast } from '@/components/toast'
 
 type PresetState = { ok: boolean; message: string }
 type PresetAction = (state: PresetState, formData: FormData) => Promise<PresetState>
@@ -22,6 +23,8 @@ export function PresetManager({
 }) {
   const [state, formAction, pending] = useActionState(createAction, { ok: false, message: '' })
   const [deleteState, deleteFormAction, deletePending] = useActionState(deleteAction, { ok: false, message: '' })
+  useActionToast(state)
+  useActionToast(deleteState)
 
   return (
     <section className="admin-panel admin-category-manager">
@@ -37,12 +40,11 @@ export function PresetManager({
             </form>
           ))}
         </div>
-        {deleteState.message ? <p aria-live="polite" data-success={deleteState.ok}>{deleteState.message}</p> : null}
         <form action={formAction}>
           <label htmlFor={`preset-${kind}`}>新增項目</label>
           <input name="kind" type="hidden" value={kind} />
           <div><input id={`preset-${kind}`} maxLength={200} name="value" placeholder={placeholder} required /><button className="button" disabled={pending} type="submit">{pending ? '新增中…' : '新增'}</button></div>
-          {state.message ? <p aria-live="polite" data-success={state.ok}>{state.message}</p> : <small>最多 200 字。</small>}
+          <small>最多 200 字。</small>
         </form>
       </div>
     </section>
