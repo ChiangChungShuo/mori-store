@@ -59,7 +59,7 @@ export async function listMembers(): Promise<MemberRecord[]> {
         email,
         phone: user?.phone ?? null,
         termsAcceptedAt: user?.termsAcceptedAt ?? null,
-        name: orders.at(0)?.recipientName ?? '尚未留下姓名',
+        name: user?.displayName?.trim() || orders.at(0)?.recipientName || '尚未留下姓名',
         accountType: user ? '會員' as const : '訪客' as const,
         tier: profile?.tier ?? suggestedTier(totalSpent, completedOrders.length),
         points: profile?.points ?? Math.floor(totalSpent / 10),
@@ -111,7 +111,9 @@ export async function listMembers(): Promise<MemberRecord[]> {
       email,
       phone: profile?.phone ?? null,
       termsAcceptedAt: profile?.terms_accepted_at ?? null,
-      name: memberOrders[0]?.recipient_name ?? '尚未留下姓名',
+      name: ((user?.user_metadata as { display_name?: string } | undefined)?.display_name?.trim())
+        || memberOrders[0]?.recipient_name
+        || '尚未留下姓名',
       accountType: user ? '會員' as const : '訪客' as const,
       tier: (override?.tier as MemberTier | undefined) ?? suggestedTier(totalSpent, completedOrders.length),
       points: override?.points ?? Math.floor(totalSpent / 10),

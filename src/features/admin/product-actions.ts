@@ -118,6 +118,20 @@ function databaseErrorMessage(error: unknown) {
   return ''
 }
 
+function withAutomaticProductSeo(product: ProductInput): ProductInput {
+  const titleSuffix = '｜MORIMUR BABY'
+  const titleName = product.name.trim().slice(0, 70 - titleSuffix.length).trimEnd()
+  const description = (product.summary?.trim() || product.description.trim() || product.name.trim())
+    .replace(/\s+/g, ' ')
+    .slice(0, 160)
+
+  return {
+    ...product,
+    seoTitle: `${titleName}${titleSuffix}`,
+    seoDescription: description,
+  }
+}
+
 export function createAdminProductActions(dependencies: AdminProductDependencies) {
   const randomUUID = dependencies.randomUUID ?? (() => crypto.randomUUID())
   const changed = dependencies.onChanged ?? (() => undefined)
@@ -145,9 +159,9 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
       }
       // Auto-generate the URL slug when the admin leaves it blank, so adding
       // many products doesn't require inventing a slug each time.
-      const data = parsed.data.slug
+      const data = withAutomaticProductSeo(parsed.data.slug
         ? parsed.data
-        : { ...parsed.data, slug: generateProductSlug(parsed.data.name, randomUUID()) }
+        : { ...parsed.data, slug: generateProductSlug(parsed.data.name, randomUUID()) })
 
       let productId: string
       try {
@@ -173,7 +187,7 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
       }
 
       try {
-        await dependencies.repository.updateProduct(id.data, parsed.data)
+        await dependencies.repository.updateProduct(id.data, withAutomaticProductSeo(parsed.data))
       } catch (error) {
         const message = databaseErrorMessage(error)
         if (message.includes('variant_not_owned')) {

@@ -178,6 +178,23 @@ describe('admin product actions', () => {
     expect(result).toMatchObject({ ok: true })
     expect(repository.events).toEqual(['admin', `delete:${productId}`])
   })
+
+  it('automatically generates SEO content when a product is created', async () => {
+    const { actions, repository } = setup()
+    const input = {
+      ...newProduct,
+      summary: '柔軟親膚、適合孩子日常活動的純棉上衣。',
+      seoTitle: '不應保留的手動標題',
+      seoDescription: '不應保留的手動描述',
+    }
+
+    await actions.createProduct(input)
+
+    expect(repository.savedProduct).toMatchObject({
+      seoTitle: '彩色口袋 Tee｜MORIMUR BABY',
+      seoDescription: '柔軟親膚、適合孩子日常活動的純棉上衣。',
+    })
+  })
   it('rejects a stale edit after payment changes stock without restoring sold inventory', async () => {
     class VersionedProductRepository extends MemoryProductRepository {
       stock = 10
@@ -216,13 +233,19 @@ describe('admin product actions', () => {
 
     await expect(actions.createProduct(newProduct)).resolves.toMatchObject({ ok: true, productId })
     expect(repository.events.slice(0, 2)).toEqual(['admin', 'create'])
-    expect(repository.savedProduct).toEqual(newProduct)
+    expect(repository.savedProduct).toEqual({
+      ...newProduct,
+      seoTitle: '彩色口袋 Tee｜MORIMUR BABY',
+      seoDescription: '柔軟日常上衣',
+    })
 
     repository.events.length = 0
     await expect(actions.updateProduct(productId, { ...product, name: '彩色 Tee' }))
       .resolves.toMatchObject({ ok: true, productId })
     expect(repository.events.slice(0, 2)).toEqual(['admin', `update:${productId}`])
     expect(repository.savedProduct?.name).toBe('彩色 Tee')
+    expect(repository.savedProduct?.seoTitle).toBe('彩色 Tee｜MORIMUR BABY')
+    expect(repository.savedProduct?.seoDescription).toBe('柔軟日常上衣')
     expect(repository.savedProduct?.variants[0]).toMatchObject({
       id: variantId,
       sku: 'TEE-Y-100',
@@ -602,6 +625,16 @@ describe('admin product form', () => {
     expect(form.getByText('請填寫尺寸指南')).toBeInTheDocument()
     expect(form.getByText('請填寫洗滌說明')).toBeInTheDocument()
     expect(onSave).not.toHaveBeenCalled()
+    view.unmount()
+  })
+
+  it('does not ask the owner to enter SEO fields manually', () => {
+    const view = render(createElement(ProductForm, { initialProduct: product, onSave: vi.fn() }))
+    const form = within(view.container)
+
+    expect(form.queryByRole('heading', { name: /SEO 設定/ })).not.toBeInTheDocument()
+    expect(form.queryByLabelText('SEO 標題')).not.toBeInTheDocument()
+    expect(form.queryByLabelText('SEO 描述')).not.toBeInTheDocument()
     view.unmount()
   })
 

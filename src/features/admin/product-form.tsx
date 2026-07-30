@@ -226,7 +226,7 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
     })
   }
 
-  function setText(field: 'name' | 'slug' | 'category' | 'description' | 'summary' | 'seoTitle' | 'seoDescription' | 'material' | 'careInstructions' | 'sizeGuide', value: string) {
+  function setText(field: 'name' | 'slug' | 'category' | 'description' | 'summary' | 'material' | 'careInstructions' | 'sizeGuide', value: string) {
     setResult(null)
     if (field === 'slug') setSlugEdited(value.trim().length > 0)
     setProduct((current) => {
@@ -299,14 +299,6 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
               <label className="admin-field-wide">洗滌說明<textarea aria-invalid={attempted && Boolean(result?.fieldErrors?.careInstructions)} value={product.careInstructions} onChange={(event) => setText('careInstructions', event.target.value)} placeholder="例：反面裝洗衣袋，冷水柔洗並自然晾乾" rows={3} required />{result?.fieldErrors?.careInstructions && <small>{result.fieldErrors.careInstructions[0]}</small>}</label>
               {carePresets.length ? <div className="admin-preset-chips admin-field-wide"><span>常用洗滌說明：</span>{carePresets.map((preset) => <button type="button" key={preset} onClick={() => applyPreset('careInstructions', preset)}>＋ {preset}</button>)}</div> : null}
               <label className="admin-field-wide">標籤（選填）<input aria-invalid={attempted && Boolean(result?.fieldErrors?.tags)} value={(product.tags ?? []).join('、')} onChange={(event) => setTags(event.target.value)} placeholder="例：休閒、夏日、純棉（用、或逗號分隔）" />{result?.fieldErrors?.tags && <small>{result.fieldErrors.tags[0]}</small>}<small className="admin-field-hint">用頓號或逗號分隔，最多 20 個；顯示在商品頁，方便顧客瀏覽。</small></label>
-            </div>
-          </section>
-
-          <section className="admin-form-card">
-            <header><div><span>＋</span><h2>SEO 設定（選填）</h2></div><p>設定搜尋引擎顯示的標題與描述，未填則自動使用商品名稱與說明。</p></header>
-            <div className="admin-form-grid">
-              <label className="admin-field-wide">SEO 標題<input aria-invalid={attempted && Boolean(result?.fieldErrors?.seoTitle)} value={product.seoTitle ?? ''} onChange={(event) => setText('seoTitle', event.target.value)} placeholder="例：有機棉小樹 T 恤 - mori 童裝" maxLength={70} />{result?.fieldErrors?.seoTitle && <small>{result.fieldErrors.seoTitle[0]}</small>}<small className="admin-field-hint">建議格式「商品名稱 - 品牌」，約 70 字內。</small></label>
-              <label className="admin-field-wide">SEO 描述<textarea aria-invalid={attempted && Boolean(result?.fieldErrors?.seoDescription)} value={product.seoDescription ?? ''} onChange={(event) => setText('seoDescription', event.target.value)} placeholder="吸引點擊的一段介紹，約 120–160 字" rows={3} maxLength={160} />{result?.fieldErrors?.seoDescription && <small>{result.fieldErrors.seoDescription[0]}</small>}</label>
             </div>
           </section>
 
