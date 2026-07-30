@@ -65,6 +65,7 @@ export function CheckoutForm({ action, couponAction, pickedStore, initialValues 
   })
   const [customerNote, setCustomerNote] = useState('')
   const [couponCode, setCouponCode] = useState('')
+  const [couponInput, setCouponInput] = useState('')
   const [couponResult, setCouponResult] = useState<(CouponValidation & { subtotal: number }) | null>(null)
   const [couponPending, startCouponTransition] = useTransition()
   const checkoutTracked = useRef(false)
@@ -98,7 +99,9 @@ export function CheckoutForm({ action, couponAction, pickedStore, initialValues 
     let cancelled = false
     queueMicrotask(() => {
       if (cancelled) return
-      setCouponCode(window.sessionStorage.getItem(couponStorageKey) ?? '')
+      const storedCoupon = window.sessionStorage.getItem(couponStorageKey) ?? ''
+      setCouponCode(storedCoupon)
+      setCouponInput(storedCoupon)
       try {
         const draft = JSON.parse(window.sessionStorage.getItem(checkoutDraftStorageKey) ?? '{}') as {
           email?: unknown
@@ -257,6 +260,15 @@ export function CheckoutForm({ action, couponAction, pickedStore, initialValues 
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img alt="" src={item.imageUrl} />
             </> : <span>mori</span>}<b>{item.quantity}</b></div><div><strong>{item.name}</strong><small>{item.color}／尺寸 {item.size}</small></div><em>{formatTwd(item.unitPrice * item.quantity)}</em></li>)}</ul>
+            {couponAction ? <div className="cart-coupon-panel checkout-coupon-panel">
+              <div className="cart-coupon-heading"><span aria-hidden="true">%</span><div><label htmlFor="checkout-coupon">優惠碼</label><small>每張訂單限用一組優惠碼</small></div></div>
+              <div className="cart-coupon-form"><input id="checkout-coupon" aria-label="優惠碼" autoComplete="off" placeholder="請輸入優惠碼" value={couponInput} onChange={(event) => setCouponInput(event.target.value.toUpperCase())} /><button type="button" disabled={couponPending || !couponInput.trim()} onClick={() => {
+                const code = couponInput.trim().toUpperCase()
+                setCouponCode(code)
+                window.sessionStorage.setItem(couponStorageKey, code)
+              }}>{couponPending ? '確認中…' : '套用'}</button></div>
+              {couponResult ? <p className={couponResult.ok ? 'coupon-success' : 'coupon-error'} role="status">{couponResult.message}</p> : null}
+            </div> : null}
             <dl><div><dt>商品小計</dt><dd>{formatTwd(summary.subtotal)}</dd></div><div><dt>超商運費</dt><dd>{summary.shipping === 0 ? '免運' : formatTwd(summary.shipping)}</dd></div>{appliedCoupon ? <div className="checkout-discount"><dt>優惠碼 {appliedCoupon.code}</dt><dd>−{formatTwd(appliedCoupon.discount)}</dd></div> : null}<div className="checkout-grand-total"><dt>應付合計</dt><dd>{formatTwd(payableTotal)}</dd></div></dl>
             {couponPending ? <p className="checkout-coupon-status" aria-live="polite">正在確認購物車優惠碼…</p> : null}
           </div> : null}
