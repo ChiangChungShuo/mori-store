@@ -20,9 +20,10 @@ export function BannerSettingsEditor({
   action: (state: BannerSaveState, formData: FormData) => Promise<BannerSaveState>
 }) {
   const [state, formAction, pending] = useActionState(action, { ok: false, message: '' })
-  const keyRef = useRef(0)
+  const initialRows = slides.length ? slides : [emptySlide]
+  const nextKeyRef = useRef(initialRows.length)
   const [drafts, setDrafts] = useState<DraftRow[]>(() =>
-    (slides.length ? slides : [emptySlide]).map((slide) => ({ key: keyRef.current++, slide: { ...slide } })),
+    initialRows.map((slide, index) => ({ key: index, slide: { ...slide } })),
   )
 
   function update(index: number, field: keyof BannerSlide, value: string) {
@@ -33,7 +34,7 @@ export function BannerSettingsEditor({
   function addSlide() {
     setDrafts((current) => current.length >= MAX_SLIDES
       ? current
-      : [...current, { key: keyRef.current++, slide: { ...emptySlide } }])
+      : [...current, { key: nextKeyRef.current++, slide: { ...emptySlide } }])
   }
 
   function removeSlide(index: number) {
