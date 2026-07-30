@@ -55,6 +55,8 @@ export type PaymentAttemptInsert = {
   subtotal: number
   shippingFee: number
   total: number
+  discount: number
+  couponCode: string | null
   items: PaymentAttemptItem[]
   paymentAccessExpiresAt: string
   paymentAccessTokenHash: string | null
@@ -223,6 +225,8 @@ export function createCheckoutService(
       subtotal: totals.subtotal,
       shippingFee: totals.shipping,
       total: Math.max(0, totals.total - (coupon?.discount ?? 0)),
+      discount: coupon?.ok ? coupon.discount : 0,
+      couponCode: coupon?.ok ? coupon.code : null,
       items: pricedItems.map(({ variant, quantity }) => ({
         variant_id: variant.id,
         quantity,
@@ -499,6 +503,8 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
         subtotal: attempt.subtotal,
         shipping_fee: attempt.shippingFee,
         total: attempt.total,
+        discount: attempt.discount,
+        coupon_code: attempt.couponCode,
         items: attempt.items as unknown as Json,
         payment_access_expires_at: attempt.paymentAccessExpiresAt,
         payment_access_token_hash: attempt.paymentAccessTokenHash,

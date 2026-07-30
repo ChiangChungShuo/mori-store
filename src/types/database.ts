@@ -9,6 +9,45 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      promotions: {
+        Row: {
+          active: boolean
+          code: string | null
+          condition_value: number
+          created_at: string
+          gift_name: string
+          id: string
+          name: string
+          reward_value: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code?: string | null
+          condition_value?: number
+          created_at?: string
+          gift_name?: string
+          id?: string
+          name: string
+          reward_value?: number
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string | null
+          condition_value?: number
+          created_at?: string
+          gift_name?: string
+          id?: string
+          name?: string
+          reward_value?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_categories: {
         Row: {
           created_at: string
@@ -173,8 +212,10 @@ export type Database = {
       }
       payment_attempts: {
         Row: {
+          coupon_code: string | null
           created_at: string
           customer_note: string
+          discount: number
           email: string
           id: string
           items: Json
@@ -199,8 +240,10 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          coupon_code?: string | null
           created_at?: string
           customer_note?: string
+          discount?: number
           email: string
           id?: string
           items: Json
@@ -225,8 +268,10 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          coupon_code?: string | null
           created_at?: string
           customer_note?: string
+          discount?: number
           email?: string
           id?: string
           items?: Json

@@ -162,9 +162,39 @@ const promotionSchema = z.object({
   active: z.boolean(),
 })
 
+function mapPromotionRow(row: {
+  id: string
+  name: string
+  type: string
+  code: string | null
+  condition_value: number
+  reward_value: number
+  gift_name: string
+  active: boolean
+}): Promotion {
+  return {
+    id: row.id,
+    name: row.name,
+    type: row.type as Promotion['type'],
+    code: row.code ?? '',
+    conditionValue: row.condition_value,
+    rewardValue: row.reward_value,
+    giftName: row.gift_name ?? '',
+    active: row.active,
+  }
+}
+
 export async function getMarketingDashboard() {
   await requireAdmin()
-  if (!isE2EMode()) return { promotions: [] as Promotion[], reminder: null, abandonedCarts: 0 }
+  if (!isE2EMode()) {
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const { data, error } = await createAdminClient()
+      .from('promotions')
+      .select('id, name, type, code, condition_value, reward_value, gift_name, active')
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return { promotions: (data ?? []).map(mapPromotionRow), reminder: null, abandonedCarts: 0 }
+  }
   const { getE2EStore } = await import('@/testing/e2e-store')
   const store = getE2EStore()
   const cartSessions = new Set(store.events.filter((event) => event.type === 'add_to_cart').map((event) => event.sessionId))
@@ -188,7 +218,27 @@ export async function createPromotionFromForm(formData: FormData) {
     giftName: formData.get('giftName') ?? '',
     active: formData.get('active') === 'on',
   })
-  if (!isE2EMode()) throw new Error('正式行銷活動需先套用行銷資料庫 migration')
+  if (!isE2EMode()) {
+    if (promotion.type === 'coupon' && !promotion.code) {
+      throw new Error('折扣碼類型請填寫折扣碼')
+    }
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const { error } = await createAdminClient().from('promotions').insert({
+      name: promotion.name,
+      type: promotion.type,
+      code: promotion.code || null,
+      condition_value: promotion.conditionValue,
+      reward_value: promotion.rewardValue,
+      gift_name: promotion.giftName,
+      active: promotion.active,
+    })
+    if (error) {
+      if (error.code === '23505') throw new Error('這個折扣碼已經存在，請換一組')
+      throw error
+    }
+    revalidatePath('/admin/marketing')
+    return
+  }
   const { getE2EStore } = await import('@/testing/e2e-store')
   getE2EStore().promotions.unshift({ id: crypto.randomUUID(), ...promotion })
   revalidatePath('/admin/marketing')
@@ -197,7 +247,17 @@ export async function createPromotionFromForm(formData: FormData) {
 export async function togglePromotionFromForm(formData: FormData) {
   'use server'
   await requireAdmin()
-  if (!isE2EMode()) return
+  if (!isE2EMode()) {
+    const id = formData.get('id')?.toString()
+    if (!id) return
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const admin = createAdminClient()
+    const { data, error } = await admin.from('promotions').select('active').eq('id', id).maybeSingle()
+    if (error || !data) return
+    await admin.from('promotions').update({ active: !data.active }).eq('id', id)
+    revalidatePath('/admin/marketing')
+    return
+  }
   const { getE2EStore } = await import('@/testing/e2e-store')
   const promotion = getE2EStore().promotions.find((candidate) => candidate.id === formData.get('id'))
   if (promotion) promotion.active = !promotion.active
