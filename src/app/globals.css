@@ -1265,6 +1265,8 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-banner-remove { border: 1px solid var(--line); background: transparent; color: var(--muted); padding: 0.25rem 0.55rem; font-size: 0.62rem; font-weight: 700; cursor: pointer; }
 .admin-banner-remove:hover { border-color: #d9b3b3; background: #f3e4e4; color: #a15954; }
 .admin-banner-add { justify-self: start; }
+.admin-banner-status { margin: 0; font-size: 0.78rem; font-weight: 700; color: #a15954; }
+.admin-banner-status[data-success="true"] { color: #4c6a52; }
 .cart-page { width: min(100% - 3rem, 84rem); }
 .cart-page > .page-heading { margin-bottom: 2rem; }
 .cart-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(19rem, 22rem); gap: 1.5rem; align-items: start; }

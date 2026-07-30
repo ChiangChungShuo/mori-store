@@ -65,11 +65,11 @@ export default async function StoreHomePage() {
       <section id="story" className="section brand-story" aria-labelledby="story-title">
         <p className="eyebrow">our point of view</p>
         <h2 id="story-title">衣服不該限制孩子怎麼玩。</h2>
-        <p>mori 從布料、版型到洗滌方式仔細挑選，讓大人少一點煩惱，孩子多一點自在。</p>
+        <p>MORI 的開始，源自於一位媽媽為孩子挑選衣服時的龜毛。因為知道孩子每天都穿在身上，所以更在意每一塊布料、每一份舒適與耐穿，也希望把這份安心，分享給每一位來到 MORI 的孩子。</p>
         <dl className="story-values">
           <div><dt>01</dt><dd>舒服，是每天願意穿的第一件事。</dd></div>
           <div><dt>02</dt><dd>耐穿，才能陪著孩子真正生活。</dd></div>
-          <div><dt>03</dt><dd>簡單搭配，把時間留給更重要的事。</dd></div>
+          <div><dt>03</dt><dd>簡單自在，搭配獨特且屬於自己的風格。</dd></div>
         </dl>
       </section>
     </main>

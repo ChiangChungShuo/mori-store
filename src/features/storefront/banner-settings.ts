@@ -74,47 +74,61 @@ async function uploadBanner(file: File) {
   return supabase.storage.from('product-images').getPublicUrl(path).data.publicUrl
 }
 
-export async function updateBannerSlidesFromForm(formData: FormData) {
+export type BannerSaveState = { ok: boolean; message: string }
+
+export async function updateBannerSlidesFromForm(
+  _previousState: BannerSaveState,
+  formData: FormData,
+): Promise<BannerSaveState> {
   'use server'
   const { requireAdmin } = await import('@/lib/auth/require-admin')
   await requireAdmin()
 
-  const count = Math.min(5, Math.max(1, Number(formData.get('slideCount')) || 1))
-  const slides: BannerSlide[] = []
-  for (let index = 0; index < count; index += 1) {
-    const imageAlt = String(formData.get(`imageAlt-${index}`) ?? '')
-    const file = formData.get(`image-${index}`)
-    let imageUrl = String(formData.get(`imageUrl-${index}`) ?? '')
-    const title = String(formData.get(`title-${index}`) ?? '')
-    if (!imageUrl && (!(file instanceof File) || file.size === 0) && !title.trim()) continue
-    if (file instanceof File && file.size > 0) {
-      const image = await productImageSchema.safeParseAsync({ file, alt: imageAlt })
-      if (!image.success) throw new Error(image.error.issues[0]?.message ?? '圖片格式無效')
-      imageUrl = await uploadBanner(image.data.file)
+  try {
+    const count = Math.min(5, Math.max(1, Number(formData.get('slideCount')) || 1))
+    const slides: BannerSlide[] = []
+    for (let index = 0; index < count; index += 1) {
+      const imageAlt = String(formData.get(`imageAlt-${index}`) ?? '')
+      const file = formData.get(`image-${index}`)
+      let imageUrl = String(formData.get(`imageUrl-${index}`) ?? '')
+      const title = String(formData.get(`title-${index}`) ?? '')
+      // Skip an entirely blank slot (a freshly added, not-yet-filled slide).
+      if (!imageUrl && (!(file instanceof File) || file.size === 0) && !title.trim()) continue
+      if (file instanceof File && file.size > 0) {
+        const image = await productImageSchema.safeParseAsync({ file, alt: imageAlt })
+        if (!image.success) return { ok: false, message: image.error.issues[0]?.message ?? '圖片格式無效' }
+        imageUrl = await uploadBanner(image.data.file)
+      }
+      slides.push({
+        imageUrl,
+        imageAlt,
+        eyebrow: String(formData.get(`eyebrow-${index}`) ?? ''),
+        title,
+        body: String(formData.get(`body-${index}`) ?? ''),
+        buttonLabel: String(formData.get(`buttonLabel-${index}`) ?? ''),
+        buttonHref: String(formData.get(`buttonHref-${index}`) ?? ''),
+      })
     }
-    slides.push({
-      imageUrl,
-      imageAlt,
-      eyebrow: String(formData.get(`eyebrow-${index}`) ?? ''),
-      title,
-      body: String(formData.get(`body-${index}`) ?? ''),
-      buttonLabel: String(formData.get(`buttonLabel-${index}`) ?? ''),
-      buttonHref: String(formData.get(`buttonHref-${index}`) ?? ''),
-    })
-  }
-  const parsed = bannerSlidesSchema.safeParse(slides)
-  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? '請檢查輪播內容')
+    const parsed = bannerSlidesSchema.safeParse(slides)
+    if (!parsed.success) {
+      return { ok: false, message: `請完整填寫每張輪播的欄位（${parsed.error.issues[0]?.message ?? '內容不完整'}）` }
+    }
 
-  const { isE2EMode } = await import('@/testing/e2e-mode')
-  if (isE2EMode()) {
-    const { getE2EStore } = await import('@/testing/e2e-store')
-    getE2EStore().bannerSlides = parsed.data
-  } else {
-    const { createClient } = await import('@/lib/supabase/server')
-    const { error } = await (await createClient()).from('store_settings').upsert({ key: 'home_banner_slides', value: parsed.data as Json })
-    if (error) throw error
+    const { isE2EMode } = await import('@/testing/e2e-mode')
+    if (isE2EMode()) {
+      const { getE2EStore } = await import('@/testing/e2e-store')
+      getE2EStore().bannerSlides = parsed.data
+    } else {
+      const { createClient } = await import('@/lib/supabase/server')
+      const { error } = await (await createClient()).from('store_settings').upsert({ key: 'home_banner_slides', value: parsed.data as Json }, { onConflict: 'key' })
+      if (error) return { ok: false, message: '儲存失敗，請稍後再試' }
+    }
+    const { revalidatePath } = await import('next/cache')
+    revalidatePath('/')
+    revalidatePath('/admin/settings')
+    return { ok: true, message: '首頁輪播已更新' }
+  } catch (error) {
+    console.error('[banner] save failed', error)
+    return { ok: false, message: '儲存時發生錯誤，請稍後再試' }
   }
-  const { revalidatePath } = await import('next/cache')
-  revalidatePath('/')
-  revalidatePath('/admin/settings')
 }
