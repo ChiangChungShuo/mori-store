@@ -60,19 +60,17 @@ test('tabs through the desktop header with visible focus', async ({ page }, test
   await expect(page.getByRole('button', { name: '開啟選單' })).toBeHidden()
   await expect(page.getByRole('navigation', { name: '主要導覽' })
     .getByRole('link', { name: '新品', exact: true })).toBeVisible()
-  await expect(page.getByRole('link', { name: 'mori', exact: true })).toHaveCSS('width', '76px')
+  await expect(page.getByRole('link', { name: 'MORIMUR BABY 首頁', exact: true })).toHaveCSS('width', '76px')
 
   const focusOrder = [
-    page.getByRole('link', { name: 'mori', exact: true }),
+    page.getByRole('link', { name: 'MORIMUR BABY 首頁', exact: true }),
     page.getByRole('link', { name: '新品', exact: true }),
     page.getByRole('link', { name: '所有商品', exact: true }).first(),
     page.getByRole('link', { name: '依年齡', exact: true }),
     page.locator('.nav-category-menu summary'),
     page.getByRole('link', { name: '品牌故事', exact: true }),
-    page.locator('.wishlist-header-link'),
     page.locator('.account-menu summary'),
-    page.locator('.header-search input'),
-    page.locator('.header-search button'),
+    page.getByRole('button', { name: '開啟商品搜尋' }),
     page.locator('.cart-drawer summary'),
   ]
 
@@ -80,6 +78,10 @@ test('tabs through the desktop header with visible focus', async ({ page }, test
     await tabTo(page, target)
     await expectVisibleFocus(target)
   }
+
+  await page.getByRole('button', { name: '開啟商品搜尋' }).click()
+  await expect(page.locator('.header-search input')).toBeFocused()
+  await expectVisibleFocus(page.locator('.header-search input'))
 })
 
 test('keeps auth controls labeled, reachable and form-first on mobile', async ({ page }) => {

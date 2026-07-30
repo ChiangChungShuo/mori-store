@@ -7,6 +7,7 @@ import { SiteHeader } from '@/components/site-header'
 import { CartProvider } from '@/features/cart/cart-provider'
 import { ProductCard } from '@/features/catalog/product-card'
 import { ProductFilters } from '@/features/catalog/product-filters'
+import { ProductSeriesFilter } from '@/features/catalog/product-series-filter'
 import { applyCatalogFilters, listProducts, parseProductFilters } from '@/features/catalog/queries'
 import { VariantPicker } from '@/features/catalog/variant-picker'
 
@@ -16,6 +17,9 @@ const product = {
   name: '有機棉小樹 T 恤',
   description: '柔軟透氣的日常有機棉 T 恤。',
   category: '上衣',
+  series: [
+    { id: '10000000-0000-4000-8000-000000000001', categoryName: '上衣', name: 'Mori flora 漫花系列', position: 0 },
+  ],
   ageBands: ['3-6', '6-12'] as const,
   material: '100% 有機棉',
   careInstructions: '建議冷水洗滌。',
@@ -38,6 +42,17 @@ afterEach(() => {
 })
 
 describe('fixture catalog', () => {
+  it('filters fixture products by category-specific series', async () => {
+    vi.stubEnv('MORI_E2E_FIXTURES', '1')
+
+    const products = await listProducts({ category: '上衣', series: 'Mori flora 漫花系列' })
+
+    expect(products.map((catalogProduct) => catalogProduct.name)).toEqual([
+      '有機棉小樹 T 恤',
+      '燕麥針織背心',
+    ])
+  })
+
   it('offers eight fixture products across every age band and category', async () => {
     vi.stubEnv('MORI_E2E_FIXTURES', '1')
 
@@ -65,6 +80,14 @@ describe('fixture catalog', () => {
 })
 
 describe('parseProductFilters', () => {
+  it('uses series only together with a category', () => {
+    expect(parseProductFilters({ category: ' 上衣 ', series: ' Mori flora 漫花系列 ' })).toEqual({
+      category: '上衣',
+      series: 'Mori flora 漫花系列',
+    })
+    expect(parseProductFilters({ series: 'Mori flora 漫花系列' })).toEqual({})
+  })
+
   it('keeps only the fixed 0-12 age bands and supported stock value', () => {
     expect(parseProductFilters({ q: '  洋裝  ', age: '6-12', color: '鼠尾草綠', inStock: 'true' })).toEqual({
       q: '洋裝',
@@ -84,6 +107,32 @@ describe('parseProductFilters', () => {
 })
 
 describe('ProductFilters', () => {
+  it('updates the selected category after client-side navigation', () => {
+    const view = render(createElement(ProductFilters, {
+      categories: ['上衣', '褲裝'],
+      filters: {},
+    }))
+
+    view.rerender(createElement(ProductFilters, {
+      categories: ['上衣', '褲裝'],
+      filters: { category: '上衣', series: 'Mori flora 漫花系列' },
+    }))
+
+    expect(screen.getByLabelText('分類')).toHaveValue('上衣')
+    expect(view.container.querySelector('input[name="series"]')).toHaveValue('Mori flora 漫花系列')
+  })
+
+  it('preserves the active series for other filters and clears it when category changes', () => {
+    const { container } = render(createElement(ProductFilters, {
+      categories: ['上衣', '褲裝'],
+      filters: { category: '上衣', series: 'Mori flora 漫花系列' },
+    }))
+
+    expect(container.querySelector('input[name="series"]')).toHaveValue('Mori flora 漫花系列')
+    fireEvent.change(screen.getByLabelText('分類'), { target: { value: '褲裝' } })
+    expect(container.querySelector('input[name="series"]')).toBeNull()
+  })
+
   it('renders a GET form whose values come from the current URL filters', () => {
     render(createElement(ProductFilters, {
       filters: { q: '外套', age: '6-12', size: '120', inStock: true },
@@ -94,6 +143,35 @@ describe('ProductFilters', () => {
     expect(screen.getByLabelText('年齡')).toHaveValue('6-12')
     expect(screen.getByLabelText('尺寸')).toHaveValue('120')
     expect(screen.getByLabelText('只顯示有庫存')).toBeChecked()
+  })
+})
+
+describe('ProductSeriesFilter', () => {
+  it('switches series while preserving the other catalog filters', () => {
+    render(createElement(ProductSeriesFilter, {
+      filters: {
+        category: '上衣',
+        series: 'Mori flora 漫花系列',
+        q: '棉',
+        age: '3-6',
+        inStock: true,
+      },
+      series: [
+        { id: '10000000-0000-4000-8000-000000000001', categoryName: '上衣', name: 'Mori flora 漫花系列', position: 0 },
+        { id: '10000000-0000-4000-8000-000000000002', categoryName: '上衣', name: 'Mori forest 森林系列', position: 1 },
+      ],
+    }))
+
+    const allUrl = new URL(screen.getByRole('link', { name: '全部上衣' }).getAttribute('href')!, 'http://localhost')
+    expect(allUrl.searchParams.get('category')).toBe('上衣')
+    expect(allUrl.searchParams.get('series')).toBeNull()
+    expect(allUrl.searchParams.get('q')).toBe('棉')
+    expect(allUrl.searchParams.get('age')).toBe('3-6')
+    expect(allUrl.searchParams.get('inStock')).toBe('true')
+
+    const forestUrl = new URL(screen.getByRole('link', { name: 'Mori forest 森林系列' }).getAttribute('href')!, 'http://localhost')
+    expect(forestUrl.searchParams.get('series')).toBe('Mori forest 森林系列')
+    expect(screen.getByRole('link', { name: 'Mori flora 漫花系列' })).toHaveAttribute('aria-current', 'page')
   })
 })
 

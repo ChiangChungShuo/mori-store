@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-test('catalog search includes variant colors and the category menu filters products', async ({ page }) => {
+test('catalog search and the category menu filter products by category and series', async ({ page }) => {
   await page.goto('/products?q=%E8%97%8D')
 
   await expect(page.getByRole('heading', { name: '自在長褲' })).toBeVisible()
@@ -12,6 +12,16 @@ test('catalog search includes variant colors and the category menu filters produ
   await expect(page).toHaveURL(/\/products\?category=%E6%B4%8B%E8%A3%9D$/)
   await expect(page.getByRole('heading', { name: '花野洋裝' })).toBeVisible()
   await expect(page.getByRole('heading', { name: '自在長褲' })).toHaveCount(0)
+
+  await page.goto('/products')
+  await categoryMenu.locator('summary').click()
+  await categoryMenu.getByRole('link', { name: 'Mori flora 漫花系列' }).click()
+  await expect(page).toHaveURL(/category=.*series=Mori(?:%20|\+)flora/)
+  await expect(page.getByRole('navigation', { name: '商品系列' })
+    .getByRole('link', { name: 'Mori flora 漫花系列' })).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByRole('heading', { name: '有機棉小樹 T 恤' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '燕麥針織背心' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '陶土口袋襯衫' })).toHaveCount(0)
 })
 
 test('owner reply is visible in guest order lookup', async ({ page, context }) => {

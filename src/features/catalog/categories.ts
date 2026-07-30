@@ -44,7 +44,7 @@ export function createProductCategoryActions(dependencies: CategoryDependencies)
         await dependencies.repository.remove(name)
       } catch (error) {
         if (error instanceof Error && error.message === 'category_in_use') {
-          return { ok: false, message: '仍有商品使用此分類，請先調整商品分類後再刪除' }
+          return { ok: false, message: '仍有商品或系列使用此分類，請先調整後再刪除' }
         }
         return { ok: false, message: '目前無法刪除分類，請稍後再試' }
       }
@@ -66,7 +66,9 @@ function fixtureRepository(): ProductCategoryRepository {
     },
     async remove(name) {
       const { getE2EStore } = await import('@/testing/e2e-store')
-      const categories = getE2EStore().productCategories
+      const store = getE2EStore()
+      if (store.productSeries.some((series) => series.categoryName === name)) throw new Error('category_in_use')
+      const categories = store.productCategories
       const index = categories.indexOf(name)
       if (index >= 0) categories.splice(index, 1)
     },
@@ -108,6 +110,12 @@ function liveRepository(): ProductCategoryRepository {
         .eq('category', name)
       if (countError) throw countError
       if ((count ?? 0) > 0) throw new Error('category_in_use')
+      const { count: seriesCount, error: seriesCountError } = await admin
+        .from('product_series')
+        .select('id', { count: 'exact', head: true })
+        .eq('category_name', name)
+      if (seriesCountError) throw seriesCountError
+      if ((seriesCount ?? 0) > 0) throw new Error('category_in_use')
       const { error } = await admin.from('product_categories').delete().eq('name', name)
       if (error) throw error
     },

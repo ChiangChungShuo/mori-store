@@ -13,6 +13,7 @@ import { ImageUploader } from '@/features/admin/image-uploader'
 import { ProductForm, ProductPublishForm } from '@/features/admin/product-form'
 import { Toaster } from '@/components/toast'
 import { VariantGrid } from '@/features/admin/variant-grid'
+import type { ProductSeries } from '@/features/catalog/product-series'
 
 const productId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 const variantId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
@@ -23,6 +24,7 @@ const product: ProductInput = {
   name: '彩色口袋 Tee',
   slug: 'color-pocket-tee',
   category: 'tops',
+  seriesIds: [],
   ageBands: ['3-6'],
   description: '柔軟日常上衣',
   material: '100% 棉',
@@ -480,6 +482,38 @@ describe('admin product database contract', () => {
 })
 
 describe('admin product form', () => {
+  it('allows multiple series from the selected category and clears them when category changes', async () => {
+    const onSave = vi.fn().mockResolvedValue({ ok: true, productId })
+    const series: ProductSeries[] = [
+      { id: '10000000-0000-4000-8000-000000000001', categoryName: '上衣', name: 'Mori flora 漫花系列', position: 0 },
+      { id: '10000000-0000-4000-8000-000000000002', categoryName: '上衣', name: 'Mori forest 森林系列', position: 1 },
+      { id: '10000000-0000-4000-8000-000000000003', categoryName: '褲裝', name: 'Mori daily 日常系列', position: 0 },
+    ]
+    const view = render(createElement(ProductForm, {
+      initialProduct: { ...product, category: '上衣', seriesIds: [series[0].id, series[1].id] },
+      onSave,
+      categories: ['上衣', '褲裝'],
+      series,
+    }))
+    const form = within(view.container)
+
+    expect(form.getByRole('group', { name: '商品系列（可複選）' })).toBeInTheDocument()
+    expect(form.getByRole('checkbox', { name: 'Mori flora 漫花系列' })).toBeChecked()
+    expect(form.getByRole('checkbox', { name: 'Mori forest 森林系列' })).toBeChecked()
+    expect(form.queryByRole('checkbox', { name: 'Mori daily 日常系列' })).not.toBeInTheDocument()
+
+    fireEvent.change(form.getByLabelText('分類'), { target: { value: '褲裝' } })
+    expect(form.getByRole('checkbox', { name: 'Mori daily 日常系列' })).not.toBeChecked()
+    fireEvent.click(form.getByRole('button', { name: '儲存商品' }))
+    fireEvent.click(await form.findByRole('button', { name: '確定儲存' }))
+
+    await vi.waitFor(() => expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
+      category: '褲裝',
+      seriesIds: [],
+    })))
+    view.unmount()
+  })
+
   it('rejects a scheduled sale time in the past and exposes a minimum selectable time', () => {
     const onSave = vi.fn().mockResolvedValue({ ok: true, productId })
     const view = render(createElement(ProductForm, { initialProduct: product, onSave }))

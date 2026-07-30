@@ -1,6 +1,7 @@
 import type { AgeBand } from '@/types/store'
 import type { CartVariantSnapshot } from '@/features/cart/refresh'
 import { isE2EMode } from '@/testing/e2e-mode'
+import type { ProductSeries } from '@/features/catalog/product-series'
 
 const CATALOG_CONFIGURATION_ERROR = 'MORI catalog configuration error: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY are required.'
 
@@ -31,6 +32,7 @@ export type ProductFilters = {
   size?: string
   color?: string
   category?: string
+  series?: string
   inStock?: boolean
 }
 
@@ -54,6 +56,7 @@ export type CatalogProduct = {
   seoTitle?: string
   seoDescription?: string
   category: string
+  series: readonly ProductSeries[]
   ageBands: readonly AgeBand[]
   material: string
   careInstructions: string
@@ -79,7 +82,8 @@ export function parseProductFilters(searchParams: SearchParams): ProductFilters 
   const q = first(searchParams.q)?.trim()
   const size = first(searchParams.size)
   const color = first(searchParams.color)
-  const category = first(searchParams.category)
+  const category = first(searchParams.category)?.trim()
+  const series = first(searchParams.series)?.trim()
   const inStock = first(searchParams.inStock)
 
   return {
@@ -88,6 +92,7 @@ export function parseProductFilters(searchParams: SearchParams): ProductFilters 
     ...(size ? { size } : {}),
     ...(color ? { color } : {}),
     ...(category ? { category } : {}),
+    ...(category && series ? { series } : {}),
     ...(inStock === 'true' ? { inStock: true } : {}),
   }
 }
@@ -102,6 +107,14 @@ type ProductRecord = {
   seo_title?: string | null
   seo_description?: string | null
   category: string
+  product_series_products: Array<{
+    product_series: {
+      id: string
+      category_name: string
+      name: string
+      position: number
+    } | null
+  }>
   age_bands: AgeBand[]
   material: string
   care_instructions: string
@@ -144,6 +157,12 @@ function mapProduct(record: ProductRecord): CatalogProduct {
     seoTitle: record.seo_title ?? '',
     seoDescription: record.seo_description ?? '',
     category: record.category,
+    series: record.product_series_products.flatMap((assignment) => assignment.product_series ? [{
+      id: assignment.product_series.id,
+      categoryName: assignment.product_series.category_name,
+      name: assignment.product_series.name,
+      position: assignment.product_series.position,
+    }] : []).sort((first, second) => first.position - second.position),
     ageBands: record.age_bands,
     material: record.material,
     careInstructions: record.care_instructions,
@@ -175,6 +194,7 @@ export function applyCatalogFilters(products: CatalogProduct[], filters: Product
       product.description,
       product.category,
       product.material,
+      ...product.series.map((series) => series.name),
       ...product.variants.flatMap((variant) => [variant.color, variant.size, variant.sku]),
     ].join(' ').toLocaleLowerCase('zh-Hant')
     return (!term || searchable.includes(term))
@@ -182,6 +202,9 @@ export function applyCatalogFilters(products: CatalogProduct[], filters: Product
       && (!filters.size || product.variants.some((variant) => variant.size === filters.size))
       && (!filters.color || product.variants.some((variant) => variant.color.includes(filters.color!)))
       && (!filters.category || product.category === filters.category)
+      && (!filters.series || product.series.some((series) => (
+        series.categoryName === filters.category && series.name === filters.series
+      )))
       && (!filters.inStock || product.variants.some((variant) => variant.stock > 0))
   })
 }
@@ -190,6 +213,7 @@ const productFields = `
   id, slug, name, description, summary, tags, seo_title, seo_description,
   category, age_bands, material,
   care_instructions, size_guide, is_new, available_at,
+  product_series_products(product_series(id, category_name, name, position)),
   product_images(storage_path, alt_text, position),
   product_variants(id, sku, color, size, price, compare_at_price, stock),
   matching_variants:product_variants!inner(id, size, color, stock)

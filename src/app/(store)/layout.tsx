@@ -11,16 +11,17 @@ import { isCurrentUserAdmin } from '@/lib/auth/require-admin'
 import { listProductCategories } from '@/features/catalog/categories'
 import { GoogleAnalytics } from '@/components/google-analytics'
 import { getPublicSiteSettings } from '@/features/admin/settings-actions'
+import { listProductSeries } from '@/features/catalog/product-series'
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
-  const [settings, user, isAdmin, categories, { googleAnalyticsId }] = await Promise.all([getStorefrontSettings(), getCurrentUser(), isCurrentUserAdmin(), listProductCategories(), getPublicSiteSettings()])
+  const [settings, user, isAdmin, categories, series, { googleAnalyticsId }] = await Promise.all([getStorefrontSettings(), getCurrentUser(), isCurrentUserAdmin(), listProductCategories(), listProductSeries(), getPublicSiteSettings()])
 
   return (
     <CartProvider>
       <WishlistAuthProvider isSignedIn={Boolean(user)}>
         <GoogleAnalytics measurementId={googleAnalyticsId} />
         <StorefrontTracker />
-        <SiteHeader cart={<CartDrawer settings={settings} />} categories={categories} isSignedIn={Boolean(user)} isAdmin={isAdmin} />
+        <SiteHeader cart={<CartDrawer settings={settings} />} categories={categories} series={series} isSignedIn={Boolean(user)} isAdmin={isAdmin} />
         {children}
         <SiteFooter />
         <BackToTop />

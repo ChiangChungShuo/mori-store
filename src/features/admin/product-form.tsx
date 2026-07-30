@@ -11,6 +11,7 @@ import { PREORDER_TAG, PREORDER_STOCK, isPreorder } from '@/lib/preorder'
 import { ConfirmModal } from '@/components/confirm-modal'
 import { showToast } from '@/components/toast'
 import type { SaveDraftState } from '@/features/admin/product-drafts'
+import type { ProductSeries } from '@/features/catalog/product-series'
 
 type ProductActionResult = {
   ok: boolean
@@ -25,6 +26,7 @@ type ProductFormProps = {
   onSave: (product: ProductInput, image?: FormData) => Promise<ProductActionResult>
   requireImage?: boolean
   categories?: string[]
+  series?: ProductSeries[]
   materialPresets?: string[]
   carePresets?: string[]
   sizeOptions?: string[]
@@ -119,9 +121,9 @@ export function DeleteProductImageForm({
   }}><button aria-label={`刪除圖片 ${imageNumber}`} disabled={pending} type="submit">{pending ? '刪除中…' : '刪除圖片'}</button></form>
 }
 
-export function ProductForm({ initialProduct, onSave, requireImage = false, categories = [...defaultProductCategories], materialPresets = [], carePresets = [], sizeOptions = [], draftId: initialDraftId = null, saveDraft }: ProductFormProps) {
+export function ProductForm({ initialProduct, onSave, requireImage = false, categories = [...defaultProductCategories], series = [], materialPresets = [], carePresets = [], sizeOptions = [], draftId: initialDraftId = null, saveDraft }: ProductFormProps) {
   const router = useRouter()
-  const [product, setProduct] = useState(initialProduct)
+  const [product, setProduct] = useState<ProductInput>({ ...initialProduct, seriesIds: initialProduct.seriesIds ?? [] })
   const [draftId, setDraftId] = useState<string | null>(initialDraftId)
   const [preorder, setPreorder] = useState(isPreorder(initialProduct.tags))
   const [pendingSave, setPendingSave] = useState<ProductInput | null>(null)
@@ -134,6 +136,9 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [minimumAvailableAt] = useState(() => toDateTimeLocalValue(new Date()))
   const imagePreviewsRef = useRef<string[]>([])
+  const availableSeries = series
+    .filter((item) => item.categoryName === product.category)
+    .sort((first, second) => first.position - second.position)
 
   useEffect(() => { imagePreviewsRef.current = imagePreviews }, [imagePreviews])
   useEffect(() => () => { imagePreviewsRef.current.forEach((preview) => URL.revokeObjectURL(preview)) }, [])
@@ -227,6 +232,11 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
       if (field === 'name' && !slugEdited) {
         return { ...current, name: value, slug: slugifyProductName(value) }
       }
+      if (field === 'category') {
+        return current.category === value
+          ? current
+          : { ...current, category: value, seriesIds: [] }
+      }
       return { ...current, [field]: value }
     })
   }
@@ -265,6 +275,16 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
     }))
   }
 
+  function toggleSeries(seriesId: string, checked: boolean) {
+    setResult(null)
+    setProduct((current) => ({
+      ...current,
+      seriesIds: checked
+        ? [...current.seriesIds, seriesId]
+        : current.seriesIds.filter((candidate) => candidate !== seriesId),
+    }))
+  }
+
   return (
     <form className="admin-product-form" data-no-confirm onSubmit={submit} noValidate>
       {requireImage ? <div className="admin-product-progress"><div className="admin-product-steps" aria-label="商品建立流程"><span data-active={activeStep === 1} data-complete={activeStep > 1}>01 商品內容</span><span data-active={activeStep === 2} data-complete={activeStep > 2}>02 規格庫存</span><span data-active={activeStep === 3} data-complete={activeStep > 3}>03 商品圖片</span><span data-active={activeStep === 4}>04 確認建立</span></div><div aria-label="商品建立進度" aria-valuemax={100} aria-valuemin={0} aria-valuenow={Math.round(progress)} className="admin-product-progress-meter" role="progressbar"><i style={{ width: `${progress}%` }} /></div></div> : null}
@@ -278,6 +298,11 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
               <div className="admin-form-field admin-category-field"><label htmlFor="product-category">分類</label><select id="product-category" aria-invalid={attempted && Boolean(result?.fieldErrors?.category)} value={product.category} onChange={(event) => setText('category', event.target.value)} required><option value="">請選擇分類</option>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</select>{result?.fieldErrors?.category && <small>{result.fieldErrors.category[0]}</small>}<Link className="admin-field-link" href="/admin/categories" target="_blank">管理分類 <span aria-hidden="true">↗</span></Link></div>
               <label>預約開賣時間（選填）<input aria-invalid={attempted && Boolean(result?.fieldErrors?.availableAt)} min={minimumAvailableAt} suppressHydrationWarning type="datetime-local" value={product.availableAt ? toDateTimeLocalValue(product.availableAt) : ''} onChange={(event) => { setResult(null); setProduct((current) => ({ ...current, availableAt: event.target.value ? new Date(event.target.value).toISOString() : null })) }} />{result?.fieldErrors?.availableAt && <small>{result.fieldErrors.availableAt[0]}</small>}<small className="admin-field-hint">只能選擇現在之後的時間；開賣前商品可瀏覽、不可購買。</small></label>
             </div>
+            <fieldset className="admin-product-series" disabled={!product.category}>
+              <legend>商品系列（可複選）</legend>
+              {!product.category ? <p>請先選擇商品分類。</p> : availableSeries.length === 0 ? <p>此分類尚未建立系列。<Link href="/admin/categories" target="_blank">前往系列管理</Link></p> : <div>{availableSeries.map((item) => <label key={item.id} data-selected={product.seriesIds.includes(item.id)}><input checked={product.seriesIds.includes(item.id)} type="checkbox" onChange={(event) => toggleSeries(item.id, event.target.checked)} />{item.name}</label>)}</div>}
+              {result?.fieldErrors?.seriesIds && <small>{result.fieldErrors.seriesIds[0]}</small>}
+            </fieldset>
             <fieldset className="admin-age-fieldset"><legend>適用年齡</legend><div>{AGE_BANDS.map((band) => <label key={band.value} data-selected={product.ageBands.includes(band.value)}><input type="checkbox" checked={product.ageBands.includes(band.value)} onChange={(event) => toggleAgeBand(band.value, event.target.checked)} /><strong>{band.label}</strong><span>{band.range}</span></label>)}</div>{result?.fieldErrors?.ageBands && <small>{result.fieldErrors.ageBands[0]}</small>}</fieldset>
           </section>
 

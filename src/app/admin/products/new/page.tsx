@@ -5,11 +5,13 @@ import type { ProductInput } from '@/lib/validation/product'
 import { listProductCategories } from '@/features/catalog/categories'
 import { listContentPresets } from '@/features/catalog/content-presets'
 import { getProductDraft, saveProductDraft } from '@/features/admin/product-drafts'
+import { listProductSeries } from '@/features/catalog/product-series'
 
 const newProduct: ProductInput = {
   name: '',
   slug: '',
   category: '',
+  seriesIds: [],
   ageBands: [],
   description: '',
   material: '',
@@ -25,8 +27,9 @@ type NewProductPageProps = {
 
 export default async function NewAdminProductPage({ searchParams }: NewProductPageProps) {
   const { draft: draftId } = await searchParams
-  const [categories, materialPresets, carePresets, sizeOptions, draftData] = await Promise.all([
+  const [categories, series, materialPresets, carePresets, sizeOptions, draftData] = await Promise.all([
     listProductCategories(),
+    listProductSeries(),
     listContentPresets('material'),
     listContentPresets('care'),
     listContentPresets('size'),
@@ -52,6 +55,7 @@ export default async function NewAdminProductPage({ searchParams }: NewProductPa
         onSave={createProductWithImage}
         requireImage
         saveDraft={saveProductDraft}
+        series={series}
         sizeOptions={sizeOptions}
       />
     </main>
