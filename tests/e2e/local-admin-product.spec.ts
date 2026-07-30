@@ -18,7 +18,7 @@ test('owner creates a product with one complete variant in local fixture mode', 
   await page.getByLabel('商品名稱').fill(productName)
   await page.getByLabel('網址代稱').fill(`single-variant-${suffix}`)
   await page.getByLabel('分類').selectOption('上衣')
-  await page.getByRole('checkbox', { name: /3-5/ }).check()
+  await page.getByRole('checkbox', { name: /Kids/ }).check()
   await page.getByLabel('商品說明').fill('柔軟親膚的日常上衣。')
   await page.getByLabel('材質').fill('100% 棉')
   await page.getByLabel('尺寸指南').fill('正常版型，依平常尺寸選購。')

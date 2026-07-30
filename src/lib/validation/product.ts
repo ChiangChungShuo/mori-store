@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-const ageBandSchema = z.enum(['0-2', '3-5', '6-9', '10-12'])
+const ageBandSchema = z.enum(['0-3', '3-6', '6-12'])
 
 const variantSchema = z.object({
   id: z.string().uuid('商品規格編號無效').optional(),

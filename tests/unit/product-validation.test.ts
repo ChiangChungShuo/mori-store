@@ -5,7 +5,7 @@ const validProduct = {
   name: '彩色口袋 Tee',
   slug: 'color-pocket-tee',
   category: 'tops',
-  ageBands: ['3-5'],
+  ageBands: ['3-6'],
   description: '',
   material: '',
   careInstructions: '',
@@ -39,7 +39,7 @@ describe('productSchema', () => {
       name: '彩色口袋 Tee',
       slug: 'color-pocket-tee',
       category: 'tops',
-      ageBands: ['3-5'],
+      ageBands: ['3-6'],
       variants: [
         { sku: 'TEE-Y-100', color: '黃色', size: '100', price: 590, stock: 3 },
       ],

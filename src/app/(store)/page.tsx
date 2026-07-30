@@ -5,8 +5,7 @@ import { listProducts } from '@/features/catalog/queries'
 import { getBannerSlides } from '@/features/storefront/banner-settings'
 import { HeroCarousel } from '@/features/storefront/hero-carousel'
 import { absoluteUrl } from '@/lib/site'
-
-const ageBands = ['0-2', '3-5', '6-9', '10-12']
+import { AGE_BANDS } from '@/lib/age-bands'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,9 +28,9 @@ export default async function StoreHomePage() {
           <p>從剛學會走路，到開始有自己的穿搭主張。</p>
         </header>
         <div className="age-links">
-          {ageBands.map((ageBand) => (
-            <Link href={`/products?age=${ageBand}`} key={ageBand}>
-              <strong>{ageBand}</strong><span>歲</span>
+          {AGE_BANDS.map((band) => (
+            <Link href={`/products?age=${band.value}`} key={band.value}>
+              <strong>{band.label}</strong><span>{band.range}</span>
             </Link>
           ))}
         </div>

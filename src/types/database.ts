@@ -616,7 +616,7 @@ export type Database = {
       set_updated_at: { Args: Record<PropertyKey, never>; Returns: unknown }
     }
     Enums: {
-      age_band: '0-2' | '3-5' | '6-9' | '10-12'
+      age_band: '0-3' | '3-6' | '6-12'
       order_status: 'pending_payment' | 'paid' | 'preparing' | 'shipped' | 'collected' | 'cancelled'
       payment_attempt_status: 'pending' | 'paid' | 'failed' | 'cancelled' | 'requires_review'
       store_chain: 'seven_eleven' | 'family_mart'

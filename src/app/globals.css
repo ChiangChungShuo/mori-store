@@ -242,7 +242,7 @@ header#top { position: sticky; z-index: 60; top: 0; background: var(--paper); bo
   letter-spacing: -0.035em;
   line-height: 1.15;
 }
-.age-links { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); }
+.age-links { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); }
 .age-links a {
   min-height: 10rem;
   flex-direction: column;
@@ -869,7 +869,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-field-wide { grid-column: 1 / -1; }
 .admin-age-fieldset { margin: 1.25rem 0 0; padding: 0; border: 0; }
 .admin-age-fieldset legend { margin-bottom: 0.55rem; color: var(--forest); font-size: 0.7rem; font-weight: 800; }
-.admin-age-fieldset > div { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.55rem; }
+.admin-age-fieldset > div { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.55rem; }
 .admin-age-fieldset label { position: relative; display: flex; min-height: 3.3rem; gap: 0.2rem; align-items: center; justify-content: center; border: 1px solid #d5d7da; background: #fbfbfb; color: var(--muted); cursor: pointer; }
 .admin-age-fieldset input { position: absolute; opacity: 0; }
 .admin-age-fieldset label[data-selected="true"] { border-color: var(--forest); background: var(--forest); color: var(--white); }

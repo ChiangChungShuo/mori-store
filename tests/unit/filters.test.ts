@@ -16,7 +16,7 @@ const product = {
   name: '有機棉小樹 T 恤',
   description: '柔軟透氣的日常有機棉 T 恤。',
   category: '上衣',
-  ageBands: ['3-5', '6-9'] as const,
+  ageBands: ['3-6', '6-12'] as const,
   material: '100% 有機棉',
   careInstructions: '建議冷水洗滌。',
   sizeGuide: '版型正常。',
@@ -45,7 +45,7 @@ describe('fixture catalog', () => {
 
     expect(products).toHaveLength(8)
     expect(new Set(products.flatMap((catalogProduct) => catalogProduct.ageBands)))
-      .toEqual(new Set(['0-2', '3-5', '6-9', '10-12']))
+      .toEqual(new Set(['0-3', '3-6', '6-12']))
     expect([...new Set(products.map((catalogProduct) => catalogProduct.category))])
       .toEqual(expect.arrayContaining(['上衣', '褲裝', '洋裝', '外套', '幼兒服']))
     expect(products.every((catalogProduct) => catalogProduct.imageUrl?.startsWith('/images/products/'))).toBe(true)
@@ -66,9 +66,9 @@ describe('fixture catalog', () => {
 
 describe('parseProductFilters', () => {
   it('keeps only the fixed 0-12 age bands and supported stock value', () => {
-    expect(parseProductFilters({ q: '  洋裝  ', age: '6-9', color: '鼠尾草綠', inStock: 'true' })).toEqual({
+    expect(parseProductFilters({ q: '  洋裝  ', age: '6-12', color: '鼠尾草綠', inStock: 'true' })).toEqual({
       q: '洋裝',
-      age: '6-9',
+      age: '6-12',
       color: '鼠尾草綠',
       inStock: true,
     })
@@ -86,12 +86,12 @@ describe('parseProductFilters', () => {
 describe('ProductFilters', () => {
   it('renders a GET form whose values come from the current URL filters', () => {
     render(createElement(ProductFilters, {
-      filters: { q: '外套', age: '6-9', size: '120', inStock: true },
+      filters: { q: '外套', age: '6-12', size: '120', inStock: true },
     }))
 
     expect(screen.getByRole('form', { name: '篩選商品' })).toHaveAttribute('method', 'get')
     expect(screen.getByLabelText('搜尋商品')).toHaveValue('外套')
-    expect(screen.getByLabelText('年齡')).toHaveValue('6-9')
+    expect(screen.getByLabelText('年齡')).toHaveValue('6-12')
     expect(screen.getByLabelText('尺寸')).toHaveValue('120')
     expect(screen.getByLabelText('只顯示有庫存')).toBeChecked()
   })

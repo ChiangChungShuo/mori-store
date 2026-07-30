@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { availableAtError, getProductValidationErrors, productSchema, slugifyProductName, type ProductInput, type ProductVariantErrors } from '@/lib/validation/product'
 import { VariantGrid } from './variant-grid'
 import { defaultProductCategories } from '@/features/catalog/category-defaults'
+import { AGE_BANDS } from '@/lib/age-bands'
 
 type ProductActionResult = {
   ok: boolean
@@ -22,7 +23,6 @@ type ProductFormProps = {
   categories?: string[]
 }
 
-const ageBands: ProductInput['ageBands'][number][] = ['0-2', '3-5', '6-9', '10-12']
 
 function toDateTimeLocalValue(value: string | Date) {
   const date = value instanceof Date ? value : new Date(value)
@@ -240,7 +240,7 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
               <div className="admin-form-field admin-category-field"><label htmlFor="product-category">分類</label><select id="product-category" aria-invalid={attempted && Boolean(result?.fieldErrors?.category)} value={product.category} onChange={(event) => setText('category', event.target.value)} required><option value="">請選擇分類</option>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</select>{result?.fieldErrors?.category && <small>{result.fieldErrors.category[0]}</small>}<Link className="admin-field-link" href="/admin/categories" target="_blank">管理分類 <span aria-hidden="true">↗</span></Link></div>
               <label>預約開賣時間（選填）<input aria-invalid={attempted && Boolean(result?.fieldErrors?.availableAt)} min={minimumAvailableAt} suppressHydrationWarning type="datetime-local" value={product.availableAt ? toDateTimeLocalValue(product.availableAt) : ''} onChange={(event) => { setResult(null); setProduct((current) => ({ ...current, availableAt: event.target.value ? new Date(event.target.value).toISOString() : null })) }} />{result?.fieldErrors?.availableAt && <small>{result.fieldErrors.availableAt[0]}</small>}<small className="admin-field-hint">只能選擇現在之後的時間；開賣前商品可瀏覽、不可購買。</small></label>
             </div>
-            <fieldset className="admin-age-fieldset"><legend>適用年齡</legend><div>{ageBands.map((ageBand) => <label key={ageBand} data-selected={product.ageBands.includes(ageBand)}><input type="checkbox" checked={product.ageBands.includes(ageBand)} onChange={(event) => toggleAgeBand(ageBand, event.target.checked)} /><strong>{ageBand}</strong><span>歲</span></label>)}</div>{result?.fieldErrors?.ageBands && <small>{result.fieldErrors.ageBands[0]}</small>}</fieldset>
+            <fieldset className="admin-age-fieldset"><legend>適用年齡</legend><div>{AGE_BANDS.map((band) => <label key={band.value} data-selected={product.ageBands.includes(band.value)}><input type="checkbox" checked={product.ageBands.includes(band.value)} onChange={(event) => toggleAgeBand(band.value, event.target.checked)} /><strong>{band.label}</strong><span>{band.range}</span></label>)}</div>{result?.fieldErrors?.ageBands && <small>{result.fieldErrors.ageBands[0]}</small>}</fieldset>
           </section>
 
           <section className="admin-form-card">

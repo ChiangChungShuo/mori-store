@@ -1,8 +1,7 @@
 import Link from 'next/link'
 import { type ProductFilters as ProductFilterValues } from '@/features/catalog/queries'
 import { defaultProductCategories } from '@/features/catalog/category-defaults'
-
-const ages: Array<NonNullable<ProductFilterValues['age']>> = ['0-2', '3-5', '6-9', '10-12']
+import { AGE_BANDS } from '@/lib/age-bands'
 
 export function ProductFilters({ filters, categories = [...defaultProductCategories] }: { filters: ProductFilterValues; categories?: string[] }) {
   return (
@@ -15,7 +14,7 @@ export function ProductFilters({ filters, categories = [...defaultProductCategor
         年齡
         <select name="age" defaultValue={filters.age ?? ''}>
           <option value="">全部年齡</option>
-          {ages.map((age) => <option value={age} key={age}>{age} 歲</option>)}
+          {AGE_BANDS.map((band) => <option value={band.value} key={band.value}>{band.label}｜{band.range}</option>)}
         </select>
       </label>
 

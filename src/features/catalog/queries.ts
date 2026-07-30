@@ -27,7 +27,7 @@ export function resolveCatalogConfiguration(
 
 export type ProductFilters = {
   q?: string
-  age?: '0-2' | '3-5' | '6-9' | '10-12'
+  age?: '0-3' | '3-6' | '6-12'
   size?: string
   color?: string
   category?: string
@@ -68,7 +68,7 @@ export type CatalogProduct = {
 
 type SearchParams = Record<string, string | string[] | undefined>
 
-const ageBands: ProductFilters['age'][] = ['0-2', '3-5', '6-9', '10-12']
+const ageBands: ProductFilters['age'][] = ['0-3', '3-6', '6-12']
 
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value

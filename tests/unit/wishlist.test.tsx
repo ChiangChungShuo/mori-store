@@ -27,7 +27,7 @@ describe('WishlistButton', () => {
     window.localStorage.setItem('mori-wishlist', JSON.stringify(['product-1']))
     const product = {
       id: 'product-1', slug: 'tree-tee', name: '小樹 T 恤', description: '柔軟上衣', category: '上衣',
-      ageBands: ['3-5'] as const, material: '棉', careInstructions: '冷水洗', sizeGuide: '正常版', isNew: false,
+      ageBands: ['3-6'] as const, material: '棉', careInstructions: '冷水洗', sizeGuide: '正常版', isNew: false,
       imageUrl: null, imageAlt: '小樹 T 恤', variants: [{ id: 'v1', sku: 'TREE-100', color: '綠', size: '100', price: 680, compareAtPrice: null, stock: 1 }],
     }
 

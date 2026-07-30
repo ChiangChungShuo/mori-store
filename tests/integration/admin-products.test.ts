@@ -22,7 +22,7 @@ const product: ProductInput = {
   name: '彩色口袋 Tee',
   slug: 'color-pocket-tee',
   category: 'tops',
-  ageBands: ['3-5'],
+  ageBands: ['3-6'],
   description: '柔軟日常上衣',
   material: '100% 棉',
   careInstructions: '冷水洗滌',
@@ -557,7 +557,7 @@ describe('admin product form', () => {
     fireEvent.change(form.getByLabelText('商品名稱'), { target: { value: '彩色口袋 Tee' } })
     fireEvent.change(form.getByLabelText(/網址代稱/), { target: { value: 'color-pocket-tee' } })
     fireEvent.change(form.getByLabelText('分類'), { target: { value: '上衣' } })
-    fireEvent.click(form.getByRole('checkbox', { name: /3-5/ }))
+    fireEvent.click(form.getByRole('checkbox', { name: /Kids/ }))
     fireEvent.change(form.getByLabelText('商品說明'), { target: { value: '柔軟日常上衣' } })
     fireEvent.change(form.getByLabelText('材質'), { target: { value: '100% 棉' } })
     fireEvent.change(form.getByLabelText('尺寸指南'), { target: { value: '正常版型' } })

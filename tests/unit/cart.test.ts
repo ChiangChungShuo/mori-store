@@ -42,7 +42,7 @@ const suggestedProduct: CatalogProduct = {
   name: '雲朵包屁衣',
   description: '柔軟日常包屁衣',
   category: '包屁衣',
-  ageBands: ['0-2'],
+  ageBands: ['0-3'],
   material: '棉',
   careInstructions: '冷水洗滌',
   sizeGuide: '70–80',

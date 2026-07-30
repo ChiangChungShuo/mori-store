@@ -1,4 +1,4 @@
-export type AgeBand = '0-2' | '3-5' | '6-9' | '10-12'
+export type AgeBand = '0-3' | '3-6' | '6-12'
 
 export type OrderStatus =
   | 'pending_payment'
