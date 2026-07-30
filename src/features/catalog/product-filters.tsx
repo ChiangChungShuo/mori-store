@@ -7,7 +7,9 @@ import { defaultProductCategories } from '@/features/catalog/category-defaults'
 import { AGE_BANDS } from '@/lib/age-bands'
 
 export function ProductFilters({ filters, categories = [...defaultProductCategories] }: { filters: ProductFilterValues; categories?: string[] }) {
-  const [category, setCategory] = useState(filters.category ?? '')
+  const sourceCategory = filters.category ?? ''
+  const [categorySelection, setCategorySelection] = useState<{ source: string; value: string } | null>(null)
+  const category = categorySelection?.source === sourceCategory ? categorySelection.value : sourceCategory
   return (
     <form action="/products" method="get" aria-label="篩選商品" className="product-filters">
       {filters.series && category === filters.category ? <input name="series" type="hidden" value={filters.series} /> : null}
@@ -35,7 +37,7 @@ export function ProductFilters({ filters, categories = [...defaultProductCategor
 
       <label>
         分類
-        <select name="category" value={category} onChange={(event) => setCategory(event.target.value)}>
+        <select name="category" value={category} onChange={(event) => setCategorySelection({ source: sourceCategory, value: event.target.value })}>
           <option value="">全部分類</option>
           {categories.map((category) => <option value={category} key={category}>{category}</option>)}
         </select>

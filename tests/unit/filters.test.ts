@@ -107,6 +107,21 @@ describe('parseProductFilters', () => {
 })
 
 describe('ProductFilters', () => {
+  it('updates the selected category after client-side navigation', () => {
+    const view = render(createElement(ProductFilters, {
+      categories: ['上衣', '褲裝'],
+      filters: {},
+    }))
+
+    view.rerender(createElement(ProductFilters, {
+      categories: ['上衣', '褲裝'],
+      filters: { category: '上衣', series: 'Mori flora 漫花系列' },
+    }))
+
+    expect(screen.getByLabelText('分類')).toHaveValue('上衣')
+    expect(view.container.querySelector('input[name="series"]')).toHaveValue('Mori flora 漫花系列')
+  })
+
   it('preserves the active series for other filters and clears it when category changes', () => {
     const { container } = render(createElement(ProductFilters, {
       categories: ['上衣', '褲裝'],
