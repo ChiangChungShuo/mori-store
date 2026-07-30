@@ -1,4 +1,6 @@
 import { createPromotionFromForm, deletePromotionFromForm, getMarketingDashboard, togglePromotionFromForm, updateReminderFromForm } from '@/features/admin/business-management'
+import { countMarketingSubscribers, sendMarketingBroadcastFromForm } from '@/features/admin/marketing-broadcast'
+import { MarketingBroadcastForm } from '@/features/admin/marketing-broadcast-form'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,7 +11,7 @@ const promotionTypeLabels = {
 }
 
 export default async function AdminMarketingPage() {
-  const dashboard = await getMarketingDashboard()
+  const [dashboard, subscriberCount] = await Promise.all([getMarketingDashboard(), countMarketingSubscribers()])
 
   return (
     <main className="section admin-management-page">
@@ -55,6 +57,7 @@ export default async function AdminMarketingPage() {
           </form> : <p className="admin-panel-note">訂單確認信已可正常寄送（Resend）。此「未結帳自動提醒」的自動排程功能仍在規劃中，敬請期待。</p>}
         </section>
       </div>
+      <MarketingBroadcastForm action={sendMarketingBroadcastFromForm} subscriberCount={subscriberCount} />
     </main>
   )
 }

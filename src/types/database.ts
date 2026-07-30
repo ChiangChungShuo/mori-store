@@ -150,39 +150,39 @@ export type Database = {
           created_at: string
           id: string
           order_id: string
-          product_id: string
+          product_id: string | null
           product_name: string
           quantity: number
           size: string
           sku: string
           unit_price: number
-          variant_id: string
+          variant_id: string | null
         }
         Insert: {
           color: string
           created_at?: string
           id?: string
           order_id: string
-          product_id: string
+          product_id?: string | null
           product_name: string
           quantity: number
           size: string
           sku: string
           unit_price: number
-          variant_id: string
+          variant_id?: string | null
         }
         Update: {
           color?: string
           created_at?: string
           id?: string
           order_id?: string
-          product_id?: string
+          product_id?: string | null
           product_name?: string
           quantity?: number
           size?: string
           sku?: string
           unit_price?: number
-          variant_id?: string
+          variant_id?: string | null
         }
         Relationships: [
           {
