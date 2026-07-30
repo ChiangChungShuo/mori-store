@@ -58,9 +58,9 @@ describe('member contact display', () => {
 
   it('labels the phone in member and owner views', () => {
     const accountPage = readFileSync(resolve(process.cwd(), 'src/app/account/page.tsx'), 'utf8')
-    const adminPage = readFileSync(resolve(process.cwd(), 'src/app/admin/members/page.tsx'), 'utf8')
+    const memberDirectory = readFileSync(resolve(process.cwd(), 'src/features/admin/member-directory.tsx'), 'utf8')
 
     expect(accountPage).toMatch(/手機號碼/)
-    expect(adminPage).toMatch(/member\.phone/)
+    expect(memberDirectory).toMatch(/member\.phone/)
   })
 })

@@ -68,7 +68,6 @@ export default async function AdminSettingsPage() {
         <div className="integration-grid">
           <article><span data-status="active">目前可用</span><h3>7-ELEVEN／全家取貨</h3><p>前台可選擇測試門市；正式電子地圖與物流單仍需串接物流服務。</p></article>
           <article><span data-status="active">目前可用</span><h3>銀行匯款</h3><p>送出訂單後顯示收款帳號，會員可回報帳號末 5 碼供後台核對。</p></article>
-          <article><span data-status="active">目前可用</span><h3>超商取貨付款</h3><p>訂單成立後等待出貨，買家於 7-ELEVEN／全家取件時付款。</p></article>
           <article><span data-status="active">基礎完成</span><h3>SEO 與社群預覽</h3><p>已設定網站名稱、摘要與社群分享卡片；正式上線後再填入公開網域。</p></article>
         </div>
       </section>

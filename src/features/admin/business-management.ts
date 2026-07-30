@@ -128,6 +128,12 @@ export async function listMembers(): Promise<MemberRecord[]> {
   }).sort((a, b) => b.totalSpent - a.totalSpent)
 }
 
+export async function getMemberDetail(email: string): Promise<MemberRecord | null> {
+  const normalized = email.trim().toLowerCase()
+  const members = await listMembers()
+  return members.find((member) => member.email === normalized) ?? null
+}
+
 const memberUpdateSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   tier: z.enum(['seed', 'forest', 'canopy']),

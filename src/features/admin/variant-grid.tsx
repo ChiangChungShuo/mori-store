@@ -20,8 +20,8 @@ const emptyVariant: Variant = {
   stock: 0,
 }
 
-const SIZE_OPTIONS = ['80', '90', '100', '110', '120', '130', '140', '150', '160']
-const STOCK_OPTIONS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
+const SIZE_OPTIONS = ['80', '90', '100', '110', '120', '130', '140']
+const STOCK_OPTIONS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
 
 // Best-effort next SKU when duplicating: increment the trailing number so the
 // copy isn't an immediate duplicate. The admin can still edit it.
@@ -54,7 +54,6 @@ export function VariantGrid({ variants, onChange, errors = [] }: VariantGridProp
     <fieldset className="admin-variant-fieldset">
       <legend className="sr-only">商品規格</legend>
       <p className="admin-sku-help"><strong>SKU 是什麼？</strong>它是每個「顏色＋尺寸」專用的內部庫存編號，顧客不會看到。例：<code>MORI-TEE-GREEN-110</code>。填好一個後可按「複製此規格」快速新增同色不同尺寸。</p>
-      <datalist id="variant-size-options">{SIZE_OPTIONS.map((size) => <option key={size} value={size} />)}</datalist>
       <datalist id="variant-stock-options">{STOCK_OPTIONS.map((stock) => <option key={stock} value={stock} />)}</datalist>
       <div className="admin-variant-labels" aria-hidden="true"><span>SKU</span><span>顏色</span><span>尺寸</span><span>售價</span><span>成本</span><span>原價</span><span>庫存</span><span /></div>
       {variants.map((variant, index) => (
@@ -84,15 +83,19 @@ export function VariantGrid({ variants, onChange, errors = [] }: VariantGridProp
           </label>
           <label>
             尺寸
-            <input
+            <select
               aria-label="尺寸"
               aria-invalid={Boolean(errors[index]?.size)}
-              list="variant-size-options"
-              placeholder="選擇或輸入"
               value={variant.size}
               onChange={(event) => update(index, 'size', event.target.value)}
               required
-            />
+            >
+              <option value="" disabled>選擇尺寸</option>
+              {SIZE_OPTIONS.map((size) => <option key={size} value={size}>{size}</option>)}
+              {variant.size && !SIZE_OPTIONS.includes(variant.size)
+                ? <option value={variant.size}>{variant.size}</option>
+                : null}
+            </select>
             {errors[index]?.size ? <small>{errors[index].size?.[0]}</small> : null}
           </label>
           <label>
@@ -158,10 +161,16 @@ export function VariantGrid({ variants, onChange, errors = [] }: VariantGridProp
             <button type="button" className="admin-variant-duplicate" onClick={() => duplicate(index)}>複製此規格</button>
             <button
               type="button"
+              className="admin-variant-remove"
+              aria-label="移除規格"
+              title="移除規格"
               onClick={() => onChange(variants.filter((_, variantIndex) => variantIndex !== index))}
               disabled={variants.length === 1}
             >
-              移除規格
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" />
+                <path d="M10 11v6M14 11v6" />
+              </svg>
             </button>
           </div>
         </div>
