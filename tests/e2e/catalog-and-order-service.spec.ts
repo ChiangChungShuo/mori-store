@@ -24,6 +24,7 @@ test('owner reply is visible in guest order lookup', async ({ page, context }) =
 
   await page.getByLabel('回覆客戶').fill('尺寸已確認，今天會安排備貨。')
   await page.getByRole('button', { name: '儲存回覆' }).click()
+  await page.getByRole('button', { name: '確定儲存' }).click()
   await expect(page.getByText('回覆已儲存，顧客可在訂單內容中查看')).toBeVisible()
 
   await context.clearCookies()
@@ -48,6 +49,7 @@ test('owner-created category appears in storefront navigation and product editor
 
   await page.getByLabel('新增分類').fill(categoryName)
   await page.getByRole('button', { name: '新增分類' }).click()
+  await page.getByRole('button', { name: '確定儲存' }).click()
   await expect(page.getByText(`分類「${categoryName}」已新增`)).toBeVisible()
 
   await page.goto('/products')

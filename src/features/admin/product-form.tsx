@@ -8,6 +8,7 @@ import { VariantGrid } from './variant-grid'
 import { defaultProductCategories } from '@/features/catalog/category-defaults'
 import { AGE_BANDS } from '@/lib/age-bands'
 import { PREORDER_TAG, PREORDER_STOCK, isPreorder } from '@/lib/preorder'
+import { ConfirmModal } from '@/components/confirm-modal'
 import type { SaveDraftState } from '@/features/admin/product-drafts'
 
 type ProductActionResult = {
@@ -96,9 +97,8 @@ export function DeleteProductForm({ onDelete }: { onDelete: () => Promise<Produc
   const router = useRouter()
   const [result, setResult] = useState<ProductActionResult | null>(null)
   const [pending, startTransition] = useTransition()
-  return <form onSubmit={(event) => {
+  return <form data-confirm="danger" onSubmit={(event) => {
     event.preventDefault()
-    if (!window.confirm('確定刪除這件商品？刪除後無法復原。')) return
     startTransition(async () => {
       const nextResult = await onDelete()
       setResult(nextResult)
@@ -117,9 +117,8 @@ export function DeleteProductImageForm({
   const router = useRouter()
   const [pending, startTransition] = useTransition()
 
-  return <form className="admin-image-delete-form" onSubmit={(event) => {
+  return <form className="admin-image-delete-form" data-confirm="danger" onSubmit={(event) => {
     event.preventDefault()
-    if (!window.confirm(`確定刪除第 ${imageNumber} 張商品圖片？`)) return
     startTransition(async () => {
       const nextResult = await onDelete()
       if (nextResult.ok) router.refresh()
@@ -128,9 +127,11 @@ export function DeleteProductImageForm({
 }
 
 export function ProductForm({ initialProduct, onSave, requireImage = false, categories = [...defaultProductCategories], materialPresets = [], carePresets = [], sizeOptions = [], draftId: initialDraftId = null, saveDraft }: ProductFormProps) {
+  const router = useRouter()
   const [product, setProduct] = useState(initialProduct)
   const [draftId, setDraftId] = useState<string | null>(initialDraftId)
   const [preorder, setPreorder] = useState(isPreorder(initialProduct.tags))
+  const [pendingSave, setPendingSave] = useState<ProductInput | null>(null)
   const [slugEdited, setSlugEdited] = useState(Boolean(initialProduct.slug))
   const [result, setResult] = useState<ProductActionResult | null>(null)
   const [pending, startTransition] = useTransition()
@@ -201,6 +202,14 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
     const finalProduct = preorder
       ? { ...parsed.data, variants: parsed.data.variants.map((variant) => ({ ...variant, stock: PREORDER_STOCK })) }
       : parsed.data
+    // Validation passed — ask for confirmation before actually saving.
+    setPendingSave(finalProduct)
+  }
+
+  function runSave() {
+    const finalProduct = pendingSave
+    if (!finalProduct) return
+    setPendingSave(null)
     startTransition(async () => {
       let outcome: ProductActionResult
       if (!requireImage) {
@@ -212,6 +221,8 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
         outcome = await onSave(finalProduct, imageData)
       }
       setResult(outcome)
+      // New products: return to the inventory list after a successful create.
+      if (outcome.ok && requireImage) router.push('/admin/products')
     })
   }
 
@@ -262,7 +273,7 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
   }
 
   return (
-    <form className="admin-product-form" onSubmit={submit} noValidate>
+    <form className="admin-product-form" data-no-confirm onSubmit={submit} noValidate>
       {requireImage ? <div className="admin-product-progress"><div className="admin-product-steps" aria-label="商品建立流程"><span data-active={activeStep === 1} data-complete={activeStep > 1}>01 商品內容</span><span data-active={activeStep === 2} data-complete={activeStep > 2}>02 規格庫存</span><span data-active={activeStep === 3} data-complete={activeStep > 3}>03 商品圖片</span><span data-active={activeStep === 4}>04 確認建立</span></div><div aria-label="商品建立進度" aria-valuemax={100} aria-valuemin={0} aria-valuenow={Math.round(progress)} className="admin-product-progress-meter" role="progressbar"><i style={{ width: `${progress}%` }} /></div></div> : null}
       <div className="admin-product-form-layout">
         <div className="admin-product-form-main">
@@ -368,6 +379,15 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
         </div>
       </div> : null}
       {!requireImage && result?.ok ? <div className="admin-edit-save-toast" role="status"><span aria-hidden="true">✓</span><div><strong>{result.message ?? '商品修改已儲存'}</strong><small>前台與後台資料已同步更新</small></div></div> : null}
+      <ConfirmModal
+        open={pendingSave !== null}
+        title={requireImage ? '確定要建立這件商品嗎？' : '確定要儲存修改嗎？'}
+        message={requireImage ? '建立後會回到商品列表，先保留為草稿，可再上架。' : '將更新這件商品的內容。'}
+        confirmLabel={requireImage ? '確定建立' : '確定儲存'}
+        pending={pending}
+        onConfirm={runSave}
+        onCancel={() => setPendingSave(null)}
+      />
     </form>
   )
 }

@@ -42,6 +42,7 @@ test('owner creates a product with one complete variant in local fixture mode', 
   await expect(page.locator('.admin-product-steps').getByText('04 確認建立')).toHaveAttribute('data-active', 'true')
   await expect(page.getByRole('progressbar', { name: '商品建立進度' })).toHaveAttribute('aria-valuenow', '100')
   await page.getByRole('button', { name: '儲存並建立商品' }).click()
+  await page.getByRole('button', { name: '確定建立' }).click()
   await expect(page.getByRole('dialog', { name: '商品建立完成' })).toBeVisible()
   await expect(page.getByRole('dialog')).toContainText('商品與 2 張圖片已建立')
   await expect(page.getByText(/完整填寫每個規格/)).toHaveCount(0)
@@ -55,6 +56,7 @@ test('owner creates a product with one complete variant in local fixture mode', 
   const updatedName = `${productName} 已更新`
   await page.getByLabel('商品名稱').fill(updatedName)
   await page.getByRole('button', { name: '儲存商品' }).click()
+  await page.getByRole('button', { name: '確定儲存' }).click()
   await expect(page.getByRole('status')).toContainText('商品修改已儲存')
   await page.getByRole('link', { name: '← 返回商品列表' }).click()
   const productRow = page.getByRole('row').filter({ has: page.getByRole('rowheader', { name: updatedName }) })

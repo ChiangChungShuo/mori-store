@@ -3,6 +3,7 @@ import { requireAdmin } from '@/lib/auth/require-admin'
 import { signOut } from '@/features/auth/actions'
 import { BrandLogo } from '@/components/brand-logo'
 import { MobileMenu } from '@/components/mobile-menu'
+import { AdminConfirmGuard } from '@/features/admin/admin-confirm-guard'
 
 function AdminNavigationLinks() {
   return <>
@@ -27,7 +28,7 @@ export default async function AdminLayout({ children }: Readonly<{ children: Rea
         <MobileMenu ariaLabel="商店後台導覽" breakpoint="36rem" heading="商店管理" id="admin-mobile-menu" side="left">
           <div className="admin-mobile-owner"><strong>mori 老闆</strong><small>商店管理員</small></div>
           <nav className="admin-mobile-nav" aria-label="手機版商店後台導覽"><AdminNavigationLinks /></nav>
-          <form action={signOut}><button type="submit">登出</button></form>
+          <form action={signOut} data-no-confirm><button type="submit">登出</button></form>
         </MobileMenu>
         <Link aria-label="MORIMUR BABY 商店後台" className="admin-mobile-brand" href="/admin">
           <BrandLogo subtitle="store room" />
@@ -40,10 +41,11 @@ export default async function AdminLayout({ children }: Readonly<{ children: Rea
         <div className="admin-owner"><span>店</span><div><strong>mori 老闆</strong><small>商店管理員</small></div></div>
         <nav className="admin-nav" aria-label="商店後台導覽"><AdminNavigationLinks /></nav>
         <div className="admin-sidebar-actions">
-          <form action={signOut}><button type="submit">登出</button></form>
+          <form action={signOut} data-no-confirm><button type="submit">登出</button></form>
         </div>
       </aside>
       <div className="admin-workspace">{children}</div>
+      <AdminConfirmGuard />
     </div>
   )
 }

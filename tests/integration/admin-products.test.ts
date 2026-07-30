@@ -525,6 +525,7 @@ describe('admin product form', () => {
 
     fireEvent.change(form.getByLabelText('商品名稱'), { target: { value: '彩色 Tee' } })
     fireEvent.click(form.getByRole('button', { name: '儲存商品' }))
+    fireEvent.click(await form.findByRole('button', { name: '確定儲存' }))
 
     await vi.waitFor(() => expect(onSave).toHaveBeenCalledWith({ ...product, name: '彩色 Tee' }))
     expect((await form.findAllByRole('status')).some((status) => status.textContent?.includes('商品修改已儲存'))).toBe(true)
@@ -624,6 +625,7 @@ describe('admin product form', () => {
     fireEvent.change(form.getByLabelText('原價'), { target: { value: '' } })
     expect(form.queryByText('原價不可低於售價')).not.toBeInTheDocument()
     fireEvent.click(form.getByRole('button', { name: '儲存商品' }))
+    fireEvent.click(await form.findByRole('button', { name: '確定儲存' }))
     await vi.waitFor(() => expect(onSave).toHaveBeenCalledTimes(1))
     view.unmount()
   })
@@ -653,6 +655,7 @@ describe('admin product form', () => {
     fireEvent.change(form.getAllByLabelText('售價')[1], { target: { value: '590' } })
     fireEvent.change(form.getAllByLabelText('庫存')[1], { target: { value: '2' } })
     fireEvent.click(form.getByRole('button', { name: '儲存商品' }))
+    fireEvent.click(await form.findByRole('button', { name: '確定儲存' }))
     await vi.waitFor(() => expect(onSave).toHaveBeenCalledTimes(1))
     expect(onSave.mock.calls[0][0].variants[1].id).toBeUndefined()
 
@@ -682,6 +685,7 @@ describe('admin product form', () => {
       onSave,
     }))
     fireEvent.click(form.getByRole('button', { name: '儲存商品' }))
+    fireEvent.click(await form.findByRole('button', { name: '確定儲存' }))
 
     await vi.waitFor(() => expect(onSave).toHaveBeenCalledTimes(2))
     expect(onSave.mock.calls[1][0].variants.map((variant: ProductInput['variants'][number]) => variant.id))

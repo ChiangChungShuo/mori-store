@@ -51,12 +51,14 @@ test('owner can edit homepage carousel copy from store settings', async ({ page 
   const firstTitle = page.locator('textarea[name="title-0"]')
   await firstTitle.fill('後台可自訂的首頁輪播')
   await page.getByRole('button', { name: '儲存首頁輪播' }).click()
+  await page.getByRole('button', { name: '確定儲存' }).click()
   await page.goto('/')
   await expect(page.getByRole('heading', { level: 1 })).toContainText('後台可自訂')
 
   await page.goto('/admin/settings')
   await page.locator('textarea[name="title-0"]').fill('小小日常，\n自在長大。')
   await page.getByRole('button', { name: '儲存首頁輪播' }).click()
+  await page.getByRole('button', { name: '確定儲存' }).click()
 })
 
 test('checkout validates a promotion code and carries the discount into payment', async ({ page }) => {

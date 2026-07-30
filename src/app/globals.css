@@ -964,6 +964,11 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .confirm-modal-ack input { margin-top: 0.2rem; }
 .confirm-modal-actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 0.6rem; }
 .confirm-modal-actions .button { width: 100%; }
+.confirm-modal-compact { width: min(100%, 24rem); }
+.confirm-modal-compact h2 { font-size: 1.1rem; margin-bottom: 0.6rem; }
+.confirm-modal-message { margin: 0 0 1.1rem; color: var(--muted); font-size: 0.82rem; line-height: 1.6; }
+.confirm-modal-actions .confirm-modal-danger { border-color: #a15954; background: #a15954; }
+.confirm-modal-actions .confirm-modal-danger:hover { background: #8f4c47; }
 .admin-save-success { color: var(--forest); }
 .admin-save-error { color: #a15954; }
 .admin-workspace main a:not(.button) { text-decoration-thickness: 1px; text-underline-offset: 0.2rem; transition: color 150ms ease, text-decoration-color 150ms ease; }
