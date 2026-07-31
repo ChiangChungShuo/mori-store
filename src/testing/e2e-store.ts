@@ -100,7 +100,7 @@ export type E2EStoreState = {
   productCategories: string[]
   productSeries: ProductSeries[]
   productSeriesProducts: Array<{ productId: string; seriesId: string }>
-  contentPresets: { material: string[]; care: string[]; size: string[] }
+  contentPresets: { material: string[]; care: string[]; size: string[]; series: string[] }
   productDrafts: Array<{ id: string; label: string; data: unknown; updatedAt: string }>
   products: CatalogProduct[]
   /** Product slug → quantity tiers, mirroring product_quantity_prices. */
@@ -243,7 +243,7 @@ export function createE2EStore(): E2EStoreState {
       { productId: '00000000-0000-4000-8000-000000000600', seriesId: '10000000-0000-4000-8000-000000000002' },
       { productId: '00000000-0000-4000-8000-000000000200', seriesId: '10000000-0000-4000-8000-000000000003' },
     ],
-    contentPresets: { material: [...defaultMaterialPresets], care: [...defaultCarePresets], size: [...defaultSizePresets] },
+    contentPresets: { material: [...defaultMaterialPresets], care: [...defaultCarePresets], size: [...defaultSizePresets], series: [] },
     productDrafts: [],
     products: [],
     // One tiered product so fixture/E2E runs exercise bundle pricing. Kept off
@@ -291,7 +291,8 @@ export function getE2EStore() {
   fixtureGlobal.__moriE2EStore.productCategories ??= [...defaultProductCategories]
   fixtureGlobal.__moriE2EStore.productSeries ??= createE2EStore().productSeries
   fixtureGlobal.__moriE2EStore.productSeriesProducts ??= createE2EStore().productSeriesProducts
-  fixtureGlobal.__moriE2EStore.contentPresets ??= { material: [...defaultMaterialPresets], care: [...defaultCarePresets], size: [...defaultSizePresets] }
+  fixtureGlobal.__moriE2EStore.contentPresets ??= { material: [...defaultMaterialPresets], care: [...defaultCarePresets], size: [...defaultSizePresets], series: [] }
+  fixtureGlobal.__moriE2EStore.contentPresets.series ??= []
   fixtureGlobal.__moriE2EStore.productDrafts ??= []
   fixtureGlobal.__moriE2EStore.promotionRedemptions ??= []
   fixtureGlobal.__moriE2EStore.variantCosts ??= new Map()

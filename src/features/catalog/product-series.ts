@@ -20,6 +20,8 @@ type ProductSeriesDependencies = {
   repository: ProductSeriesRepository
   requireAdmin: () => Promise<unknown>
   onChanged?: () => void | Promise<void>
+  /** Remembers the name as a reusable chip so other categories are one click. */
+  rememberName?: (name: string) => Promise<void>
 }
 
 export function createProductSeriesActions(dependencies: ProductSeriesDependencies) {
@@ -42,6 +44,10 @@ export function createProductSeriesActions(dependencies: ProductSeriesDependenci
       } catch {
         return { ok: false, message: '目前無法新增系列，請稍後再試' }
       }
+      // Never fail the creation just because the chip could not be remembered.
+      try {
+        await dependencies.rememberName?.(name)
+      } catch { /* the series itself is already saved */ }
       await dependencies.onChanged?.()
       return { ok: true, message: `系列「${name}」已新增` }
     },
@@ -223,6 +229,10 @@ function serverActions() {
       return requireAdmin()
     },
     onChanged: revalidateProductSeriesPaths,
+    rememberName: async (name) => {
+      const { rememberContentPreset } = await import('@/features/catalog/content-presets')
+      await rememberContentPreset('series', name)
+    },
   })
 }
 

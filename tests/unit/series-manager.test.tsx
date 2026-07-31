@@ -54,4 +54,98 @@ describe('series manager', () => {
     expect(screen.getByRole('button', { name: '刪除系列 Mori flora 漫花系列' })).toBeEnabled()
     expect(container.querySelector('form.admin-series-create input[name="categoryName"]')).toHaveValue('上衣')
   })
+
+  it('adds a preset series to the selected category on click', () => {
+    render(
+      <SeriesManager
+        categories={['上衣', '褲裝']}
+        series={series}
+        seriesPresets={['Mori flora 漫花系列', 'Mori lumi 拾光系列']}
+        createSeries={action}
+        moveSeries={action}
+        deleteSeries={action}
+        createPreset={action}
+        deletePreset={action}
+      />,
+    )
+
+    const chips = screen.getByLabelText('常用系列')
+    // Already in 上衣, so it cannot be added twice.
+    expect(within(chips).getByRole('button', { name: 'Mori flora 漫花系列（此分類已加入）' })).toBeDisabled()
+
+    const addable = within(chips).getByRole('button', { name: '將 Mori lumi 拾光系列 加入 上衣' })
+    expect(addable).toBeEnabled()
+    fireEvent.click(addable)
+    expect(action).toHaveBeenCalled()
+  })
+
+  it('re-targets the preset chips when the category changes', () => {
+    render(
+      <SeriesManager
+        categories={['上衣', '褲裝']}
+        series={series}
+        seriesPresets={['Mori flora 漫花系列']}
+        createSeries={action}
+        moveSeries={action}
+        deleteSeries={action}
+        createPreset={action}
+        deletePreset={action}
+      />,
+    )
+
+    const chips = screen.getByLabelText('常用系列')
+    expect(within(chips).getByRole('button', { name: /此分類已加入/ })).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('選擇商品分類'), { target: { value: '褲裝' } })
+    // 褲裝 does not have it yet, so the same chip becomes addable.
+    expect(within(chips).getByRole('button', { name: '將 Mori flora 漫花系列 加入 褲裝' })).toBeEnabled()
+  })
+
+  it('offers removal from the reusable list separately from the category', () => {
+    render(
+      <SeriesManager
+        categories={['上衣']}
+        series={series}
+        seriesPresets={['Mori lumi 拾光系列']}
+        createSeries={action}
+        moveSeries={action}
+        deleteSeries={action}
+        createPreset={action}
+        deletePreset={action}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: '從常用系列移除 Mori lumi 拾光系列' })).toBeEnabled()
+  })
+
+  it('hides the reusable list when no preset actions are supplied', () => {
+    render(
+      <SeriesManager
+        categories={['上衣']}
+        series={series}
+        createSeries={action}
+        moveSeries={action}
+        deleteSeries={action}
+      />,
+    )
+
+    expect(screen.queryByLabelText('常用系列')).not.toBeInTheDocument()
+  })
+
+  it('explains how to seed the list when it is empty', () => {
+    render(
+      <SeriesManager
+        categories={['上衣']}
+        series={series}
+        seriesPresets={[]}
+        createSeries={action}
+        moveSeries={action}
+        deleteSeries={action}
+        createPreset={action}
+        deletePreset={action}
+      />,
+    )
+
+    expect(screen.getByText(/尚未建立常用系列/)).toBeInTheDocument()
+  })
 })

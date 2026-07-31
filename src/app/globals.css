@@ -2394,3 +2394,40 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
   .admin-quantity-price-preview { grid-column: 1 / -1; }
   .admin-quantity-price-remove { grid-column: 1 / -1; justify-self: start; }
 }
+
+/* Reusable series chips in 系列管理 --------------------------------------- */
+.admin-series-presets { border-top: 1px solid var(--sand); padding-top: 1.1rem; margin-top: 0.35rem; }
+.admin-series-presets-title { display: grid; gap: 0.25rem; margin: 0 0 0.7rem; color: var(--forest); font-size: 0.72rem; font-weight: 700; }
+.admin-series-presets-title small { font-weight: 400; font-size: 0.66rem; line-height: 1.6; color: var(--muted); }
+.admin-series-preset-chips { display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; }
+.admin-series-preset-chips > small { font-size: 0.68rem; line-height: 1.7; color: var(--muted); }
+
+.admin-series-preset-chip { display: inline-flex; align-items: center; border: 1px solid var(--sand); background: var(--oat); }
+.admin-series-preset-chip > form { display: flex; }
+.admin-series-preset-chip > form > button {
+  display: inline-flex; align-items: center; gap: 0.35rem; border: 0; background: transparent;
+  padding: 0.4rem 0.5rem 0.4rem 0.75rem; color: var(--forest); font-size: 0.7rem; font-weight: 700;
+  cursor: pointer; transition: color 150ms ease;
+}
+.admin-series-preset-chip > form > button:hover:not(:disabled) { color: #35505f; }
+.admin-series-preset-chip > form > button span { color: var(--muted); font-size: 0.8rem; }
+.admin-series-preset-chip[data-added='true'] { border-color: #b9cad6; background: #e8f1f5; }
+.admin-series-preset-chip[data-added='true'] > form > button { cursor: default; opacity: 0.75; }
+.admin-series-preset-chip[data-added='true'] > form > button span { color: #52667a; }
+.admin-series-preset-remove {
+  display: grid; place-items: center; width: 1.25rem; height: 1.25rem; margin-right: 0.45rem;
+  border: 0; border-radius: 50%; background: transparent; color: var(--muted); font-size: 1rem;
+  line-height: 1; cursor: pointer; transition: background 150ms ease, color 150ms ease;
+}
+.admin-series-preset-remove:hover:not(:disabled) { background: #ecd8d8; color: #a15954; }
+.admin-series-preset-remove:disabled { cursor: not-allowed; opacity: 0.45; }
+
+.admin-series-preset-create { margin-top: 1rem; }
+.admin-series-preset-create > div { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.admin-series-preset-create input { flex: 1 1 14rem; }
+.admin-series-preset-create > div > button {
+  border: 1px dashed #b9cad6; background: #f4f8fa; padding: 0.45rem 1.1rem;
+  font-size: 0.72rem; font-weight: 700; color: #52667a; cursor: pointer;
+}
+.admin-series-preset-create > div > button:hover:not(:disabled) { background: #e8f1f5; }
+.admin-series-preset-create > div > button:disabled { cursor: not-allowed; opacity: 0.5; }

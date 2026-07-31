@@ -9,12 +9,13 @@ import { createProductSeriesFromForm, deleteProductSeriesFromForm, listProductSe
 export const dynamic = 'force-dynamic'
 
 export default async function AdminCategoriesPage() {
-  const [categories, series, materialPresets, carePresets, sizePresets] = await Promise.all([
+  const [categories, series, materialPresets, carePresets, sizePresets, seriesPresets] = await Promise.all([
     listProductCategories(),
     listProductSeries(),
     listContentPresets('material'),
     listContentPresets('care'),
     listContentPresets('size'),
+    listContentPresets('series'),
   ])
 
   return (
@@ -25,7 +26,7 @@ export default async function AdminCategoriesPage() {
       </header>
       <div className="admin-category-toolbar"><Link href="/admin/products">← 返回商品與庫存</Link><span>目前共 {categories.length} 個分類</span></div>
       <CategoryManager categories={categories} createCategory={createProductCategory} deleteCategory={deleteProductCategory} />
-      <SeriesManager categories={categories} series={series} createSeries={createProductSeriesFromForm} moveSeries={moveProductSeriesFromForm} deleteSeries={deleteProductSeriesFromForm} />
+      <SeriesManager categories={categories} series={series} seriesPresets={seriesPresets} createSeries={createProductSeriesFromForm} moveSeries={moveProductSeriesFromForm} deleteSeries={deleteProductSeriesFromForm} createPreset={createContentPresetFromForm} deletePreset={deleteContentPresetFromForm} />
       <PresetManager kind="size" title="尺寸選項" placeholder="例：150 或 XS" presets={sizePresets} createAction={createContentPresetFromForm} deleteAction={deleteContentPresetFromForm} />
       <PresetManager kind="material" title="常用材質" placeholder="例：100% 有機棉" presets={materialPresets} createAction={createContentPresetFromForm} deleteAction={deleteContentPresetFromForm} />
       <PresetManager kind="care" title="常用洗滌說明" placeholder="例：冷水手洗，請勿漂白" presets={carePresets} createAction={createContentPresetFromForm} deleteAction={deleteContentPresetFromForm} />

@@ -6,7 +6,9 @@ export type { ContentPresetKind }
 type PresetState = { ok: boolean; message: string }
 
 function parseKind(value: FormDataEntryValue | null): ContentPresetKind | null {
-  return value === 'material' || value === 'care' || value === 'size' ? value : null
+  return value === 'material' || value === 'care' || value === 'size' || value === 'series'
+    ? value
+    : null
 }
 
 export async function listContentPresets(kind: ContentPresetKind): Promise<string[]> {
@@ -30,6 +32,33 @@ export async function listContentPresets(kind: ContentPresetKind): Promise<strin
 }
 
 const revalidatePaths = ['/admin/categories', '/admin/products/new']
+
+/**
+ * Adds a preset without the form plumbing, for callers that create the value as
+ * a side effect (e.g. creating a series remembers its name as a chip).
+ * Silent about duplicates — the point is that the chip exists afterwards.
+ */
+export async function rememberContentPreset(kind: ContentPresetKind, valueInput: string) {
+  const value = valueInput.trim()
+  if (!value || value.length > 200) return
+
+  if (isE2EMode()) {
+    const { getE2EStore } = await import('@/testing/e2e-store')
+    const list = getE2EStore().contentPresets[kind]
+    if (!list.includes(value)) list.push(value)
+    return
+  }
+
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const admin = createAdminClient()
+  const { data } = await admin.from('content_presets').select('position').eq('kind', kind)
+    .order('position', { ascending: false }).limit(1)
+  await admin.from('content_presets').insert({
+    kind,
+    value,
+    position: (data?.[0]?.position ?? -1) + 1,
+  })
+}
 
 export async function createContentPresetFromForm(
   _previousState: PresetState,

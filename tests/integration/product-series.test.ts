@@ -42,13 +42,17 @@ class MemoryProductSeriesRepository implements ProductSeriesRepository {
   }
 }
 
-function createActions(repository = new MemoryProductSeriesRepository()) {
+function createActions(
+  repository = new MemoryProductSeriesRepository(),
+  rememberName?: (name: string) => Promise<void>,
+) {
   const events: string[] = []
   return {
     actions: createProductSeriesActions({
       repository,
       requireAdmin: async () => { events.push('admin') },
       onChanged: async () => { events.push('changed') },
+      rememberName,
     }),
     events,
     repository,
@@ -100,5 +104,40 @@ describe('product series management', () => {
       ok: false,
       message: '仍有商品使用此系列，請先調整商品系列',
     })
+  })
+
+  it('remembers the created name so other categories can reuse it', async () => {
+    const remembered: string[] = []
+    const { actions } = createActions(
+      new MemoryProductSeriesRepository(),
+      async (name) => { remembered.push(name) },
+    )
+
+    await actions.create('上衣', '  Mori lumi 拾光系列  ')
+
+    // Trimmed, matching what was stored as the series name.
+    expect(remembered).toEqual(['Mori lumi 拾光系列'])
+  })
+
+  it('does not remember a name when the series itself was rejected', async () => {
+    const remembered: string[] = []
+    const repository = new MemoryProductSeriesRepository()
+    const { actions } = createActions(repository, async (name) => { remembered.push(name) })
+
+    await actions.create('上衣', 'Mori lumi 拾光系列')
+    remembered.length = 0
+
+    await expect(actions.create('上衣', 'mori lumi 拾光系列')).resolves.toMatchObject({ ok: false })
+    expect(remembered).toEqual([])
+  })
+
+  it('still creates the series when remembering the name fails', async () => {
+    const { actions, repository } = createActions(
+      new MemoryProductSeriesRepository(),
+      async () => { throw new Error('presets unavailable') },
+    )
+
+    await expect(actions.create('上衣', 'Mori lumi 拾光系列')).resolves.toMatchObject({ ok: true })
+    expect((await repository.list('上衣')).map((item) => item.name)).toContain('Mori lumi 拾光系列')
   })
 })
