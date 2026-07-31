@@ -83,6 +83,7 @@ export interface ProductRepository {
   updateProduct(productId: string, input: ProductInput): Promise<void>
   setPublished(productId: string, published: boolean): Promise<void>
   uploadFile(path: string, file: File): Promise<void>
+  copyFile(fromPath: string, toPath: string): Promise<void>
   insertImage(productId: string, path: string, alt: string): Promise<void>
   deleteImage(productId: string, imageId: string): Promise<string>
   removeFile(path: string): Promise<void>
@@ -276,6 +277,31 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
       }
     },
 
+    // Reuses an image already stored for a draft: copies it into the product's
+    // folder server-side, so draft images never round-trip through the browser
+    // (which would hit the server-action body limit for phone-sized photos).
+    async adoptDraftImage(productId: string, storagePath: string, alt: string): Promise<ActionResult> {
+      await dependencies.requireAdmin()
+      const id = productIdSchema.safeParse(productId)
+      if (!id.success) return { ok: false, message: '商品不存在' }
+      if (!storagePath.startsWith('drafts/')) return { ok: false, message: '草稿圖片路徑無效' }
+
+      const extension = storagePath.split('.').pop() || 'png'
+      const target = `${id.data}/${randomUUID()}.${extension}`
+      try {
+        await dependencies.repository.copyFile(storagePath, target)
+      } catch {
+        return { ok: false, message: '目前無法沿用草稿圖片，請重新選擇圖片' }
+      }
+      try {
+        await dependencies.repository.insertImage(id.data, target, alt)
+      } catch {
+        try { await dependencies.repository.removeFile(target) } catch { /* ignore */ }
+        return { ok: false, message: '圖片資料儲存失敗，請稍後再試' }
+      }
+      return { ok: true, productId: id.data }
+    },
+
     async uploadProductImage(productId: string, input: unknown): Promise<ActionResult> {
       await dependencies.requireAdmin()
       const id = productIdSchema.safeParse(productId)
@@ -398,6 +424,12 @@ function createSupabaseProductRepository(): ProductRepository {
       const { error } = await supabase.storage
         .from('product-images')
         .upload(path, file, { contentType: file.type, upsert: false })
+      if (error) throw error
+    },
+
+    async copyFile(fromPath, toPath) {
+      const supabase = await client()
+      const { error } = await supabase.storage.from('product-images').copy(fromPath, toPath)
       if (error) throw error
     },
 
@@ -571,6 +603,11 @@ function createFixtureProductRepository(): ProductRepository {
     async uploadFile(path, file) {
       const bytes = Buffer.from(await file.arrayBuffer()).toString('base64')
       getE2EStore().uploadedProductImages.set(path, `data:${file.type};base64,${bytes}`)
+    },
+    async copyFile(fromPath, toPath) {
+      const store = getE2EStore()
+      const existing = store.uploadedProductImages.get(fromPath)
+      store.uploadedProductImages.set(toPath, existing ?? `data:image/png;base64,${fromPath}`)
     },
     async insertImage(productId, path, alt) {
       const product = getMutableE2EProducts().find((candidate) => candidate.id === productId)
@@ -801,24 +838,40 @@ export async function createProduct(input: unknown): Promise<ActionResult> {
 
 export async function createProductWithImage(input: unknown, formData?: FormData): Promise<ActionResult> {
   'use server'
-  const files = formData?.getAll('file') ?? []
-  if (!formData || files.length === 0) return { ok: false, message: '請選擇至少一張商品圖片' }
+  const files = (formData?.getAll('file') ?? []).filter((entry): entry is File => entry instanceof File && entry.size > 0)
+  // Draft images already live in storage; they arrive as paths, not files.
+  let draftPaths: string[] = []
+  try {
+    const parsed = JSON.parse(String(formData?.get('draftImagePaths') ?? '[]')) as unknown
+    if (Array.isArray(parsed)) draftPaths = parsed.filter((path): path is string => typeof path === 'string')
+  } catch { /* ignore */ }
+
+  if (!formData || (files.length === 0 && draftPaths.length === 0)) {
+    return { ok: false, message: '請選擇至少一張商品圖片' }
+  }
   const actions = resolvedActions()
   const created = await actions.createProduct(input)
   if (!created.ok || !created.productId) return created
 
   const alt = String(formData.get('alt') ?? '')
+  const altFor = (index: number) => (index === 0 ? alt : `${alt}（第 ${index + 1} 張）`)
+
   for (const [index, file] of files.entries()) {
-    const uploaded = await actions.uploadProductImage(created.productId, {
-      alt: index === 0 ? alt : `${alt}（第 ${index + 1} 張）`,
-      file,
-    })
+    const uploaded = await actions.uploadProductImage(created.productId, { alt: altFor(index), file })
     if (!uploaded.ok) {
       await actions.deleteProduct(created.productId)
       return uploaded
     }
   }
-  return { ok: true, productId: created.productId, message: `商品與 ${files.length} 張圖片已建立` }
+  for (const [index, path] of draftPaths.entries()) {
+    const adopted = await actions.adoptDraftImage(created.productId, path, altFor(files.length + index))
+    if (!adopted.ok) {
+      await actions.deleteProduct(created.productId)
+      return adopted
+    }
+  }
+  const total = files.length + draftPaths.length
+  return { ok: true, productId: created.productId, message: `商品與 ${total} 張圖片已建立` }
 }
 
 export async function updateProduct(productId: string, input: unknown): Promise<ActionResult> {

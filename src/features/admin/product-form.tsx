@@ -266,25 +266,34 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
       if (!requireImage) {
         outcome = await onSave(finalProduct)
       } else {
-        // Freshly selected files win; otherwise re-materialise the images that
-        // were stored with the draft so nothing is lost between sessions.
-        let files = imageFiles
-        if (!files.length && draftImages.length) {
-          try {
-            files = await Promise.all(draftImages.map(async (url, index) => {
-              const response = await fetch(url)
-              const blob = await response.blob()
-              const extension = blob.type.split('/')[1] ?? 'png'
-              return new File([blob], `draft-image-${index + 1}.${extension}`, { type: blob.type })
-            }))
-          } catch {
-            setResult({ ok: false, message: '無法讀取草稿圖片，請重新選擇圖片後再建立。' })
-            return
-          }
-        }
         const imageData = new FormData()
-        files.forEach((file) => imageData.append('file', file))
         imageData.set('alt', imageAlt)
+        if (imageFiles.length) {
+          imageFiles.forEach((file) => imageData.append('file', file))
+        } else {
+          // Draft images already live in storage: send their paths so the server
+          // copies them directly instead of pushing megabytes back through the
+          // browser (which exceeds the server-action body limit).
+          const marker = '/product-images/'
+          const paths: string[] = []
+          for (const [index, url] of draftImages.entries()) {
+            const markerAt = url.indexOf(marker)
+            if (markerAt !== -1) {
+              paths.push(url.slice(markerAt + marker.length))
+              continue
+            }
+            // Fixture/data URLs have no storage path; inline them as files.
+            try {
+              const blob = await (await fetch(url)).blob()
+              const extension = blob.type.split('/')[1] ?? 'png'
+              imageData.append('file', new File([blob], `draft-image-${index + 1}.${extension}`, { type: blob.type }))
+            } catch {
+              setResult({ ok: false, message: '無法讀取草稿圖片，請重新選擇圖片後再建立。' })
+              return
+            }
+          }
+          imageData.set('draftImagePaths', JSON.stringify(paths))
+        }
         outcome = await onSave(finalProduct, imageData)
       }
       if (outcome.ok) {

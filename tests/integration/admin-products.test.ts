@@ -103,6 +103,11 @@ class MemoryProductRepository implements ProductRepository {
     this.uploadedPaths.push(path)
   }
 
+  async copyFile(fromPath: string, toPath: string) {
+    this.events.push(`copy:${fromPath}->${toPath}`)
+    this.uploadedPaths.push(toPath)
+  }
+
   async insertImage(_id: string, path: string) {
     this.events.push(`insert-image:${path}`)
     if (this.failImageInsert) throw new Error('image row failed')
