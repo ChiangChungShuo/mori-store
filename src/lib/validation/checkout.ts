@@ -4,7 +4,8 @@ export const checkoutSchema = z.object({
   email: z.string().trim().email('請輸入有效的 Email').transform((value) => value.toLowerCase()),
   recipientName: z.string().trim().min(1, '請輸入收件人姓名'),
   phone: z.string().trim().regex(/^09\d{8}$/, '請輸入有效的台灣手機號碼'),
-  chain: z.enum(['seven_eleven', 'family_mart']),
+  chain: z.enum(['seven_eleven', 'family_mart'])
+    .refine((chain) => chain === 'seven_eleven', '目前僅支援 7-ELEVEN 取貨'),
   storeName: z.string().trim().min(1, '請輸入取貨門市名稱').max(60, '門市名稱請控制在 60 字以內'),
   storeId: z.string().trim().min(1, '請輸入門市店號').max(20, '店號請控制在 20 字以內'),
   couponCode: z.string().trim().toUpperCase().max(32).optional(),

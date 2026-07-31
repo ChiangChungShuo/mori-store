@@ -1,4 +1,4 @@
-// 綠界 ECPay 門市電子地圖 (CVS store map) — opens the official 7-ELEVEN / 全家 store
+// 綠界 ECPay 門市電子地圖 (CVS store map) — opens the official convenience-store map.
 // selector (emap.pcsc.com.tw) and posts the chosen store back to our ServerReplyURL.
 // Defaults target ECPay's public STAGING map with the shared test MerchantID so the
 // button works before you have a production account. Override via env for production.

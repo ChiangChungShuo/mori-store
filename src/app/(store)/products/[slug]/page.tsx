@@ -49,6 +49,16 @@ function shuffle<T>(items: T[]) {
   return shuffled
 }
 
+const standardKidsSizeGuide = [
+  { size: '80', age: '1–2 歲', height: '75–85 cm', weight: '7–12 kg' },
+  { size: '90', age: '2–3 歲', height: '85–95 cm', weight: '12–14 kg' },
+  { size: '100', age: '3–4 歲', height: '95–105 cm', weight: '13–19 kg' },
+  { size: '110', age: '4–5 歲', height: '105–115 cm', weight: '16–21 kg' },
+  { size: '120', age: '5–6 歲', height: '115–125 cm', weight: '19–25 kg' },
+  { size: '130', age: '6–7 歲', height: '125–135 cm', weight: '21–28 kg' },
+  { size: '140', age: '7–8 歲', height: '135–145 cm', weight: '26–32 kg' },
+]
+
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const [product, catalog] = await Promise.all([
@@ -63,8 +73,6 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     ? new Intl.DateTimeFormat('zh-TW', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(product.availableAt!))
     : null
   const compareAtPrice = Math.max(...product.variants.map((variant) => variant.compareAtPrice ?? 0))
-  const sizes = [...new Set(product.variants.map((variant) => variant.size))]
-    .sort((a, b) => a.localeCompare(b, 'zh-Hant', { numeric: true }))
   const popularProducts = shuffle(catalog.filter((candidate) => candidate.id !== product.id)).slice(0, 4)
   const productImages = product.images?.length
     ? product.images
@@ -125,7 +133,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           {product.tags && product.tags.length > 0 ? <ul className="product-tags" aria-label="商品標籤">{product.tags.map((tag) => <li key={tag}>{tag}</li>)}</ul> : null}
           <div className="product-wishlist-row"><WishlistButton productId={product.id} productName={product.name} /><small>收藏後可在頁首的「收藏」快速找到這件商品。</small></div>
           <ul className="product-feature-list">
-            <li><span>寄送</span><strong>7-ELEVEN／全家門市取貨</strong></li>
+            <li><span>寄送</span><strong>7-ELEVEN 門市取貨</strong></li>
             <li><span>付款方式</span><strong>轉帳匯款</strong></li>
           </ul>
           <VariantPicker product={product} />
@@ -139,8 +147,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <div className="product-info-layout">
           <div className="product-info-main">
             <details open><summary>商品特點</summary><div><p className="product-description-body">{product.description}</p><dl className="product-notes"><div><dt>商品分類</dt><dd>{product.category}</dd></div><div><dt>適用年齡</dt><dd>{product.ageBands.join('、')} 歲</dd></div><div><dt>觸感</dt><dd>{product.material}</dd></div><div><dt>活動</dt><dd>為孩子日常跑跳保留舒適空間</dd></div><div><dt>照顧方式</dt><dd>{product.careInstructions}</dd></div></dl></div></details>
-            <details open><summary>尺寸表</summary><div><figure className="measurement-guide"><Image src="/images/children-clothing-flat-measurement-guide.png" alt="童裝平量方式：上衣、褲子、包屁衣與連身衣的衣長、胸寬、肩寬、袖長、腰寬、褲長與襠長量測位置" width={1774} height={887} sizes="(max-width: 58rem) calc(100vw - 2rem), 54rem" /><figcaption>將衣服自然攤平、不拉伸布料，再依圖示位置量測；胸寬與腰寬皆為平量單面尺寸。</figcaption></figure><p>{product.sizeGuide}</p><div className="size-table-wrap"><table className="size-table"><thead><tr><th>標示尺寸</th><th>建議身高</th><th>可選顏色</th></tr></thead><tbody>{sizes.map((size) => { const variants = product.variants.filter((variant) => variant.size === size); return <tr key={size}><th>{size}</th><td>{/^\d+$/.test(size) ? `${size} cm 前後` : '依尺寸說明'}</td><td>{[...new Set(variants.map((variant) => variant.color))].join('、')}</td></tr> })}</tbody></table></div><small>手工測量可能有 1–2 cm 誤差；介於兩個尺寸時，建議依孩子身形與喜歡的穿著感選擇。</small></div></details>
-            <details><summary>購物須知</summary><div><ul className="detail-bullets"><li>本店使用 7-ELEVEN、全家超商取貨，門市到貨後請依通知期限領取。</li><li>商品圖片會因螢幕顯示與拍攝光線產生些微色差，實際顏色以收到商品為準。</li><li>鑑賞期並非試用期，退換貨時請保留吊牌、包裝與商品完整性。</li><li>付款完成後才會保留庫存；熱門尺寸可能較快售完。</li></ul></div></details>
+            <details open><summary>尺寸表</summary><div><figure className="measurement-guide"><Image src="/images/children-clothing-flat-measurement-guide.png" alt="童裝平量方式：上衣、褲子、包屁衣與連身衣的衣長、胸寬、肩寬、袖長、腰寬、褲長與襠長量測位置" width={1774} height={887} sizes="(max-width: 58rem) calc(100vw - 2rem), 54rem" /><figcaption>將衣服自然攤平、不拉伸布料，再依圖示位置量測；胸寬與腰寬皆為平量單面尺寸。</figcaption></figure><p>{product.sizeGuide}</p><div className="size-table-wrap"><table className="size-table"><thead><tr><th>尺寸</th><th>建議年齡</th><th>建議身高</th><th>建議體重</th></tr></thead><tbody>{standardKidsSizeGuide.map((row) => <tr key={row.size}><th>{row.size}</th><td>{row.age}</td><td>{row.height}</td><td>{row.weight}</td></tr>)}</tbody></table></div><small>此表為固定參考值；每位孩子身形不同，購買前請再依商品描述與實際平量尺寸選擇。手工測量可能有 1–2 cm 誤差。</small></div></details>
+            <details><summary>購物須知</summary><div><ul className="detail-bullets"><li>本店使用 7-ELEVEN 超商取貨，門市到貨後請依通知期限領取。</li><li>商品圖片會因螢幕顯示與拍攝光線產生些微色差，實際顏色以收到商品為準。</li><li>鑑賞期並非試用期，退換貨時請保留吊牌、包裝與商品完整性。</li><li>付款完成後才會保留庫存；熱門尺寸可能較快售完。</li></ul></div></details>
           </div>
           <aside className="product-care-card"><p className="eyebrow">care note</p><h3>讓衣服陪孩子久一點</h3><p>{product.careInstructions}</p><div><span>01</span>深淺色分開洗滌</div><div><span>02</span>使用中性洗劑</div><div><span>03</span>依洗標方式晾乾</div></aside>
         </div>

@@ -27,9 +27,7 @@ function openStoreMap(chain: StoreChain) {
     LogisticsSubType: cvsSubType(chain),
     IsCollection: 'N',
     ServerReplyURL: `${window.location.origin}/api/cvs/callback`,
-    Device: chain === 'family_mart'
-      ? '0'
-      : /Mobi|Android|iPhone/i.test(navigator.userAgent) ? '1' : '0',
+    Device: /Mobi|Android|iPhone/i.test(navigator.userAgent) ? '1' : '0',
   }
   for (const [name, value] of Object.entries(fields)) {
     const input = document.createElement('input')
@@ -59,9 +57,7 @@ export function StorePicker({
   onStoreIdChange,
 }: StorePickerProps) {
   const [localPickerOpen, setLocalPickerOpen] = useState(false)
-  const localStore = chain === 'seven_eleven'
-    ? { name: '7-ELEVEN 測試門市', id: '000001' }
-    : { name: '全家測試門市', id: 'F00001' }
+  const localStore = { name: '7-ELEVEN 測試門市', id: '000001' }
 
   function handleOpenStorePicker() {
     if (usesLocalNetworkPicker()) {
@@ -96,25 +92,12 @@ export function StorePicker({
             />
             <span><strong>7-ELEVEN</strong><small>統一超商取貨</small></span>
           </label>
-          <label data-selected={chain === 'family_mart'}>
-            <input
-              aria-label="全家"
-              aria-describedby={errors.chain ? 'checkout-chain-error' : undefined}
-              checked={chain === 'family_mart'}
-              name="chain"
-              onChange={() => onChainChange('family_mart')}
-              required
-              type="radio"
-              value="family_mart"
-            />
-            <span><strong>全家</strong><small>FamilyMart 取貨</small></span>
-          </label>
         </div>
       </fieldset>
       {errors.chain ? <span id="checkout-chain-error" role="alert">{errors.chain}</span> : null}
       <div className="store-map-picker">
         <button type="button" className="button button-secondary store-map-button" onClick={handleOpenStorePicker}>
-          {storeName ? '重新選擇門市' : `開啟${chain === 'seven_eleven' ? '7-ELEVEN' : '全家'}門市地圖`}
+          {storeName ? '重新選擇門市' : '開啟 7-ELEVEN 門市地圖'}
         </button>
         {storeName && storeId ? (
           <p className="store-map-selected" aria-live="polite">
@@ -148,19 +131,19 @@ export function StorePicker({
           required
           maxLength={20}
           value={storeId}
-          placeholder={chain === 'seven_eleven' ? '例：123456' : '例：012345'}
+          placeholder="例：123456"
           onChange={(event) => onStoreIdChange(event.target.value)}
         />
       </label>
       {errors.storeId ? <span id="checkout-store-error" role="alert">{errors.storeId}</span> : null}
       <p className="store-picker-hint">
-        請填寫你方便取貨的 {chain === 'seven_eleven' ? '7-ELEVEN' : '全家'} 門市名稱與店號（可在超商 App 或門市櫃台查詢），我們會依此為你寄件。
+        請填寫方便取貨的 7-ELEVEN 門市名稱與店號（可在超商 App 或門市櫃台查詢），我們會依此為你寄件。
       </p>
       {localPickerOpen ? (
         <div className="local-store-dialog-backdrop">
           <section aria-labelledby="local-store-dialog-title" aria-modal="true" className="local-store-dialog" role="dialog">
             <header>
-              <div><small>local preview</small><h2 id="local-store-dialog-title">選擇{chain === 'seven_eleven' ? '7-ELEVEN' : '全家'}測試門市</h2></div>
+              <div><small>local preview</small><h2 id="local-store-dialog-title">選擇 7-ELEVEN 測試門市</h2></div>
               <button aria-label="關閉測試門市選擇" onClick={() => setLocalPickerOpen(false)} type="button">×</button>
             </header>
             <p>目前使用區網 HTTP 預覽，為避免瀏覽器攔截資料回傳，請先使用測試門市完成結帳流程。</p>

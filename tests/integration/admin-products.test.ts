@@ -126,6 +126,10 @@ class MemoryProductRepository implements ProductRepository {
     return `${id}/${imageId}.png`
   }
 
+  async reorderImages(id: string, imageIds: string[]) {
+    this.events.push(`reorder-images:${id}:${imageIds.join(',')}`)
+  }
+
   async deleteProduct(id: string) {
     this.events.push(`delete:${id}`)
   }
@@ -176,6 +180,23 @@ describe('admin product actions', () => {
       `delete-image:${productId}:eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee`,
       `remove:${productId}/eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee.png`,
     ])
+  })
+
+  it('authorizes and reorders existing product images without deleting files', async () => {
+    const { actions, repository } = setup()
+    const imageIds = [
+      'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+      'ffffffff-ffff-4fff-8fff-ffffffffffff',
+    ]
+
+    const result = await actions.reorderProductImages(productId, imageIds)
+
+    expect(result).toMatchObject({ ok: true, message: '商品圖片順序已更新' })
+    expect(repository.events).toEqual([
+      'admin',
+      `reorder-images:${productId}:${imageIds.join(',')}`,
+    ])
+    expect(repository.removedPaths).toEqual([])
   })
 
   it('authorizes and deletes the selected product', async () => {
@@ -632,7 +653,7 @@ describe('admin product form', () => {
     view.unmount()
   })
 
-  it('updates the create progress from content through variants and images', () => {
+  it('updates the create progress from content through variants and images', async () => {
     const onSave = vi.fn().mockResolvedValue({ ok: true, productId })
     const view = render(createElement(ProductForm, {
       initialProduct: {
@@ -675,7 +696,8 @@ describe('admin product form', () => {
 
     fireEvent.change(form.getByLabelText('商品圖片'), { target: { files: [imageFile('image/png')] } })
     fireEvent.change(form.getByLabelText('圖片說明'), { target: { value: '黃色口袋 Tee 正面' } })
-    expect(form.getByText('04 確認建立')).toHaveAttribute('data-active', 'true')
+    // Selected photos are downscaled asynchronously before they count as chosen.
+    await vi.waitFor(() => expect(form.getByText('04 確認建立')).toHaveAttribute('data-active', 'true'))
     expect(form.getByRole('progressbar', { name: '商品建立進度' })).toHaveAttribute('aria-valuenow', '100')
     view.unmount()
   })

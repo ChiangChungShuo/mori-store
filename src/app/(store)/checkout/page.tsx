@@ -28,9 +28,9 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
     email: previousOrder?.email ?? account?.email ?? '',
     recipientName: previousOrder?.recipientName ?? account?.displayName ?? '',
     phone: previousOrder?.recipientPhone ?? account?.phone ?? '',
-    chain: previousOrder?.storeChain ?? 'seven_eleven' as const,
-    storeName: previousOrder?.storeName ?? '',
-    storeId: previousOrder?.storeId ?? '',
+    chain: 'seven_eleven' as const,
+    storeName: previousOrder?.storeChain === 'seven_eleven' ? previousOrder.storeName : '',
+    storeId: previousOrder?.storeChain === 'seven_eleven' ? previousOrder.storeId : '',
   }
   const { payment } = await searchParams
 
@@ -39,7 +39,8 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
   const rawPickedStore = cookieStore.get(CVS_STORE_COOKIE)?.value
   if (rawPickedStore) {
     try {
-      pickedStore = JSON.parse(rawPickedStore) as PickedStore
+      const parsed = JSON.parse(rawPickedStore) as PickedStore
+      pickedStore = parsed.chain === 'seven_eleven' ? parsed : null
     } catch {
       pickedStore = null
     }
@@ -69,7 +70,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
         email: formData.get('email')?.toString() ?? '',
         recipientName: formData.get('recipientName')?.toString() ?? '',
         phone: formData.get('phone')?.toString() ?? '',
-        chain: formData.get('chain')?.toString() as 'seven_eleven' | 'family_mart',
+        chain: formData.get('chain')?.toString() as 'seven_eleven',
         storeName: formData.get('storeName')?.toString() ?? '',
         storeId: formData.get('storeId')?.toString() ?? '',
         couponCode: formData.get('couponCode')?.toString() ?? '',

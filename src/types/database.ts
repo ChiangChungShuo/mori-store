@@ -715,6 +715,10 @@ export type Database = {
         Args: { p_alt_text: string; p_product_id: string; p_storage_path: string }
         Returns: string
       }
+      admin_reorder_product_images: {
+        Args: { p_image_ids: string[]; p_product_id: string }
+        Returns: undefined
+      }
       admin_set_product_published: {
         Args: { p_product_id: string; p_published: boolean }
         Returns: undefined

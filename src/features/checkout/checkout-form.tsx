@@ -49,9 +49,13 @@ const errorIds: Record<CheckoutField, string> = {
 export function CheckoutForm({ action, couponAction, pickedStore, initialValues }: CheckoutFormProps) {
   const { items, hydrated, replaceItems } = useCart()
   const [state, formAction, pending] = useActionState(action, initialState)
-  const [chain, setChain] = useState<StoreChain>(pickedStore?.chain ?? initialValues?.chain ?? 'seven_eleven')
-  const [storeName, setStoreName] = useState(pickedStore?.storeName ?? initialValues?.storeName ?? '')
-  const [storeId, setStoreId] = useState(pickedStore?.storeId ?? initialValues?.storeId ?? '')
+  const chain: StoreChain = 'seven_eleven'
+  const [storeName, setStoreName] = useState(pickedStore?.chain === 'seven_eleven'
+    ? pickedStore.storeName
+    : initialValues?.chain === 'seven_eleven' ? initialValues.storeName : '')
+  const [storeId, setStoreId] = useState(pickedStore?.chain === 'seven_eleven'
+    ? pickedStore.storeId
+    : initialValues?.chain === 'seven_eleven' ? initialValues.storeId : '')
   const [storeAddress, setStoreAddress] = useState(pickedStore?.address ?? '')
   const [errors, setErrors] = useState<Partial<Record<CheckoutField, string>>>({})
   const [refreshAttempt, setRefreshAttempt] = useState(0)
@@ -118,11 +122,13 @@ export function CheckoutForm({ action, couponAction, pickedStore, initialValues 
           phone: typeof draft.phone === 'string' ? draft.phone : initialValues?.phone ?? '',
         })
         if (!pickedStore) {
-          setChain(draft.chain === 'family_mart' || draft.chain === 'seven_eleven'
-            ? draft.chain
-            : initialValues?.chain ?? 'seven_eleven')
-          setStoreName(typeof draft.storeName === 'string' ? draft.storeName.slice(0, 60) : initialValues?.storeName ?? '')
-          setStoreId(typeof draft.storeId === 'string' ? draft.storeId.slice(0, 20) : initialValues?.storeId ?? '')
+          const canReuseDraftStore = draft.chain === 'seven_eleven'
+          setStoreName(canReuseDraftStore && typeof draft.storeName === 'string'
+            ? draft.storeName.slice(0, 60)
+            : initialValues?.chain === 'seven_eleven' ? initialValues.storeName : '')
+          setStoreId(canReuseDraftStore && typeof draft.storeId === 'string'
+            ? draft.storeId.slice(0, 20)
+            : initialValues?.chain === 'seven_eleven' ? initialValues.storeId : '')
         }
         setCustomerNote(typeof draft.customerNote === 'string' ? draft.customerNote.slice(0, 500) : '')
       } catch {
@@ -233,8 +239,8 @@ export function CheckoutForm({ action, couponAction, pickedStore, initialValues 
             </div>
           </section>
           <section className="checkout-card checkout-store-card">
-            <header><span>02</span><div><h2>選擇取貨門市</h2><p>目前支援 7-ELEVEN 與全家超商取貨。</p></div></header>
-            <StorePicker chain={chain} storeName={storeName} storeId={storeId} storeAddress={storeAddress} errors={{ chain: errors.chain, storeName: errors.storeName, storeId: errors.storeId }} onChainChange={(value) => { setChain(value); setStoreName(''); setStoreId(''); setStoreAddress('') }} onStoreNameChange={(value) => { setStoreName(value); setStoreAddress('') }} onStoreIdChange={(value) => { setStoreId(value); setStoreAddress('') }} />
+            <header><span>02</span><div><h2>選擇取貨門市</h2><p>目前僅支援 7-ELEVEN 超商取貨。</p></div></header>
+            <StorePicker chain={chain} storeName={storeName} storeId={storeId} storeAddress={storeAddress} errors={{ chain: errors.chain, storeName: errors.storeName, storeId: errors.storeId }} onChainChange={() => undefined} onStoreNameChange={(value) => { setStoreName(value); setStoreAddress('') }} onStoreIdChange={(value) => { setStoreId(value); setStoreAddress('') }} />
           </section>
           <section className="checkout-card checkout-payment-card">
             <header><span>03</span><div><h2>付款方式</h2><p>下單後以銀行匯款完成付款。</p></div></header>

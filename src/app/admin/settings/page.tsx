@@ -66,7 +66,7 @@ export default async function AdminSettingsPage() {
       <section className="admin-panel admin-integration-settings">
         <header><div><p className="eyebrow">payments, shipping & seo</p><h2>付款、物流與搜尋設定</h2></div></header>
         <div className="integration-grid">
-          <article><span data-status="active">目前可用</span><h3>7-ELEVEN／全家取貨</h3><p>前台可透過綠界電子地圖選擇取貨門市；出貨採手動方式（如 7-11 賣貨便）處理。</p></article>
+          <article><span data-status="active">目前可用</span><h3>7-ELEVEN 取貨</h3><p>前台可透過綠界電子地圖選擇取貨門市；出貨採手動方式（如 7-11 賣貨便）處理。</p></article>
           <article><span data-status="active">目前可用</span><h3>銀行匯款</h3><p>送出訂單後顯示收款帳號，會員可回報帳號末 5 碼供後台核對。</p></article>
           <article><span data-status="active">目前可用</span><h3>SEO 與社群預覽</h3><p>已設定網站名稱、摘要、社群分享卡片與正式網域。</p></article>
         </div>

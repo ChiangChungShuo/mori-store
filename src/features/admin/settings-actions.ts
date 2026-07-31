@@ -9,7 +9,7 @@ const nonNegativeInteger = z.union([
 
 export const defaultSitePresentation = {
   siteTitle: 'mori 童裝商城｜0–12 歲孩子的日常選衣',
-  siteDescription: '為 0–12 歲孩子挑選親膚、耐穿、自在活動的日常服，支援 7-ELEVEN 與全家取貨。',
+  siteDescription: '為 0–12 歲孩子挑選親膚、耐穿、自在活動的日常服，支援 7-ELEVEN 取貨。',
   siteKeywords: ['童裝', '兒童服飾', '親膚童裝', '0–12 歲穿搭', '超商取貨'],
   googleAnalyticsId: null as string | null,
 }

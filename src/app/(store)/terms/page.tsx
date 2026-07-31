@@ -27,7 +27,7 @@ export default function TermsPage() {
         </section>
         <section>
           <h2>配送與取貨</h2>
-          <p>本站採 7-ELEVEN／全家超商取貨，配送範圍為台灣本島。商品到店後請於超商規定期限內領取，逾期未取件將退回並可能影響後續下單權益。</p>
+          <p>本站採 7-ELEVEN 超商取貨，配送範圍為台灣本島。商品到店後請於超商規定期限內領取，逾期未取件將退回並可能影響後續下單權益。</p>
         </section>
         <section>
           <h2>退換貨</h2>

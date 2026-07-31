@@ -49,7 +49,9 @@ export function toCheckoutActionState(error: unknown): CheckoutActionState {
   }
 }
 
-export type StoreChain = CheckoutInput['chain']
+// Existing orders may still contain FamilyMart pickup data even though new
+// checkout attempts are restricted to 7-ELEVEN.
+export type StoreChain = 'seven_eleven' | 'family_mart'
 export type PaymentMethod = Exclude<CheckoutInput['paymentMethod'], undefined>
 
 export type TestStore = {

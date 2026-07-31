@@ -14,10 +14,9 @@ test('completes the local fixture checkout without Supabase', async ({ page }) =
   await page.goto('/checkout')
   await expect(page.getByLabel('結帳進度').locator('li', { hasText: '填寫資料' })).toHaveAttribute('aria-current', 'step')
 
-  await page.getByRole('radio', { name: '全家', exact: true }).check()
-  await expect(page.getByRole('radio', { name: '全家', exact: true })).toBeChecked()
-  await expect(page.getByRole('button', { name: '開啟全家門市地圖' })).toBeVisible()
-  await page.getByRole('radio', { name: '7-ELEVEN', exact: true }).check()
+  await expect(page.getByRole('radio', { name: '7-ELEVEN', exact: true })).toBeChecked()
+  await expect(page.getByRole('radio', { name: '全家', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '開啟 7-ELEVEN 門市地圖' })).toBeVisible()
 
   await page.getByLabel('Email', { exact: true }).fill('preview-parent@example.com')
   await page.getByLabel('收件人姓名').fill('王小美')

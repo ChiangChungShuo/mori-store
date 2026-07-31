@@ -15,7 +15,7 @@ export function SiteHeader({ cart, isSignedIn = false, isAdmin = false, categori
   return (
     <header id="top">
       <div className="announcement">
-        <p>滿 NT$1,500 免運・7-ELEVEN／全家取貨</p>
+        <p>滿 NT$1,500 免運・7-ELEVEN 取貨</p>
       </div>
       <nav aria-label="主要導覽" className="site-nav">
         <div className="store-mobile-left">

@@ -16,7 +16,7 @@ describe('local network store picker', () => {
     const onStoreIdChange = vi.fn()
 
     render(<StorePicker
-      chain="family_mart"
+      chain="seven_eleven"
       storeName=""
       storeId=""
       onChainChange={vi.fn()}
@@ -24,13 +24,13 @@ describe('local network store picker', () => {
       onStoreIdChange={onStoreIdChange}
     />)
 
-    fireEvent.click(screen.getByRole('button', { name: '開啟全家門市地圖' }))
+    fireEvent.click(screen.getByRole('button', { name: '開啟 7-ELEVEN 門市地圖' }))
 
     expect(submit).not.toHaveBeenCalled()
-    expect(screen.getByRole('dialog', { name: '選擇全家測試門市' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: '選擇 7-ELEVEN 測試門市' })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: '選擇全家測試門市' }))
-    expect(onStoreNameChange).toHaveBeenCalledWith('全家測試門市')
-    expect(onStoreIdChange).toHaveBeenCalledWith('F00001')
+    fireEvent.click(screen.getByRole('button', { name: '選擇7-ELEVEN 測試門市' }))
+    expect(onStoreNameChange).toHaveBeenCalledWith('7-ELEVEN 測試門市')
+    expect(onStoreIdChange).toHaveBeenCalledWith('000001')
   })
 })

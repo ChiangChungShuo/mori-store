@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { absoluteUrl } from '@/lib/site'
+import { InstagramIcon } from '@/components/instagram-icon'
 
 export const metadata: Metadata = {
   title: '聯絡我們',
@@ -23,6 +24,12 @@ export default function ContactPage() {
           <h2>客服信箱</h2>
           <p>moribaby0612@gmail.com</p>
           <small>一般問題約 1–2 個工作天內回覆</small>
+        </a>
+        <a className="contact-card" href="https://www.instagram.com/mori.murbebe/" rel="noreferrer" target="_blank">
+          <span className="contact-card-icon" aria-hidden="true"><InstagramIcon /></span>
+          <h2>Instagram</h2>
+          <p>@mori.murbebe</p>
+          <small>新品、穿搭與客服私訊</small>
         </a>
         <div className="contact-card">
           <span className="contact-card-icon" aria-hidden="true">🕒</span>

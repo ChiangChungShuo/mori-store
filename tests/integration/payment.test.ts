@@ -8,7 +8,7 @@ import {
   type CheckoutVariant,
   type PaymentAttemptInsert,
 } from '@/features/checkout/service'
-import type { PaymentAttemptStatus } from '@/features/checkout/types'
+import type { CheckoutInput, PaymentAttemptStatus } from '@/features/checkout/types'
 
 const teeId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 const pantsId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
@@ -265,7 +265,7 @@ describe('checkout payment integration', () => {
       .rejects.toThrow('庫存不足')
   })
 
-  it('stores the customer-entered pickup store name and number as provided', async () => {
+  it('rejects FamilyMart for new checkout attempts', async () => {
     const customStore = {
       ...checkoutInput,
       chain: 'family_mart' as const,
@@ -274,14 +274,10 @@ describe('checkout payment integration', () => {
     }
     const repository = new MemoryCheckoutRepository()
 
-    await createCheckoutService(repository)
-      .createPaymentAttempt(customStore, [{ variantId: teeId, quantity: 1 }])
-
-    expect(repository.attempts[0]).toMatchObject({
-      storeChain: 'family_mart',
-      storeId: 'F00789',
-      storeName: '全家大安店',
-    })
+    await expect(createCheckoutService(repository)
+      .createPaymentAttempt(customStore as unknown as CheckoutInput, [{ variantId: teeId, quantity: 1 }]))
+      .rejects.toThrow('目前僅支援 7-ELEVEN 取貨')
+    expect(repository.attempts).toHaveLength(0)
   })
 
   it('rejects member and guest access that does not own the attempt', async () => {

@@ -4,12 +4,13 @@ import { notFound } from 'next/navigation'
 import {
   deleteProductImage,
   getAdminProduct,
+  reorderProductImages,
   setProductPublished,
   updateProduct,
   uploadProductImage,
 } from '@/features/admin/product-actions'
 import { ImageUploader } from '@/features/admin/image-uploader'
-import { DeleteProductImageForm, ProductForm, ProductPublishForm } from '@/features/admin/product-form'
+import { DeleteProductImageForm, ProductForm, ProductImageOrderControls, ProductPublishForm } from '@/features/admin/product-form'
 import { listProductCategories } from '@/features/catalog/categories'
 import { listContentPresets } from '@/features/catalog/content-presets'
 import { listProductSeries } from '@/features/catalog/product-series'
@@ -40,6 +41,12 @@ export default async function EditAdminProductPage({
     .map((variant) => `${variant.id}:${variant.updatedAt}`)
     .sort()
     .join(':')
+  const imageIds = product.images.map((image) => image.id)
+  const moveImage = (index: number, offset: -1 | 1) => {
+    const reordered = [...imageIds]
+    ;[reordered[index], reordered[index + offset]] = [reordered[index + offset], reordered[index]]
+    return reordered
+  }
 
   return (
     <main className="section admin-product-editor">
@@ -61,6 +68,11 @@ export default async function EditAdminProductPage({
                 {index === 0 ? <span>主圖</span> : <span>{String(index + 1).padStart(2, '0')}</span>}
                 <Image alt={image.alt} height={160} src={image.url} unoptimized width={128} />
                 <p>{image.alt}</p>
+                <ProductImageOrderControls
+                  imageNumber={index + 1}
+                  onMoveEarlier={index > 0 ? reorderProductImages.bind(null, productId, moveImage(index, -1)) : undefined}
+                  onMoveLater={index < product.images.length - 1 ? reorderProductImages.bind(null, productId, moveImage(index, 1)) : undefined}
+                />
                 <DeleteProductImageForm imageNumber={index + 1} onDelete={deleteProductImage.bind(null, productId, image.id)} />
               </li>
             ))}

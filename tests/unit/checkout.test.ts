@@ -50,12 +50,12 @@ describe('CheckoutProgress', () => {
 })
 
 describe('store picker', () => {
-  it('uses FamilyMart-compatible map settings on mobile', () => {
+  it('uses 7-ELEVEN map settings on mobile', () => {
     const submit = vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(() => undefined)
     vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (iPhone) Mobile')
 
     render(createElement(StorePicker, {
-      chain: 'family_mart',
+      chain: 'seven_eleven',
       storeName: '',
       storeId: '',
       onChainChange: vi.fn(),
@@ -63,12 +63,12 @@ describe('store picker', () => {
       onStoreIdChange: vi.fn(),
     }))
 
-    fireEvent.click(screen.getByRole('button', { name: '開啟全家門市地圖' }))
+    fireEvent.click(screen.getByRole('button', { name: '開啟 7-ELEVEN 門市地圖' }))
 
     const mapForm = document.body.querySelector<HTMLFormElement>('form[action="https://logistics-stage.ecpay.com.tw/Express/map"]')
     expect(mapForm).not.toBeNull()
-    expect(new FormData(mapForm ?? undefined).get('LogisticsSubType')).toBe('FAMIC2C')
-    expect(new FormData(mapForm ?? undefined).get('Device')).toBe('0')
+    expect(new FormData(mapForm ?? undefined).get('LogisticsSubType')).toBe('UNIMARTC2C')
+    expect(new FormData(mapForm ?? undefined).get('Device')).toBe('1')
     expect(submit).toHaveBeenCalledOnce()
     mapForm?.remove()
   })
@@ -104,12 +104,12 @@ describe('store picker', () => {
     expect(screen.getByLabelText('收件人姓名')).toBeRequired()
     expect(screen.getByLabelText('手機號碼')).toBeRequired()
     expect(screen.getByRole('radio', { name: '7-ELEVEN' })).toBeRequired()
-    expect(screen.getByRole('radio', { name: '全家' })).toBeRequired()
+    expect(screen.queryByRole('radio', { name: '全家' })).not.toBeInTheDocument()
     expect(screen.getByLabelText('取貨門市名稱')).toBeRequired()
     expect(screen.getByLabelText('門市店號')).toBeRequired()
   })
 
-  it('prefills the signed-in member previous recipient and pickup store', async () => {
+  it('keeps member contact details but clears a previous FamilyMart store', async () => {
     const CheckoutWithDefaults = CheckoutForm as ComponentType<Record<string, unknown>>
     render(createElement(
       CartProvider,
@@ -130,12 +130,12 @@ describe('store picker', () => {
     expect(await screen.findByLabelText('Email')).toHaveValue('parent@example.com')
     expect(screen.getByLabelText('收件人姓名')).toHaveValue('王小美')
     expect(screen.getByLabelText('手機號碼')).toHaveValue('0912345678')
-    expect(screen.getByRole('radio', { name: '全家' })).toBeChecked()
-    expect(screen.getByLabelText('取貨門市名稱')).toHaveValue('全家大安店')
-    expect(screen.getByLabelText('門市店號')).toHaveValue('F00789')
+    expect(screen.getByRole('radio', { name: '7-ELEVEN' })).toBeChecked()
+    expect(screen.getByLabelText('取貨門市名稱')).toHaveValue('')
+    expect(screen.getByLabelText('門市店號')).toHaveValue('')
   })
 
-  it('clears the previous store when the shopper changes convenience-store chain', () => {
+  it('only offers 7-ELEVEN for new orders', () => {
     const CheckoutWithDefaults = CheckoutForm as ComponentType<Record<string, unknown>>
     render(createElement(
       CartProvider,
@@ -153,12 +153,10 @@ describe('store picker', () => {
       }),
     ))
 
-    fireEvent.click(screen.getByRole('radio', { name: '全家' }))
-
-    expect(screen.getByRole('radio', { name: '全家' })).toBeChecked()
-    expect(screen.getByLabelText('取貨門市名稱')).toHaveValue('')
-    expect(screen.getByLabelText('門市店號')).toHaveValue('')
-    expect(screen.getByRole('button', { name: '開啟全家門市地圖' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: '7-ELEVEN' })).toBeChecked()
+    expect(screen.queryByRole('radio', { name: '全家' })).not.toBeInTheDocument()
+    expect(screen.getByLabelText('取貨門市名稱')).toHaveValue('台北門市')
+    expect(screen.getByLabelText('門市店號')).toHaveValue('123456')
   })
 
   it('connects checkout validation errors to their fields', () => {

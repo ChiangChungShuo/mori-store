@@ -86,6 +86,7 @@ export interface ProductRepository {
   copyFile(fromPath: string, toPath: string): Promise<void>
   insertImage(productId: string, path: string, alt: string): Promise<void>
   deleteImage(productId: string, imageId: string): Promise<string>
+  reorderImages(productId: string, imageIds: string[]): Promise<void>
   removeFile(path: string): Promise<void>
   deleteProduct(productId: string): Promise<void>
 }
@@ -100,6 +101,8 @@ type AdminProductDependencies = {
 
 const productIdSchema = z.string().uuid()
 const imageIdSchema = z.string().min(1)
+const imageOrderSchema = z.array(imageIdSchema).min(1).max(30)
+  .refine((imageIds) => new Set(imageIds).size === imageIds.length)
 
 function validationFailure(error: z.ZodError): ActionResult {
   const { fieldErrors, variantErrors } = getProductValidationErrors(error)
@@ -364,6 +367,21 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
       return { ok: true, productId: id.data, message: '商品圖片已刪除' }
     },
 
+    async reorderProductImages(productId: string, imageIds: string[]): Promise<ActionResult> {
+      await dependencies.requireAdmin()
+      const id = productIdSchema.safeParse(productId)
+      const parsedImageIds = imageOrderSchema.safeParse(imageIds)
+      if (!id.success || !parsedImageIds.success) return { ok: false, message: '商品圖片順序無效' }
+
+      try {
+        await dependencies.repository.reorderImages(id.data, parsedImageIds.data)
+      } catch {
+        return { ok: false, message: '目前無法調整圖片順序，請稍後再試' }
+      }
+      await refreshAfterMutation(id.data)
+      return { ok: true, productId: id.data, message: '商品圖片順序已更新' }
+    },
+
     async deleteProduct(productId: string): Promise<ActionResult> {
       await dependencies.requireAdmin()
       const id = productIdSchema.safeParse(productId)
@@ -460,6 +478,15 @@ function createSupabaseProductRepository(): ProductRepository {
         .eq('product_id', productId)
       if (deleteError) throw deleteError
       return data.storage_path
+    },
+
+    async reorderImages(productId, imageIds) {
+      const supabase = await client()
+      const { error } = await supabase.rpc('admin_reorder_product_images', {
+        p_product_id: productId,
+        p_image_ids: imageIds,
+      })
+      if (error) throw error
     },
 
     async removeFile(path) {
@@ -631,6 +658,21 @@ function createFixtureProductRepository(): ProductRepository {
       product.imageUrl = images[0]?.url ?? null
       product.imageAlt = images[0]?.alt ?? product.name
       return [...getE2EStore().uploadedProductImages.entries()].find(([, url]) => url === removed.url)?.[0] ?? ''
+    },
+    async reorderImages(productId, imageIds) {
+      const product = getMutableE2EProducts().find((candidate) => candidate.id === productId)
+      if (!product) throw new Error('product_not_found')
+      const images = [...(product.images ?? (product.imageUrl ? [{ url: product.imageUrl, alt: product.imageAlt }] : []))]
+      const reordered = imageIds.map((imageId) => {
+        const indexText = imageId.startsWith(`${productId}-`) ? imageId.slice(productId.length + 1) : ''
+        const index = Number(indexText)
+        if (!Number.isInteger(index) || index < 0 || index >= images.length) throw new Error('image_not_found')
+        return images[index]
+      })
+      if (reordered.length !== images.length || new Set(reordered).size !== images.length) throw new Error('image_order_invalid')
+      product.images = reordered
+      product.imageUrl = reordered[0]?.url ?? null
+      product.imageAlt = reordered[0]?.alt ?? product.name
     },
     async removeFile(path) {
       getE2EStore().uploadedProductImages.delete(path)
@@ -895,6 +937,11 @@ export async function uploadProductImage(productId: string, formData: FormData):
 export async function deleteProductImage(productId: string, imageId: string): Promise<ActionResult> {
   'use server'
   return resolvedActions().deleteProductImage(productId, imageId)
+}
+
+export async function reorderProductImages(productId: string, imageIds: string[]): Promise<ActionResult> {
+  'use server'
+  return resolvedActions().reorderProductImages(productId, imageIds)
 }
 
 export async function deleteProduct(productId: string): Promise<ActionResult> {

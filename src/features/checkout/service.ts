@@ -13,6 +13,7 @@ import type {
   PaymentMethod,
   PaymentResult,
   OrderSubmissionResult,
+  StoreChain,
   TestPaymentOutcome,
 } from '@/features/checkout/types'
 import { checkoutSchema } from '@/lib/validation/checkout'
@@ -79,7 +80,7 @@ type StoredPaymentAttemptSummary = {
   recipientPhone?: string
   customerNote?: string
   paymentMethod?: PaymentMethod
-  storeChain?: CheckoutInput['chain']
+  storeChain?: StoreChain
   storeId?: string
   storeName?: string
 }
@@ -95,7 +96,7 @@ export type PaymentCompletion = {
 export type CompletedOrder = {
   orderNumber: string
   email: string
-  storeChain: CheckoutInput['chain']
+  storeChain: StoreChain
   storeId: string
   storeName: string
   status: string
