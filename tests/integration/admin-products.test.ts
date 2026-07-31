@@ -557,12 +557,13 @@ describe('admin product form', () => {
     const form = within(view.container)
 
     expect(form.getByRole('group', { name: '商品系列（可複選）' })).toBeInTheDocument()
-    expect(form.getByRole('checkbox', { name: 'Mori flora 漫花系列' })).toBeChecked()
-    expect(form.getByRole('checkbox', { name: 'Mori forest 森林系列' })).toBeChecked()
-    expect(form.queryByRole('checkbox', { name: 'Mori daily 日常系列' })).not.toBeInTheDocument()
+    // Series are picked with + / ✓ toggle chips rather than checkboxes.
+    expect(form.getByRole('button', { name: /Mori flora 漫花系列/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(form.getByRole('button', { name: /Mori forest 森林系列/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(form.queryByRole('button', { name: /Mori daily 日常系列/ })).not.toBeInTheDocument()
 
     fireEvent.change(form.getByLabelText('分類'), { target: { value: '褲裝' } })
-    expect(form.getByRole('checkbox', { name: 'Mori daily 日常系列' })).not.toBeChecked()
+    expect(form.getByRole('button', { name: /Mori daily 日常系列/ })).toHaveAttribute('aria-pressed', 'false')
     fireEvent.click(form.getByRole('button', { name: '儲存商品' }))
     fireEvent.click(await form.findByRole('button', { name: '確定儲存' }))
 

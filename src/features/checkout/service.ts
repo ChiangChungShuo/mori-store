@@ -83,6 +83,7 @@ type StoredPaymentAttemptSummary = {
   storeChain?: StoreChain
   storeId?: string
   storeName?: string
+  couponCode?: string | null
 }
 
 export type PaymentCompletion = {
@@ -144,7 +145,7 @@ export function createTestProviderReference(attemptId: string) {
   return `test-payment:${canonicalizePaymentAttemptId(attemptId)}`
 }
 
-type CouponResolver = (code: string, subtotal: number) => Promise<CouponValidation>
+type CouponResolver = (code: string, subtotal: number, email?: string) => Promise<CouponValidation>
 
 const rejectCoupon: CouponResolver = async (code) => ({
   ok: false,
@@ -208,7 +209,7 @@ export function createCheckoutService(
       settings.freeShippingThreshold,
     )
     const coupon = customer.couponCode
-      ? await resolveCoupon(customer.couponCode, totals.subtotal)
+      ? await resolveCoupon(customer.couponCode, totals.subtotal, customer.email)
       : null
     if (coupon && !coupon.ok) throw new CheckoutAttemptError('coupon_invalid')
     const userId = await repository.getCurrentUserId()
@@ -289,6 +290,12 @@ export function createCheckoutService(
       throw new CheckoutAttemptError(
         completion.reviewCode === 'stock_unavailable' ? 'stock_changed' : 'catalog_changed',
       )
+    }
+
+    // Record coupon usage so "once overall" / "once per account" limits hold.
+    if (attempt.couponCode && attempt.email) {
+      const { recordCouponRedemption } = await import('@/features/checkout/coupons')
+      await recordCouponRedemption(attempt.couponCode, attempt.email, completion.orderNumber)
     }
 
     // Fire-and-forget order confirmation email. Never let a mail failure roll
@@ -412,7 +419,7 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
     async getPaymentAttemptSummary(attemptId) {
       const { data, error } = await admin
         .from('payment_attempts')
-        .select('items, subtotal, shipping_fee, total, status, email, recipient_name, recipient_phone, store_chain, store_id, store_name, customer_note, payment_method')
+        .select('items, subtotal, shipping_fee, total, status, email, recipient_name, recipient_phone, store_chain, store_id, store_name, customer_note, payment_method, coupon_code')
         .eq('id', attemptId)
         .maybeSingle()
       if (error) throw error
@@ -445,6 +452,7 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
         storeName: data.store_name,
         customerNote: data.customer_note,
         paymentMethod: data.payment_method as PaymentMethod,
+        couponCode: data.coupon_code,
       }
     },
 

@@ -193,7 +193,13 @@ const promotionSchema = z.object({
   rewardValue: z.coerce.number().int().nonnegative(),
   giftName: z.string().trim(),
   active: z.boolean(),
-})
+  startsAt: z.string().trim().optional().transform((value) => value ? new Date(value).toISOString() : null),
+  endsAt: z.string().trim().optional().transform((value) => value ? new Date(value).toISOString() : null),
+  usageLimit: z.enum(['unlimited', 'once_total', 'once_per_account']).default('unlimited'),
+}).refine(
+  (promotion) => !promotion.startsAt || !promotion.endsAt || promotion.endsAt > promotion.startsAt,
+  { message: '結束時間必須晚於開始時間', path: ['endsAt'] },
+)
 
 function mapPromotionRow(row: {
   id: string
@@ -204,6 +210,9 @@ function mapPromotionRow(row: {
   reward_value: number
   gift_name: string
   active: boolean
+  starts_at?: string | null
+  ends_at?: string | null
+  usage_limit?: string | null
 }): Promotion {
   return {
     id: row.id,
@@ -214,6 +223,9 @@ function mapPromotionRow(row: {
     rewardValue: row.reward_value,
     giftName: row.gift_name ?? '',
     active: row.active,
+    startsAt: row.starts_at ?? null,
+    endsAt: row.ends_at ?? null,
+    usageLimit: (row.usage_limit ?? 'unlimited') as Promotion['usageLimit'],
   }
 }
 
@@ -223,7 +235,7 @@ export async function getMarketingDashboard() {
     const { createAdminClient } = await import('@/lib/supabase/admin')
     const { data, error } = await createAdminClient()
       .from('promotions')
-      .select('id, name, type, code, condition_value, reward_value, gift_name, active')
+      .select('id, name, type, code, condition_value, reward_value, gift_name, active, starts_at, ends_at, usage_limit')
       .order('created_at', { ascending: false })
     if (error) throw error
     return { promotions: (data ?? []).map(mapPromotionRow), reminder: null, abandonedCarts: 0 }
@@ -250,6 +262,9 @@ export async function createPromotionFromForm(formData: FormData) {
     rewardValue: formData.get('rewardValue'),
     giftName: formData.get('giftName') ?? '',
     active: formData.get('active') === 'on',
+    startsAt: formData.get('startsAt')?.toString() ?? '',
+    endsAt: formData.get('endsAt')?.toString() ?? '',
+    usageLimit: formData.get('usageLimit')?.toString() || 'unlimited',
   })
   if (!isE2EMode()) {
     if (promotion.type === 'coupon' && !promotion.code) {
@@ -264,6 +279,9 @@ export async function createPromotionFromForm(formData: FormData) {
       reward_value: promotion.rewardValue,
       gift_name: promotion.giftName,
       active: promotion.active,
+      starts_at: promotion.startsAt,
+      ends_at: promotion.endsAt,
+      usage_limit: promotion.usageLimit,
     })
     if (error) {
       if (error.code === '23505') throw new Error('這個折扣碼已經存在，請換一組')

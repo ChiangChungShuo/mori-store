@@ -427,7 +427,10 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
             </div>
             <fieldset className="admin-product-series" disabled={!product.category}>
               <legend>商品系列（可複選）</legend>
-              {!product.category ? <p>請先選擇商品分類。</p> : availableSeries.length === 0 ? <p>此分類尚未建立系列。<Link href="/admin/categories" target="_blank">前往系列管理</Link></p> : <div>{availableSeries.map((item) => <label key={item.id} data-selected={product.seriesIds.includes(item.id)}><input checked={product.seriesIds.includes(item.id)} type="checkbox" onChange={(event) => toggleSeries(item.id, event.target.checked)} />{item.name}</label>)}</div>}
+              {!product.category ? <p>請先選擇商品分類。</p> : availableSeries.length === 0 ? <p>此分類尚未建立系列。<Link href="/admin/categories" target="_blank">前往系列管理</Link></p> : <div className="admin-series-chips">{availableSeries.map((item) => {
+                const selected = product.seriesIds.includes(item.id)
+                return <button key={item.id} type="button" data-selected={selected} aria-pressed={selected} onClick={() => toggleSeries(item.id, !selected)}><span aria-hidden="true">{selected ? '✓' : '＋'}</span>{item.name}</button>
+              })}</div>}
               {result?.fieldErrors?.seriesIds && <small>{result.fieldErrors.seriesIds[0]}</small>}
             </fieldset>
             <fieldset className="admin-age-fieldset"><legend>適用年齡</legend><div>{AGE_BANDS.map((band) => <label key={band.value} data-selected={product.ageBands.includes(band.value)}><input type="checkbox" checked={product.ageBands.includes(band.value)} onChange={(event) => toggleAgeBand(band.value, event.target.checked)} /><strong>{band.label}</strong><span>{band.range}</span></label>)}</div>{result?.fieldErrors?.ageBands && <small>{result.fieldErrors.ageBands[0]}</small>}</fieldset>

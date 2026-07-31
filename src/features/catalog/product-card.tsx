@@ -46,7 +46,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
         {product.summary ? <p className="product-card-summary">{product.summary}</p> : null}
         <div className="product-card-footer">
           <p>尺寸 {sizes[0]}–{sizes.at(-1)}</p>
-          <p className="product-price">{formatTwd(minimumPrice)} 起</p>
+          <p className="product-price">{formatTwd(minimumPrice)}</p>
         </div>
       </div>
     </article>

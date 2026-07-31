@@ -229,7 +229,7 @@ describe('ProductCard', () => {
 
     expect(screen.getByText('2 種顏色')).toBeInTheDocument()
     expect(screen.getByText('尺寸 100–120')).toBeInTheDocument()
-    expect(screen.getByText('NT$680 起')).toBeInTheDocument()
+    expect(screen.getByText('NT$680')).toBeInTheDocument()
     expect(screen.getByText('查看商品')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '查看 有機棉小樹 T 恤' })).toHaveAttribute(
       'href',

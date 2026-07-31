@@ -128,7 +128,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </div>
           {saleDate ? <div className="product-detail-availability" role="status"><span aria-hidden="true">◷</span><p><small>預計開賣</small><strong>商品將於 <time dateTime={product.availableAt!}>{saleDate}</time> 開始販售</strong></p></div> : null}
           {isPreorder(product.tags) ? <div className="product-detail-availability" data-variant="preorder" role="status"><span aria-hidden="true">◷</span><p><small>預購商品</small><strong>{PREORDER_NOTE}</strong></p></div> : null}
-          <div className="product-price-row"><p className="product-price">{formatTwd(minimumPrice)} 起</p>{compareAtPrice > minimumPrice && <del>{formatTwd(compareAtPrice)}</del>}</div>
+          <div className="product-price-row"><p className="product-price">{formatTwd(minimumPrice)}</p>{compareAtPrice > minimumPrice && <del>{formatTwd(compareAtPrice)}</del>}</div>
           <p className="product-lead">{product.summary || product.description}</p>
           {product.tags && product.tags.length > 0 ? <ul className="product-tags" aria-label="商品標籤">{product.tags.map((tag) => <li key={tag}>{tag}</li>)}</ul> : null}
           <div className="product-wishlist-row"><WishlistButton productId={product.id} productName={product.name} /><small>收藏後可在頁首的「收藏」快速找到這件商品。</small></div>

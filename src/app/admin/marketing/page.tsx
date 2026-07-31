@@ -1,6 +1,8 @@
 import { createPromotionFromForm, deletePromotionFromForm, getMarketingDashboard, togglePromotionFromForm, updateReminderFromForm } from '@/features/admin/business-management'
 import { countMarketingSubscribers, sendMarketingBroadcastFromForm } from '@/features/admin/marketing-broadcast'
+import { couponUsageLimitLabels } from '@/features/checkout/coupons'
 import { MarketingBroadcastForm } from '@/features/admin/marketing-broadcast-form'
+import { formatTaipeiDateTime } from '@/lib/date-time'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,7 +28,17 @@ export default async function AdminMarketingPage() {
           <div className="promotion-list">{dashboard.promotions.map((promotion) => (
             <article key={promotion.id}>
               <span>{promotionTypeLabels[promotion.type]}</span>
-              <div><strong>{promotion.name}</strong><small>{promotion.code || promotion.giftName || `條件 ${promotion.conditionValue}`}</small></div>
+              <div>
+                <strong>{promotion.name}</strong>
+                <small>{promotion.code || promotion.giftName || `條件 ${promotion.conditionValue}`}</small>
+                <small className="promotion-terms">
+                  {promotion.startsAt || promotion.endsAt
+                    ? `${promotion.startsAt ? formatTaipeiDateTime(promotion.startsAt) : '不限開始'} ～ ${promotion.endsAt ? formatTaipeiDateTime(promotion.endsAt) : '不限結束'}`
+                    : '無使用期限'}
+                  ・{couponUsageLimitLabels[promotion.usageLimit ?? 'unlimited']}
+                  {promotion.endsAt && new Date(promotion.endsAt) < new Date() ? '・已過期' : ''}
+                </small>
+              </div>
               <div className="promotion-actions">
                 <form action={togglePromotionFromForm}><input name="id" type="hidden" value={promotion.id} /><button data-active={promotion.active} type="submit">{promotion.active ? '啟用中' : '已停用'}</button></form>
                 <form action={deletePromotionFromForm}><input name="id" type="hidden" value={promotion.id} /><button aria-label={`刪除 ${promotion.name}`} className="promotion-delete" type="submit">刪除</button></form>
@@ -42,6 +54,15 @@ export default async function AdminMarketingPage() {
             <label>活動類型<select name="type"><option value="coupon">折扣碼</option><option value="threshold_gift">滿額贈</option><option value="quantity_discount">滿件折</option></select></label>
             <div className="form-split"><label>折扣碼<input name="code" placeholder="MORI100" /></label><label>門檻金額／件數<input defaultValue="1000" min="0" name="conditionValue" type="number" /></label></div>
             <div className="form-split"><label>折抵金額／折數 %<input defaultValue="100" min="0" name="rewardValue" type="number" /></label><label>贈品名稱<input name="giftName" placeholder="適用滿額贈" /></label></div>
+            <div className="form-split">
+              <label>開始時間（選填）<input name="startsAt" type="datetime-local" /></label>
+              <label>結束時間（選填）<input name="endsAt" type="datetime-local" /></label>
+            </div>
+            <label>使用限制<select defaultValue="unlimited" name="usageLimit">
+              <option value="unlimited">不限次數</option>
+              <option value="once_total">全站僅能使用一次</option>
+              <option value="once_per_account">每個帳號限用一次</option>
+            </select><small className="admin-field-hint">時間留空代表不限；超過結束時間後優惠碼會自動失效。</small></label>
             <label className="check-label"><input defaultChecked name="active" type="checkbox" />建立後立即啟用</label>
             <button className="button" type="submit">建立活動</button>
           </form>

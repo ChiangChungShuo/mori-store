@@ -120,6 +120,15 @@ export type E2EStoreState = {
     rewardValue: number
     giftName: string
     active: boolean
+    startsAt?: string | null
+    endsAt?: string | null
+    usageLimit?: 'unlimited' | 'once_total' | 'once_per_account'
+  }>
+  promotionRedemptions: Array<{
+    promotionId: string
+    code: string
+    email: string
+    orderNumber: string | null
   }>
   abandonedCartReminder: {
     enabled: boolean
@@ -252,7 +261,11 @@ export function createE2EStore(): E2EStoreState {
       rewardValue: 100,
       giftName: '',
       active: true,
+      startsAt: null,
+      endsAt: null,
+      usageLimit: 'unlimited',
     }],
+    promotionRedemptions: [],
     abandonedCartReminder: {
       enabled: false,
       delayHours: 24,
@@ -272,6 +285,7 @@ export function getE2EStore() {
   fixtureGlobal.__moriE2EStore.productSeriesProducts ??= createE2EStore().productSeriesProducts
   fixtureGlobal.__moriE2EStore.contentPresets ??= { material: [...defaultMaterialPresets], care: [...defaultCarePresets], size: [...defaultSizePresets] }
   fixtureGlobal.__moriE2EStore.productDrafts ??= []
+  fixtureGlobal.__moriE2EStore.promotionRedemptions ??= []
   fixtureGlobal.__moriE2EStore.variantCosts ??= new Map()
   fixtureGlobal.__moriE2EStore.publishedProductIds ??= new Set()
   fixtureGlobal.__moriE2EStore.uploadedProductImages ??= new Map()

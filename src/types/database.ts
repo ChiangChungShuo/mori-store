@@ -84,42 +84,81 @@ export type Database = {
         }
         Relationships: []
       }
+      promotion_redemptions: {
+        Row: {
+          code: string
+          created_at: string
+          email: string
+          id: string
+          order_id: string | null
+          order_number: string | null
+          promotion_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          email: string
+          id?: string
+          order_id?: string | null
+          order_number?: string | null
+          promotion_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          email?: string
+          id?: string
+          order_id?: string | null
+          order_number?: string | null
+          promotion_id?: string
+        }
+        Relationships: []
+      }
       promotions: {
         Row: {
           active: boolean
           code: string | null
           condition_value: number
           created_at: string
+          ends_at: string | null
           gift_name: string
           id: string
           name: string
           reward_value: number
+          starts_at: string | null
           type: string
           updated_at: string
+          usage_limit: string
         }
         Insert: {
           active?: boolean
           code?: string | null
           condition_value?: number
           created_at?: string
+          ends_at?: string | null
           gift_name?: string
           id?: string
           name: string
           reward_value?: number
+          starts_at?: string | null
           type?: string
           updated_at?: string
+          usage_limit?: string
         }
         Update: {
           active?: boolean
           code?: string | null
           condition_value?: number
           created_at?: string
+          ends_at?: string | null
           gift_name?: string
           id?: string
           name?: string
           reward_value?: number
+          starts_at?: string | null
           type?: string
           updated_at?: string
+          usage_limit?: string
         }
         Relationships: []
       }
