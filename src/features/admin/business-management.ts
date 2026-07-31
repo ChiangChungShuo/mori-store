@@ -187,7 +187,7 @@ export type Promotion = ReturnType<typeof promotionSchema.parse> & { id: string 
 
 const promotionSchema = z.object({
   name: z.string().trim().min(1),
-  type: z.enum(['coupon', 'threshold_gift', 'quantity_discount']),
+  type: z.enum(['coupon', 'threshold_gift']),
   code: z.string().trim().toUpperCase(),
   conditionValue: z.coerce.number().int().nonnegative(),
   rewardValue: z.coerce.number().int().nonnegative(),

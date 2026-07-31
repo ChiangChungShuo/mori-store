@@ -116,7 +116,7 @@ export type E2EStoreState = {
   promotions: Array<{
     id: string
     name: string
-    type: 'coupon' | 'threshold_gift' | 'quantity_discount'
+    type: 'coupon' | 'threshold_gift'
     code: string
     conditionValue: number
     rewardValue: number

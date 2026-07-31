@@ -6,10 +6,10 @@ import { formatTaipeiDateTime } from '@/lib/date-time'
 
 export const dynamic = 'force-dynamic'
 
-const promotionTypeLabels = {
+// 「滿件折」已移除：多件優惠改由商品頁的「多件優惠價」設定。
+const promotionTypeLabels: Record<string, string> = {
   coupon: '折扣碼',
   threshold_gift: '滿額贈',
-  quantity_discount: '滿件折',
 }
 
 export default async function AdminMarketingPage() {
@@ -27,7 +27,7 @@ export default async function AdminMarketingPage() {
           <header><div><p className="eyebrow">promotions</p><h2>促銷活動</h2></div><strong>{dashboard.promotions.filter((item) => item.active).length} 個啟用中</strong></header>
           <div className="promotion-list">{dashboard.promotions.map((promotion) => (
             <article key={promotion.id}>
-              <span>{promotionTypeLabels[promotion.type]}</span>
+              <span>{promotionTypeLabels[promotion.type] ?? promotion.type}</span>
               <div>
                 <strong>{promotion.name}</strong>
                 <small>{promotion.code || promotion.giftName || `條件 ${promotion.conditionValue}`}</small>
@@ -51,9 +51,9 @@ export default async function AdminMarketingPage() {
           <header><div><p className="eyebrow">new campaign</p><h2>新增活動</h2></div></header>
           <form action={createPromotionFromForm} className="admin-stack-form">
             <label>活動名稱<input name="name" placeholder="例：開學季滿額贈" required /></label>
-            <label>活動類型<select name="type"><option value="coupon">折扣碼</option><option value="threshold_gift">滿額贈</option><option value="quantity_discount">滿件折</option></select></label>
-            <div className="form-split"><label>折扣碼<input name="code" placeholder="MORI100" /></label><label>門檻金額／件數<input defaultValue="1000" min="0" name="conditionValue" type="number" /></label></div>
-            <div className="form-split"><label>折抵金額／折數 %<input defaultValue="100" min="0" name="rewardValue" type="number" /></label><label>贈品名稱<input name="giftName" placeholder="適用滿額贈" /></label></div>
+            <label>活動類型<select name="type"><option value="coupon">折扣碼</option><option value="threshold_gift">滿額贈</option></select></label>
+            <div className="form-split"><label>折扣碼<input name="code" placeholder="MORI100" /></label><label>門檻金額<input defaultValue="1000" min="0" name="conditionValue" type="number" /></label></div>
+            <div className="form-split"><label>折抵金額<input defaultValue="100" min="0" name="rewardValue" type="number" /></label><label>贈品名稱<input name="giftName" placeholder="適用滿額贈" /></label></div>
             <div className="form-split">
               <label>開始時間（選填）<input name="startsAt" type="datetime-local" /></label>
               <label>結束時間（選填）<input name="endsAt" type="datetime-local" /></label>
