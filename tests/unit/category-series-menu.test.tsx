@@ -17,7 +17,12 @@ describe('CategorySeriesMenu', () => {
     const { container } = render(createElement(CategorySeriesMenu, { categories, series, variant: 'desktop' }))
     const menu = container.querySelector<HTMLElement>('.desktop-category-series-menu')!
 
+    expect(menu).toHaveAttribute('aria-label', '商品分類與系列')
+    expect(within(menu).getByText('SHOP BY CATEGORY')).toBeInTheDocument()
+    expect(within(menu).getByText('依分類挑選')).toBeInTheDocument()
     expect(within(menu).getByRole('link', { name: '所有商品' })).toHaveAttribute('href', '/products')
+    expect(within(menu).getByRole('link', { name: /上衣.*2 個系列/ })).toBeInTheDocument()
+    expect(within(menu).getByRole('link', { name: /褲裝.*1 個系列/ })).toBeInTheDocument()
     expect(within(menu).getByRole('link', { name: '全部上衣' })).toHaveAttribute('href', '/products?category=%E4%B8%8A%E8%A1%A3')
     expect(within(menu).getByRole('link', { name: 'Mori flora 漫花系列' })).toHaveAttribute('href', '/products?category=%E4%B8%8A%E8%A1%A3&series=Mori%20flora%20%E6%BC%AB%E8%8A%B1%E7%B3%BB%E5%88%97')
   })
@@ -27,7 +32,10 @@ describe('CategorySeriesMenu', () => {
     const menu = container.querySelector<HTMLElement>('.mobile-category-series-menu')!
 
     expect(menu.querySelectorAll('details')).toHaveLength(2)
+    expect(within(menu).getByText('01')).toBeInTheDocument()
+    expect(within(menu).getByText('02')).toBeInTheDocument()
     expect(within(menu).getByText('上衣')).toBeInTheDocument()
+    expect(within(menu).getByText('2 個系列')).toBeInTheDocument()
     expect(within(menu).getByRole('link', { name: '全部上衣' })).toBeInTheDocument()
     expect(within(menu).getByRole('link', { name: 'Mori forest 森林系列' })).toBeInTheDocument()
   })
