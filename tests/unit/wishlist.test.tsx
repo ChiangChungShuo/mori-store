@@ -7,7 +7,9 @@ import { WishlistButton } from '@/features/wishlist/wishlist-button'
 import { WishlistList } from '@/features/wishlist/wishlist-list'
 import { WishlistAuthProvider } from '@/features/wishlist/wishlist-auth'
 
-const signedIn = (node: ReactNode) => createElement(WishlistAuthProvider, { isSignedIn: true, children: node })
+// JSX rather than createElement: children is a required prop, so passing it
+// positionally fails typecheck and passing it in props trips react/no-children-prop.
+const signedIn = (node: ReactNode) => <WishlistAuthProvider isSignedIn>{node}</WishlistAuthProvider>
 
 afterEach(() => {
   cleanup()

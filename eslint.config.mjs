@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Nested git worktrees are separate checkouts of this repo; linting them
+    // reports the same files twice and flags code that is not on this branch.
+    // vitest.config.ts excludes them from the test run for the same reason.
+    "**/.worktrees/**",
+    "**/.claude/worktrees/**",
   ]),
 ]);
 
