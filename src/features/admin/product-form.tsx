@@ -10,6 +10,7 @@ import { AGE_BANDS } from '@/lib/age-bands'
 import { PREORDER_TAG, PREORDER_STOCK, isPreorder } from '@/lib/preorder'
 import { ConfirmModal } from '@/components/confirm-modal'
 import { showToast } from '@/components/toast'
+import { compressImagesForUpload } from '@/lib/image-compression'
 import type { SaveDraftState } from '@/features/admin/product-drafts'
 import type { ProductSeries } from '@/features/catalog/product-series'
 
@@ -168,6 +169,33 @@ export function DeleteProductImageForm({
   }}><button aria-label={`刪除圖片 ${imageNumber}`} disabled={pending} type="submit">{pending ? '刪除中…' : '刪除圖片'}</button></form>
 }
 
+export function ProductImageOrderControls({
+  imageNumber,
+  onMoveEarlier,
+  onMoveLater,
+}: {
+  imageNumber: number
+  onMoveEarlier?: () => Promise<ProductActionResult>
+  onMoveLater?: () => Promise<ProductActionResult>
+}) {
+  const router = useRouter()
+  const [pending, startTransition] = useTransition()
+
+  function move(action?: () => Promise<ProductActionResult>) {
+    if (!action) return
+    startTransition(async () => {
+      const nextResult = await action()
+      showToast(nextResult.message ?? (nextResult.ok ? '商品圖片順序已更新' : '排序失敗'), nextResult.ok)
+      if (nextResult.ok) router.refresh()
+    })
+  }
+
+  return <div className="admin-image-order-controls" aria-label={`調整圖片 ${imageNumber} 順序`}>
+    <button aria-label={`將圖片 ${imageNumber} 往前移`} disabled={pending || !onMoveEarlier} type="button" onClick={() => move(onMoveEarlier)}>← 往前</button>
+    <button aria-label={`將圖片 ${imageNumber} 往後移`} disabled={pending || !onMoveLater} type="button" onClick={() => move(onMoveLater)}>往後 →</button>
+  </div>
+}
+
 export function ProductForm({ initialProduct, onSave, requireImage = false, categories = [...defaultProductCategories], series = [], materialPresets = [], carePresets = [], sizeOptions = [], draftId: initialDraftId = null, draftImages: initialDraftImages = [], draftImageAlt: initialDraftImageAlt = '', saveDraft, discardDraft }: ProductFormProps) {
   const router = useRouter()
   const [product, setProduct] = useState<ProductInput>({ ...initialProduct, seriesIds: initialProduct.seriesIds ?? [] })
@@ -179,6 +207,7 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
   const [pending, startTransition] = useTransition()
   const [attempted, setAttempted] = useState(false)
   const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [compressing, setCompressing] = useState(false)
   const [draftImages, setDraftImages] = useState<string[]>(initialDraftImages)
   const [imageAlt, setImageAlt] = useState(initialDraftImageAlt)
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
@@ -428,15 +457,22 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
             <header><div><span>04</span><h2>商品主圖</h2></div><p>建立商品時一起上傳，儲存後就能直接預覽；其他角度可在編輯頁繼續新增。</p></header>
             <label className="admin-image-dropzone" data-has-preview={imagePreviews.length > 0 || draftImages.length > 0}>
               <input aria-label="商品圖片" name="file" type="file" accept="image/jpeg,image/png,image/webp" multiple required={!draftImages.length} onChange={(event) => {
-                const files = Array.from(event.target.files ?? [])
-                imagePreviews.forEach((preview) => URL.revokeObjectURL(preview))
-                setImageFiles(files)
-                setImagePreviews(files.map((file) => URL.createObjectURL(file)))
-                if (files.length) setDraftImages([])
-                setResult(null)
+                const selected = Array.from(event.target.files ?? [])
                 event.currentTarget.value = ''
+                if (!selected.length) return
+                setResult(null)
+                setCompressing(true)
+                // Shrink phone/tablet photos before preview or upload: full-size
+                // originals exhaust tablet memory and exceed the upload limit.
+                void compressImagesForUpload(selected).then((files) => {
+                  imagePreviews.forEach((preview) => URL.revokeObjectURL(preview))
+                  setImageFiles(files)
+                  setImagePreviews(files.map((file) => URL.createObjectURL(file)))
+                  setDraftImages([])
+                  setCompressing(false)
+                })
               }} />
-              {imagePreviews[0] ? <>
+              {compressing ? <><b>⋯</b><strong>正在處理圖片…</strong><span>大張照片會自動縮小，請稍候</span></> : imagePreviews[0] ? <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img alt="商品圖片預覽" src={imagePreviews[0]} /><strong>已選擇 {imageFiles.length} 張圖片</strong><span>第一張會作為主圖；點擊可重新選擇</span>
               </> : draftImages[0] ? <>
@@ -485,7 +521,7 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
           {requireImage && saveDraft ? (
             <button type="button" className="button button-secondary" disabled={pending} onClick={handleSaveDraft}>儲存草稿</button>
           ) : null}
-          <button aria-label={requireImage ? '儲存並建立商品' : '儲存商品'} className="button" type="submit" disabled={pending}>{pending ? '儲存中…' : requireImage ? '儲存並建立商品' : '儲存商品'}</button>
+          <button aria-label={requireImage ? '儲存並建立商品' : '儲存商品'} className="button" type="submit" disabled={pending || compressing}>{pending ? '儲存中…' : compressing ? '圖片處理中…' : requireImage ? '儲存並建立商品' : '儲存商品'}</button>
         </div>
       </div>
       <ConfirmModal

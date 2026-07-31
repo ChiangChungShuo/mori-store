@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { showToast } from '@/components/toast'
+import { compressImageForUpload } from '@/lib/image-compression'
 
 type UploadResult = { ok: boolean; message?: string }
 
@@ -22,7 +23,13 @@ export function ImageUploader({
     const form = event.currentTarget
     startTransition(async () => {
       try {
-        const nextResult = await upload(new FormData(form))
+        const payload = new FormData(form)
+        // Shrink oversized photos so tablet uploads stay within the limit.
+        const picked = payload.get('file')
+        if (picked instanceof File && picked.size > 0) {
+          payload.set('file', await compressImageForUpload(picked))
+        }
+        const nextResult = await upload(payload)
         setResult(nextResult)
         if (nextResult.ok) {
           showToast(nextResult.message ?? '圖片已上傳，可繼續新增下一張')
