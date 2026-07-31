@@ -118,25 +118,46 @@ function databaseErrorMessage(error: unknown) {
   return ''
 }
 
-// Maps known database conflicts to actionable admin-facing messages, so a
-// duplicate SKU/slug doesn't surface as an unexplained generic failure.
-function friendlyProductSaveError(error: unknown): string | null {
+// Maps known database conflicts to actionable admin-facing messages, and marks
+// the offending input so the red hint lands on the exact field rather than
+// only in the save bar.
+function friendlyProductSaveError(
+  error: unknown,
+  variants: ProductInput['variants'],
+): ActionResult | null {
   const message = databaseErrorMessage(error)
   const details = error && typeof error === 'object' && 'details' in error
     ? String((error as { details: unknown }).details ?? '')
     : ''
+
   if (message.includes('product_variants_sku_lower_key')) {
-    const match = details.match(/=\((.+?)\)/)
-    return match
-      ? `SKU「${match[1]}」已被其他商品使用，SKU 全店不可重複，請改用不同編號（例如加上商品代號）`
-      : 'SKU 已被其他商品使用，SKU 全店不可重複，請改用不同編號'
+    const conflictingSku = details.match(/=\((.+?)\)/)?.[1]?.trim().toLowerCase()
+    const fieldMessage = conflictingSku
+      ? `SKU「${conflictingSku}」已被其他商品使用，請改用不同編號`
+      : 'SKU 已被其他商品使用，請改用不同編號'
+    const variantErrors: ProductVariantErrors = []
+    variants.forEach((variant, index) => {
+      if (!conflictingSku || variant.sku.trim().toLowerCase() === conflictingSku) {
+        variantErrors[index] = { sku: [fieldMessage] }
+      }
+    })
+    return {
+      ok: false,
+      message: `${fieldMessage}（SKU 全店不可重複，建議加上商品代號，例如 WF01-100）`,
+      variantErrors,
+    }
   }
+
   if (message.includes('products_slug_key')) {
-    return '網址代稱已被其他商品使用，請更換（留空會自動產生）'
+    const fieldMessage = '網址代稱已被其他商品使用，請更換'
+    return { ok: false, message: `${fieldMessage}（留空會自動產生）`, fieldErrors: { slug: [fieldMessage] } }
   }
+
   if (message.includes('product_series_category_mismatch')) {
-    return '所選系列與商品分類不符，請重新選擇系列'
+    const fieldMessage = '所選系列與商品分類不符，請重新選擇'
+    return { ok: false, message: fieldMessage, fieldErrors: { seriesIds: [fieldMessage] } }
   }
+
   return null
 }
 
@@ -189,8 +210,8 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
       try {
         productId = await dependencies.repository.createProduct(data)
       } catch (error) {
-        const friendly = friendlyProductSaveError(error)
-        if (friendly) return { ok: false, message: friendly }
+        const friendly = friendlyProductSaveError(error, data.variants)
+        if (friendly) return friendly
         logError(`product create failed: ${databaseErrorMessage(error)}`, {})
         return { ok: false, message: '目前無法建立商品，請稍後再試' }
       }
@@ -221,8 +242,8 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
         if (message.includes('stale_product_variant')) {
           return { ok: false, message: '商品庫存或規格已更新，請重新載入後再儲存' }
         }
-        const friendly = friendlyProductSaveError(error)
-        if (friendly) return { ok: false, message: friendly }
+        const friendly = friendlyProductSaveError(error, parsed.data.variants)
+        if (friendly) return friendly
         logError(`product update failed: ${message}`, { productId: id.data })
         return { ok: false, message: '目前無法更新商品，請稍後再試' }
       }

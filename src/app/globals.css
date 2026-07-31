@@ -1073,6 +1073,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-image-alt { display: grid; gap: 0.45rem; color: var(--forest); font-size: 0.72rem; font-weight: 800; }
 .admin-image-alt input { min-height: 3rem; border: 1px solid #d5d7da; background: #fbfbfb; padding: 0.65rem 0.75rem; }
 .admin-image-alt small { color: var(--muted); font-size: 0.62rem; font-weight: 500; }
+.admin-image-alt small.admin-field-error, .admin-field-error { color: #a15954; font-weight: 700; }
 .admin-image-uploader > .button { grid-column: 2; width: 100%; }
 .admin-upload-error, .admin-upload-success { grid-column: 2; margin: 0; padding: 0.7rem; font-size: 0.68rem; }
 .admin-upload-error { background: #fcf9f9; color: #a15954; }

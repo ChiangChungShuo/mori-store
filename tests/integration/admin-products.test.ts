@@ -189,18 +189,30 @@ describe('admin product actions', () => {
         details: 'Key (lower(sku))=(su05) already exists.',
       })
     }
-    await expect(actions.createProduct(newProduct)).resolves.toMatchObject({
+    const skuConflict = await actions.createProduct({
+      ...newProduct,
+      variants: [
+        { ...newProduct.variants[0], sku: 'SU05' },
+        { ...newProduct.variants[0], sku: 'SU06', size: '110' },
+      ],
+    })
+    expect(skuConflict).toMatchObject({
       ok: false,
       message: expect.stringContaining('SKU「su05」已被其他商品使用'),
     })
+    // The conflicting row is marked so the red hint lands on that SKU input.
+    expect(skuConflict.variantErrors?.[0]?.sku?.[0]).toContain('SKU「su05」已被其他商品使用')
+    expect(skuConflict.variantErrors?.[1]).toBeUndefined()
 
     repository.createProduct = async () => {
       throw new Error('duplicate key value violates unique constraint "products_slug_key"')
     }
-    await expect(actions.createProduct(newProduct)).resolves.toMatchObject({
+    const slugConflict = await actions.createProduct(newProduct)
+    expect(slugConflict).toMatchObject({
       ok: false,
       message: expect.stringContaining('網址代稱已被其他商品使用'),
     })
+    expect(slugConflict.fieldErrors?.slug?.[0]).toContain('網址代稱已被其他商品使用')
   })
 
   it('automatically generates SEO content when a product is created', async () => {
@@ -679,7 +691,8 @@ describe('admin product form', () => {
     const form = within(view.container)
     fireEvent.click(form.getByRole('button', { name: '儲存商品' }))
 
-    expect(form.getByRole('alert')).toHaveTextContent('商品內容尚未完成')
+    // The save bar now names the exact fields that still need attention.
+    expect(form.getByRole('alert')).toHaveTextContent('請修正：商品說明、材質、尺寸指南、洗滌說明')
     expect(form.getByText('請填寫商品說明')).toBeInTheDocument()
     expect(form.getByText('請填寫商品材質')).toBeInTheDocument()
     expect(form.getByText('請填寫尺寸指南')).toBeInTheDocument()

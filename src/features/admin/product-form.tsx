@@ -44,6 +44,50 @@ function toDateTimeLocalValue(value: string | Date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
+// Human labels so submit-time errors can name the exact fields to fix.
+const FIELD_LABELS: Record<string, string> = {
+  name: '商品名稱',
+  slug: '網址代稱',
+  category: '分類',
+  seriesIds: '商品系列',
+  ageBands: '適用年齡',
+  summary: '簡短描述',
+  description: '商品說明',
+  material: '材質',
+  sizeGuide: '尺寸指南',
+  careInstructions: '洗滌說明',
+  tags: '標籤',
+  availableAt: '預約開賣時間',
+}
+
+const VARIANT_FIELD_LABELS: Record<string, string> = {
+  sku: 'SKU',
+  color: '顏色',
+  size: '尺寸',
+  price: '售價',
+  cost: '成本',
+  compareAtPrice: '原價',
+  stock: '庫存',
+}
+
+function describeFieldErrors(
+  fieldErrors?: Record<string, string[] | undefined>,
+  variantErrors?: ProductVariantErrors,
+): string {
+  const names = Object.entries(fieldErrors ?? {})
+    .filter(([, messages]) => messages && messages.length > 0)
+    .map(([field]) => FIELD_LABELS[field] ?? field)
+  const variantNames = (variantErrors ?? []).flatMap((row, index) => {
+    if (!row) return []
+    const fields = Object.keys(row)
+      .filter((field) => row[field as keyof typeof row]?.length)
+      .map((field) => VARIANT_FIELD_LABELS[field] ?? field)
+    return fields.length ? [`規格 ${String(index + 1).padStart(2, '0')} 的${fields.join('、')}`] : []
+  })
+  const all = [...new Set([...names, ...variantNames])]
+  return all.length ? `請修正：${all.join('、')}` : ''
+}
+
 function variantsAreComplete(variants: ProductInput['variants']) {
   const skus = variants.map((variant) => variant.sku.trim().toUpperCase())
   const combinations = variants.map((variant) => `${variant.color.trim()}::${variant.size.trim()}`)
@@ -173,25 +217,34 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
     if (!product.sizeGuide.trim()) contentErrors.sizeGuide = ['請填寫尺寸指南']
     if (!product.careInstructions.trim()) contentErrors.careInstructions = ['請填寫洗滌說明']
     if (Object.keys(contentErrors).length > 0) {
-      setResult({ ok: false, message: '商品內容尚未完成，請依紅色提示補齊。', fieldErrors: contentErrors })
+      setResult({ ok: false, message: describeFieldErrors(contentErrors), fieldErrors: contentErrors })
       window.requestAnimationFrame(() => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus())
       return
     }
     if (requireImage && (!hasImages || !imageAlt.trim())) {
-      setResult({ ok: false, message: !hasImages ? '請選擇至少一張商品圖片。' : '請填寫圖片說明。' })
+      setResult({
+        ok: false,
+        message: !hasImages ? '請選擇至少一張商品圖片。' : '請填寫圖片說明。',
+        fieldErrors: hasImages ? { imageAlt: ['請填寫圖片說明'] } : { images: ['請選擇至少一張商品圖片'] },
+      })
       window.requestAnimationFrame(() => form.querySelector<HTMLElement>(!hasImages ? '[name="file"]' : '[name="alt"]')?.focus())
       return
     }
     const parsed = productSchema.safeParse(product)
     if (!parsed.success) {
       const validationErrors = getProductValidationErrors(parsed.error)
-      setResult({ ok: false, message: '還有必填資料未完成，請依紅色提示補齊。', ...validationErrors })
+      setResult({
+        ok: false,
+        message: describeFieldErrors(validationErrors.fieldErrors, validationErrors.variantErrors)
+          || '還有必填資料未完成，請依紅色提示補齊。',
+        ...validationErrors,
+      })
       window.requestAnimationFrame(() => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus())
       return
     }
     const scheduleError = availableAtError(product.availableAt, initialProduct.availableAt ?? null)
     if (scheduleError) {
-      setResult({ ok: false, message: '還有必填資料未完成，請依紅色提示補齊。', fieldErrors: { availableAt: [scheduleError] } })
+      setResult({ ok: false, message: `預約開賣時間：${scheduleError}`, fieldErrors: { availableAt: [scheduleError] } })
       window.requestAnimationFrame(() => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus())
       return
     }
@@ -243,6 +296,14 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
         if (requireImage) router.push('/admin/products')
       } else {
         setResult(outcome)
+        setAttempted(true)
+        // Bring the offending field into view so a server-side conflict (e.g. a
+        // duplicate SKU) is as visible as a client-side validation error.
+        window.requestAnimationFrame(() => {
+          const target = document.querySelector<HTMLElement>('.admin-product-form [aria-invalid="true"]')
+          target?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+          target?.focus({ preventScroll: true })
+        })
       }
     })
   }
@@ -390,7 +451,7 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
                 setResult(null)
               }}>×</button>
             </figure>)}</div> : null}
-            <label className="admin-image-alt">圖片說明<input aria-label="圖片說明" name="alt" value={imageAlt} onChange={(event) => { setImageAlt(event.target.value); setResult(null) }} placeholder="例：孩子穿著鼠尾草綠 T 恤的正面照" required /><small>提供給看不到圖片的使用者，也有助於搜尋。</small></label>
+            <label className="admin-image-alt">圖片說明<input aria-invalid={attempted && Boolean(result?.fieldErrors?.imageAlt)} aria-label="圖片說明" name="alt" value={imageAlt} onChange={(event) => { setImageAlt(event.target.value); setResult(null) }} placeholder="例：孩子穿著鼠尾草綠 T 恤的正面照" required />{result?.fieldErrors?.imageAlt && <small className="admin-field-error">{result.fieldErrors.imageAlt[0]}</small>}<small>提供給看不到圖片的使用者，也有助於搜尋。</small></label>
           </section> : null}
         </div>
 
