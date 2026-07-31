@@ -4,7 +4,7 @@ import { ProductForm } from '@/features/admin/product-form'
 import type { ProductInput } from '@/lib/validation/product'
 import { listProductCategories } from '@/features/catalog/categories'
 import { listContentPresets } from '@/features/catalog/content-presets'
-import { getProductDraft, saveProductDraft } from '@/features/admin/product-drafts'
+import { DRAFT_IMAGES_KEY, DRAFT_IMAGE_ALT_KEY, discardProductDraft, getProductDraft, saveProductDraft } from '@/features/admin/product-drafts'
 import { listProductSeries } from '@/features/catalog/product-series'
 
 const newProduct: ProductInput = {
@@ -35,9 +35,20 @@ export default async function NewAdminProductPage({ searchParams }: NewProductPa
     listContentPresets('size'),
     draftId ? getProductDraft(draftId) : Promise.resolve(null),
   ])
+  // Split the stored draft into product fields and its saved images; the
+  // image keys must not leak into the strict product schema.
+  const {
+    [DRAFT_IMAGES_KEY]: rawDraftImages,
+    [DRAFT_IMAGE_ALT_KEY]: rawDraftImageAlt,
+    ...draftProduct
+  } = (draftData ?? {}) as Record<string, unknown>
   const initialProduct: ProductInput = draftData
-    ? { ...newProduct, ...(draftData as Partial<ProductInput>) }
+    ? { ...newProduct, ...(draftProduct as Partial<ProductInput>) }
     : newProduct
+  const draftImages = Array.isArray(rawDraftImages)
+    ? rawDraftImages.filter((url): url is string => typeof url === 'string')
+    : []
+  const draftImageAlt = typeof rawDraftImageAlt === 'string' ? rawDraftImageAlt : ''
 
   return (
     <main className="section admin-product-editor">
@@ -50,6 +61,9 @@ export default async function NewAdminProductPage({ searchParams }: NewProductPa
         carePresets={carePresets}
         categories={categories}
         draftId={draftData ? draftId : null}
+        draftImageAlt={draftImageAlt}
+        draftImages={draftImages}
+        discardDraft={discardProductDraft}
         initialProduct={initialProduct}
         materialPresets={materialPresets}
         onSave={createProductWithImage}

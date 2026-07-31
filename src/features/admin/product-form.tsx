@@ -31,7 +31,10 @@ type ProductFormProps = {
   carePresets?: string[]
   sizeOptions?: string[]
   draftId?: string | null
-  saveDraft?: (draftId: string | null, product: ProductInput) => Promise<SaveDraftState>
+  draftImages?: string[]
+  draftImageAlt?: string
+  saveDraft?: (draftId: string | null, payload: FormData) => Promise<SaveDraftState>
+  discardDraft?: (draftId: string) => Promise<void>
 }
 
 
@@ -121,7 +124,7 @@ export function DeleteProductImageForm({
   }}><button aria-label={`刪除圖片 ${imageNumber}`} disabled={pending} type="submit">{pending ? '刪除中…' : '刪除圖片'}</button></form>
 }
 
-export function ProductForm({ initialProduct, onSave, requireImage = false, categories = [...defaultProductCategories], series = [], materialPresets = [], carePresets = [], sizeOptions = [], draftId: initialDraftId = null, saveDraft }: ProductFormProps) {
+export function ProductForm({ initialProduct, onSave, requireImage = false, categories = [...defaultProductCategories], series = [], materialPresets = [], carePresets = [], sizeOptions = [], draftId: initialDraftId = null, draftImages: initialDraftImages = [], draftImageAlt: initialDraftImageAlt = '', saveDraft, discardDraft }: ProductFormProps) {
   const router = useRouter()
   const [product, setProduct] = useState<ProductInput>({ ...initialProduct, seriesIds: initialProduct.seriesIds ?? [] })
   const [draftId, setDraftId] = useState<string | null>(initialDraftId)
@@ -132,7 +135,8 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
   const [pending, startTransition] = useTransition()
   const [attempted, setAttempted] = useState(false)
   const [imageFiles, setImageFiles] = useState<File[]>([])
-  const [imageAlt, setImageAlt] = useState('')
+  const [draftImages, setDraftImages] = useState<string[]>(initialDraftImages)
+  const [imageAlt, setImageAlt] = useState(initialDraftImageAlt)
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [minimumAvailableAt] = useState(() => toDateTimeLocalValue(new Date()))
   const imagePreviewsRef = useRef<string[]>([])
@@ -154,7 +158,8 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
     && product.careInstructions.trim()
   )
   const variantsComplete = variantsAreComplete(product.variants)
-  const imageComplete = Boolean(imageFiles.length && imageAlt.trim())
+  const hasImages = imageFiles.length > 0 || draftImages.length > 0
+  const imageComplete = Boolean(hasImages && imageAlt.trim())
   const activeStep = !contentComplete ? 1 : !variantsComplete ? 2 : !imageComplete ? 3 : 4
   const progress = [contentComplete, variantsComplete, imageComplete].filter(Boolean).length / 3 * 100
 
@@ -172,9 +177,9 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
       window.requestAnimationFrame(() => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus())
       return
     }
-    if (requireImage && (!imageFiles.length || !imageAlt.trim())) {
-      setResult({ ok: false, message: !imageFiles.length ? '請選擇至少一張商品圖片。' : '請填寫圖片說明。' })
-      window.requestAnimationFrame(() => form.querySelector<HTMLElement>(!imageFiles.length ? '[name="file"]' : '[name="alt"]')?.focus())
+    if (requireImage && (!hasImages || !imageAlt.trim())) {
+      setResult({ ok: false, message: !hasImages ? '請選擇至少一張商品圖片。' : '請填寫圖片說明。' })
+      window.requestAnimationFrame(() => form.querySelector<HTMLElement>(!hasImages ? '[name="file"]' : '[name="alt"]')?.focus())
       return
     }
     const parsed = productSchema.safeParse(product)
@@ -208,14 +213,32 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
       if (!requireImage) {
         outcome = await onSave(finalProduct)
       } else {
+        // Freshly selected files win; otherwise re-materialise the images that
+        // were stored with the draft so nothing is lost between sessions.
+        let files = imageFiles
+        if (!files.length && draftImages.length) {
+          try {
+            files = await Promise.all(draftImages.map(async (url, index) => {
+              const response = await fetch(url)
+              const blob = await response.blob()
+              const extension = blob.type.split('/')[1] ?? 'png'
+              return new File([blob], `draft-image-${index + 1}.${extension}`, { type: blob.type })
+            }))
+          } catch {
+            setResult({ ok: false, message: '無法讀取草稿圖片，請重新選擇圖片後再建立。' })
+            return
+          }
+        }
         const imageData = new FormData()
-        imageFiles.forEach((file) => imageData.append('file', file))
+        files.forEach((file) => imageData.append('file', file))
         imageData.set('alt', imageAlt)
         outcome = await onSave(finalProduct, imageData)
       }
       if (outcome.ok) {
         setResult(null)
         showToast(outcome.message ?? (requireImage ? '商品已建立，先保留為草稿' : '商品修改已儲存'))
+        // The draft has become a real product — clean it (and its images) up.
+        if (draftId && discardDraft) { try { await discardDraft(draftId) } catch { /* ignore */ } }
         // New products: return to the inventory list after a successful create.
         if (requireImage) router.push('/admin/products')
       } else {
@@ -250,7 +273,12 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
   function handleSaveDraft() {
     if (!saveDraft) return
     startTransition(async () => {
-      const outcome = await saveDraft(draftId, product)
+      const payload = new FormData()
+      payload.set('product', JSON.stringify(product))
+      payload.set('alt', imageAlt)
+      payload.set('existingImages', JSON.stringify(imageFiles.length ? [] : draftImages))
+      imageFiles.forEach((file) => payload.append('file', file))
+      const outcome = await saveDraft(draftId, payload)
       if (outcome.ok && outcome.id) setDraftId(outcome.id)
       showToast(outcome.message, outcome.ok)
     })
@@ -328,20 +356,31 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
 
           {requireImage ? <section className="admin-form-card admin-create-image-card">
             <header><div><span>04</span><h2>商品主圖</h2></div><p>建立商品時一起上傳，儲存後就能直接預覽；其他角度可在編輯頁繼續新增。</p></header>
-            <label className="admin-image-dropzone" data-has-preview={imagePreviews.length > 0}>
-              <input aria-label="商品圖片" name="file" type="file" accept="image/jpeg,image/png,image/webp" multiple required onChange={(event) => {
+            <label className="admin-image-dropzone" data-has-preview={imagePreviews.length > 0 || draftImages.length > 0}>
+              <input aria-label="商品圖片" name="file" type="file" accept="image/jpeg,image/png,image/webp" multiple required={!draftImages.length} onChange={(event) => {
                 const files = Array.from(event.target.files ?? [])
                 imagePreviews.forEach((preview) => URL.revokeObjectURL(preview))
                 setImageFiles(files)
                 setImagePreviews(files.map((file) => URL.createObjectURL(file)))
+                if (files.length) setDraftImages([])
                 setResult(null)
                 event.currentTarget.value = ''
               }} />
               {imagePreviews[0] ? <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img alt="商品圖片預覽" src={imagePreviews[0]} /><strong>已選擇 {imageFiles.length} 張圖片</strong><span>第一張會作為主圖；點擊可重新選擇</span>
+              </> : draftImages[0] ? <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img alt="草稿商品圖片預覽" src={draftImages[0]} /><strong>草稿已保存 {draftImages.length} 張圖片</strong><span>建立商品時會使用這些圖片；點擊可重新選擇</span>
               </> : <><b>＋</b><strong>選擇商品圖片</strong><span>可一次選多張；JPEG／PNG／WebP，單張 5 MB 以內</span></>}
             </label>
+            {!imagePreviews.length && draftImages.length ? <div className="admin-create-image-previews" aria-label="草稿保存的商品圖片">{draftImages.map((url, index) => <figure key={url}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img alt={`草稿圖片 ${index + 1}`} src={url} /><figcaption>{index === 0 ? '主圖' : `${index + 1}`}</figcaption><button aria-label={`移除草稿圖片 ${index + 1}`} type="button" onClick={() => {
+                setDraftImages((current) => current.filter((_, imageIndex) => imageIndex !== index))
+                setResult(null)
+              }}>×</button>
+            </figure>)}</div> : null}
             {imagePreviews.length ? <div className="admin-create-image-previews" aria-label="已選擇的商品圖片">{imagePreviews.map((preview, index) => <figure key={preview}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img alt={`商品圖片預覽 ${index + 1}`} src={preview} /><figcaption>{index === 0 ? '主圖' : `${index + 1}`}</figcaption><button aria-label={`移除待上傳圖片 ${index + 1}`} type="button" onClick={() => {
