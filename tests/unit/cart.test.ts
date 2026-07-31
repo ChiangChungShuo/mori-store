@@ -70,8 +70,9 @@ afterEach(() => {
 
 describe('calculateCart', () => {
   it('charges shipping below the threshold', () => {
-    expect(calculateCart([{ unitPrice: 590, quantity: 2 }], 65, 1500)).toEqual({
+    expect(calculateCart([{ unitPrice: 590, quantity: 2 }], 65, 1500)).toMatchObject({
       subtotal: 1180,
+      bundleDiscount: 0,
       shipping: 65,
       total: 1245,
     })
@@ -82,7 +83,30 @@ describe('calculateCart', () => {
   })
 
   it('does not charge shipping for an empty cart', () => {
-    expect(calculateCart([], 65, 1500)).toEqual({ subtotal: 0, shipping: 0, total: 0 })
+    expect(calculateCart([], 65, 1500)).toMatchObject({ subtotal: 0, shipping: 0, total: 0 })
+  })
+
+  it('applies quantity tiers and judges free shipping on the discounted total', () => {
+    const items = [{ productSlug: 'tee', unitPrice: 590, quantity: 3 }]
+    const tiers = { tee: [{ quantity: 3, bundlePrice: 1350 }] }
+
+    // 1770 would clear a 1500 threshold, but the bundle price of 1350 does not.
+    expect(calculateCart(items, 65, 1500, tiers)).toMatchObject({
+      subtotal: 1770,
+      bundleDiscount: 420,
+      discountedSubtotal: 1350,
+      shipping: 65,
+      total: 1415,
+    })
+  })
+
+  it('ignores tiers for products that are not in the cart', () => {
+    expect(calculateCart(
+      [{ productSlug: 'tee', unitPrice: 590, quantity: 1 }],
+      65,
+      1500,
+      { pants: [{ quantity: 2, bundlePrice: 900 }] },
+    ).bundleDiscount).toBe(0)
   })
 })
 

@@ -5,6 +5,8 @@ import { notFound } from 'next/navigation'
 import { ProductCard } from '@/features/catalog/product-card'
 import { VariantPicker } from '@/features/catalog/variant-picker'
 import { getProductBySlug, listProducts } from '@/features/catalog/queries'
+import { getProductQuantityPrices } from '@/features/catalog/quantity-prices'
+import { describeQuantityTier } from '@/features/cart/bundle-pricing'
 import { formatTwd } from '@/lib/money'
 import { ProductViewTracker } from '@/features/analytics/storefront-tracker'
 import { WishlistButton } from '@/features/wishlist/wishlist-button'
@@ -61,9 +63,10 @@ const standardKidsSizeGuide = [
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const [product, catalog] = await Promise.all([
+  const [product, catalog, quantityPrices] = await Promise.all([
     getProductBySlug(slug),
     listProducts({ inStock: true }),
+    getProductQuantityPrices(slug),
   ])
   if (!product) notFound()
 
@@ -73,6 +76,10 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     ? new Intl.DateTimeFormat('zh-TW', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(product.availableAt!))
     : null
   const compareAtPrice = Math.max(...product.variants.map((variant) => variant.compareAtPrice ?? 0))
+  // Savings are quoted against the cheapest variant so they are never overstated.
+  const quantityTiers = quantityPrices
+    .map((tier) => describeQuantityTier(tier, minimumPrice))
+    .filter((tier) => tier.saving > 0)
   const popularProducts = shuffle(catalog.filter((candidate) => candidate.id !== product.id)).slice(0, 4)
   const productImages = product.images?.length
     ? product.images
@@ -129,6 +136,14 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           {saleDate ? <div className="product-detail-availability" role="status"><span aria-hidden="true">◷</span><p><small>預計開賣</small><strong>商品將於 <time dateTime={product.availableAt!}>{saleDate}</time> 開始販售</strong></p></div> : null}
           {isPreorder(product.tags) ? <div className="product-detail-availability" data-variant="preorder" role="status"><span aria-hidden="true">◷</span><p><small>預購商品</small><strong>{PREORDER_NOTE}</strong></p></div> : null}
           <div className="product-price-row"><p className="product-price">{formatTwd(minimumPrice)}</p>{compareAtPrice > minimumPrice && <del>{formatTwd(compareAtPrice)}</del>}</div>
+          {quantityTiers.length > 0 ? <div className="product-bundle-card">
+            <p className="product-bundle-heading"><span aria-hidden="true">＋</span>多件優惠・不需優惠碼</p>
+            <ul>{quantityTiers.map((tier) => <li key={tier.quantity}>
+              <strong>{tier.label} {formatTwd(tier.bundlePrice)}</strong>
+              <small>每件約 {formatTwd(tier.perUnit)}，省 {formatTwd(tier.saving)}</small>
+            </li>)}</ul>
+            <small className="product-bundle-note">同一商品的不同顏色與尺寸可混搭，購物車會自動套用最優惠的組合。</small>
+          </div> : null}
           <p className="product-lead">{product.summary || product.description}</p>
           {product.tags && product.tags.length > 0 ? <ul className="product-tags" aria-label="商品標籤">{product.tags.map((tag) => <li key={tag}>{tag}</li>)}</ul> : null}
           <div className="product-wishlist-row"><WishlistButton productId={product.id} productName={product.name} /><small>收藏後可在頁首的「收藏」快速找到這件商品。</small></div>

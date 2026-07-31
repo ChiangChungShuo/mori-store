@@ -103,6 +103,8 @@ export type E2EStoreState = {
   contentPresets: { material: string[]; care: string[]; size: string[] }
   productDrafts: Array<{ id: string; label: string; data: unknown; updatedAt: string }>
   products: CatalogProduct[]
+  /** Product slug → quantity tiers, mirroring product_quantity_prices. */
+  quantityPrices: Map<string, Array<{ quantity: number; bundlePrice: number }>>
   variantCosts: Map<string, number>
   publishedProductIds: Set<string>
   uploadedProductImages: Map<string, string>
@@ -244,6 +246,12 @@ export function createE2EStore(): E2EStoreState {
     contentPresets: { material: [...defaultMaterialPresets], care: [...defaultCarePresets], size: [...defaultSizePresets] },
     productDrafts: [],
     products: [],
+    // One tiered product so fixture/E2E runs exercise bundle pricing. Kept off
+    // the tee, whose totals other specs assert.
+    quantityPrices: new Map([['mori-cloud-romper', [
+      { quantity: 2, bundlePrice: 1000 },
+      { quantity: 3, bundlePrice: 1400 },
+    ]]]),
     variantCosts: new Map(),
     publishedProductIds: new Set(),
     uploadedProductImages: new Map(),

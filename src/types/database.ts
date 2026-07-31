@@ -314,6 +314,9 @@ export type Database = {
       }
       orders: {
         Row: {
+          bundle_discount: number
+          coupon_code: string | null
+          coupon_discount: number
           created_at: string
           customer_note: string
           merchant_reply: string
@@ -336,6 +339,9 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          bundle_discount?: number
+          coupon_code?: string | null
+          coupon_discount?: number
           created_at?: string
           customer_note?: string
           merchant_reply?: string
@@ -358,6 +364,9 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          bundle_discount?: number
+          coupon_code?: string | null
+          coupon_discount?: number
           created_at?: string
           customer_note?: string
           merchant_reply?: string
@@ -394,6 +403,7 @@ export type Database = {
           coupon_code: string | null
           created_at: string
           customer_note: string
+          bundle_discount: number
           discount: number
           email: string
           id: string
@@ -422,6 +432,7 @@ export type Database = {
           coupon_code?: string | null
           created_at?: string
           customer_note?: string
+          bundle_discount?: number
           discount?: number
           email: string
           id?: string
@@ -450,6 +461,7 @@ export type Database = {
           coupon_code?: string | null
           created_at?: string
           customer_note?: string
+          bundle_discount?: number
           discount?: number
           email?: string
           id?: string
@@ -487,6 +499,41 @@ export type Database = {
             columns: ['user_id']
             isOneToOne: false
             referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      product_quantity_prices: {
+        Row: {
+          bundle_price: number
+          created_at: string
+          id: string
+          product_id: string
+          quantity: number
+          updated_at: string
+        }
+        Insert: {
+          bundle_price: number
+          created_at?: string
+          id?: string
+          product_id: string
+          quantity: number
+          updated_at?: string
+        }
+        Update: {
+          bundle_price?: number
+          created_at?: string
+          id?: string
+          product_id?: string
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'product_quantity_prices_product_id_fkey'
+            columns: ['product_id']
+            isOneToOne: false
+            referencedRelation: 'products'
             referencedColumns: ['id']
           },
         ]

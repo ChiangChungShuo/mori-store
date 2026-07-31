@@ -9,17 +9,18 @@ import type { StorefrontSettings } from '@/features/checkout/settings'
 import { formatTwd } from '@/lib/money'
 
 export function CartDrawer({ settings }: { settings: StorefrontSettings }) {
-  const { items, dispatch } = useCart()
+  const { items, dispatch, quantityTiers } = useCart()
   const [bumping, setBumping] = useState(false)
   const [open, setOpen] = useState(false)
   const bumpTimer = useRef<number | null>(null)
   const itemCount = items.reduce((total, item) => total + item.quantity, 0)
-  const totals = calculateCart(items, settings.shippingFee, settings.freeShippingThreshold)
+  const totals = calculateCart(items, settings.shippingFee, settings.freeShippingThreshold, quantityTiers)
+  // Free shipping tracks the discounted goods total, matching what we charge.
   const freeShippingRemaining = settings.freeShippingThreshold === null
     ? null
-    : Math.max(0, settings.freeShippingThreshold - totals.subtotal)
+    : Math.max(0, settings.freeShippingThreshold - totals.discountedSubtotal)
   const freeShippingProgress = settings.freeShippingThreshold && settings.freeShippingThreshold > 0
-    ? Math.min(100, Math.round((totals.subtotal / settings.freeShippingThreshold) * 100))
+    ? Math.min(100, Math.round((totals.discountedSubtotal / settings.freeShippingThreshold) * 100))
     : 100
 
   useEffect(() => {
@@ -114,6 +115,7 @@ export function CartDrawer({ settings }: { settings: StorefrontSettings }) {
         {items.length > 0 ? (
           <div className="cart-drawer-totals">
             <p><span>商品小計</span><strong>{formatTwd(totals.subtotal)}</strong></p>
+            {totals.bundleDiscount > 0 ? <p className="cart-discount"><span>多件優惠</span><strong>-{formatTwd(totals.bundleDiscount)}</strong></p> : null}
             <p><span>運費</span><strong>{totals.shipping === 0 ? '免運' : formatTwd(totals.shipping)}</strong></p>
             <p className="cart-total"><span>合計</span><strong>{formatTwd(totals.total)}</strong></p>
           </div>

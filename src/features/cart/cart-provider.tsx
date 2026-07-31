@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { cartReducer, type CartAction } from '@/features/cart/reducer'
 import { parseStoredCartItems, type CartItem } from '@/features/cart/types'
+import type { QuantityPriceTier } from '@/features/cart/bundle-pricing'
 
 const STORAGE_KEY = 'mori-cart-v1'
 
@@ -11,11 +12,16 @@ type CartContextValue = {
   hydrated: boolean
   dispatch: (action: CartAction) => void
   replaceItems: (items: CartItem[]) => void
+  /** Product slug → quantity tiers, supplied by the server on render. */
+  quantityTiers: Record<string, QuantityPriceTier[]>
 }
 
 const CartContext = createContext<CartContextValue | null>(null)
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
+export function CartProvider({ children, quantityTiers = {} }: {
+  children: React.ReactNode
+  quantityTiers?: Record<string, QuantityPriceTier[]>
+}) {
   const [items, setItems] = useState<CartItem[]>([])
   const [hydrated, setHydrated] = useState(false)
 
@@ -54,7 +60,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setItems((current) => cartReducer(current, action))
     },
     replaceItems,
-  }), [hydrated, items, replaceItems])
+    quantityTiers,
+  }), [hydrated, items, quantityTiers, replaceItems])
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }

@@ -1,5 +1,6 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { calculateCart } from '@/features/cart/totals'
+import type { QuantityPriceTier } from '@/features/cart/bundle-pricing'
 import { parseCartRefreshRequest } from '@/features/cart/refresh'
 import { canonicalizeCartVariantId } from '@/features/cart/types'
 import { parseStorefrontSettings } from '@/features/checkout/settings'
@@ -30,6 +31,10 @@ export type CheckoutVariant = {
   stock: number
   isPublished: boolean
   imageUrl: string | null
+  /** Groups variants of the same product for quantity pricing. */
+  productSlug?: string
+  /** The product's "buy N for NT$X" tiers, priced server-side. */
+  quantityPrices?: QuantityPriceTier[]
 }
 
 export type PaymentAttemptItem = {
@@ -56,6 +61,8 @@ export type PaymentAttemptInsert = {
   subtotal: number
   shippingFee: number
   total: number
+  /** Savings from product quantity tiers, snapshotted for the order. */
+  bundleDiscount: number
   discount: number
   couponCode: string | null
   items: PaymentAttemptItem[]
@@ -84,6 +91,8 @@ type StoredPaymentAttemptSummary = {
   storeId?: string
   storeName?: string
   couponCode?: string | null
+  bundleDiscount?: number
+  discount?: number
 }
 
 export type PaymentCompletion = {
@@ -203,13 +212,27 @@ export function createCheckoutService(
     })
 
     const settings = await repository.getStoreSettings()
+    // Tiers come from the variants the server just read, never from the client.
+    const quantityTiers = new Map<string, QuantityPriceTier[]>()
+    for (const { variant } of pricedItems) {
+      if (variant.productSlug && variant.quantityPrices?.length) {
+        quantityTiers.set(variant.productSlug, variant.quantityPrices)
+      }
+    }
     const totals = calculateCart(
-      pricedItems.map(({ variant, quantity }) => ({ unitPrice: variant.price, quantity })),
+      pricedItems.map(({ variant, quantity }) => ({
+        unitPrice: variant.price,
+        quantity,
+        productSlug: variant.productSlug,
+      })),
       settings.shippingFee,
       settings.freeShippingThreshold,
+      quantityTiers,
     )
+    // Coupons stack on top of the bundle price, so they discount the already
+    // reduced goods total rather than the original subtotal.
     const coupon = customer.couponCode
-      ? await resolveCoupon(customer.couponCode, totals.subtotal, customer.email)
+      ? await resolveCoupon(customer.couponCode, totals.discountedSubtotal, customer.email)
       : null
     if (coupon && !coupon.ok) throw new CheckoutAttemptError('coupon_invalid')
     const userId = await repository.getCurrentUserId()
@@ -227,6 +250,7 @@ export function createCheckoutService(
       subtotal: totals.subtotal,
       shippingFee: totals.shipping,
       total: Math.max(0, totals.total - (coupon?.discount ?? 0)),
+      bundleDiscount: totals.bundleDiscount,
       discount: coupon?.ok ? coupon.discount : 0,
       couponCode: coupon?.ok ? coupon.code : null,
       items: pricedItems.map(({ variant, quantity }) => ({
@@ -417,11 +441,23 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
     },
 
     async getPaymentAttemptSummary(attemptId) {
-      const { data, error } = await admin
+      const baseColumns = 'items, subtotal, shipping_fee, total, status, email, recipient_name, recipient_phone, store_chain, store_id, store_name, customer_note, payment_method, coupon_code, discount'
+      let { data, error } = await admin
         .from('payment_attempts')
-        .select('items, subtotal, shipping_fee, total, status, email, recipient_name, recipient_phone, store_chain, store_id, store_name, customer_note, payment_method, coupon_code')
+        .select(`${baseColumns}, bundle_discount`)
         .eq('id', attemptId)
         .maybeSingle()
+      if (error) {
+        // Retry without bundle_discount so orders still load before the
+        // quantity-pricing migration has been applied.
+        const fallback = await admin
+          .from('payment_attempts')
+          .select(baseColumns)
+          .eq('id', attemptId)
+          .maybeSingle()
+        data = fallback.data as typeof data
+        error = fallback.error
+      }
       if (error) throw error
       if (!data || !Array.isArray(data.items)) return null
 
@@ -453,20 +489,44 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
         customerNote: data.customer_note,
         paymentMethod: data.payment_method as PaymentMethod,
         couponCode: data.coupon_code,
+        bundleDiscount: 'bundle_discount' in data ? data.bundle_discount ?? 0 : 0,
+        discount: data.discount ?? 0,
       }
     },
 
     async getVariants(variantIds) {
       const { data, error } = await admin
         .from('product_variants')
-        .select('id, sku, color, size, price, stock, products!inner(name, is_published, available_at, product_images(storage_path, position))')
+        .select('id, sku, color, size, price, stock, products!inner(name, slug, is_published, available_at, product_images(storage_path, position))')
         .in('id', variantIds)
         .eq('is_active', true)
       if (error) throw error
 
+      // Tiers are read separately, and failures are swallowed, so checkout keeps
+      // working whether or not the quantity-pricing migration has been applied.
+      const tiersBySlug = new Map<string, Array<{ quantity: number; bundlePrice: number }>>()
+      try {
+        const { data: tierRows, error: tierError } = await admin
+          .from('product_quantity_prices')
+          .select('quantity, bundle_price, products!inner(slug)')
+        if (tierError) throw tierError
+        for (const row of (tierRows ?? []) as unknown as Array<{
+          quantity: number
+          bundle_price: number
+          products: { slug: string }
+        }>) {
+          const tiers = tiersBySlug.get(row.products.slug) ?? []
+          tiers.push({ quantity: row.quantity, bundlePrice: row.bundle_price })
+          tiersBySlug.set(row.products.slug, tiers)
+        }
+      } catch {
+        tiersBySlug.clear()
+      }
+
       return (data ?? []).map((variant) => {
         const product = variant.products as unknown as {
           name: string
+          slug: string
           is_published: boolean
           available_at: string | null
           product_images: Array<{ storage_path: string; position: number }>
@@ -475,6 +535,8 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
         return {
           id: variant.id,
           productName: product.name,
+          productSlug: product.slug,
+          quantityPrices: tiersBySlug.get(product.slug) ?? [],
           sku: variant.sku,
           color: variant.color,
           size: variant.size,
@@ -514,6 +576,9 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
         total: attempt.total,
         discount: attempt.discount,
         coupon_code: attempt.couponCode,
+        // Only sent when non-zero, which can only happen once the
+        // quantity-pricing migration has added the column.
+        ...(attempt.bundleDiscount > 0 ? { bundle_discount: attempt.bundleDiscount } : {}),
         items: attempt.items as unknown as Json,
         payment_access_expires_at: attempt.paymentAccessExpiresAt,
         payment_access_token_hash: attempt.paymentAccessTokenHash,

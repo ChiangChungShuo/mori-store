@@ -31,6 +31,7 @@ const product: ProductInput = {
   careInstructions: '冷水洗滌',
   sizeGuide: '正常版型',
   isNew: true,
+  quantityPrices: [],
   variants: [
     {
       id: variantId,

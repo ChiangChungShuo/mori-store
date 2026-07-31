@@ -2361,3 +2361,36 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 @media (max-width: 36rem) {
   .admin-dashboard-grid .order-pipeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Product quantity (bundle) pricing --------------------------------------- */
+.cart-summary .cart-discount strong { color: #52667a; }
+
+.product-bundle-card { margin: 0.85rem 0 0; border: 1px solid #dde5ea; border-radius: 0.9rem; background: #f4f8fa; padding: 0.85rem 1rem; }
+.product-bundle-heading { display: flex; align-items: center; gap: 0.4rem; margin: 0 0 0.55rem; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; color: #52667a; }
+.product-bundle-heading span { font-size: 0.9rem; }
+.product-bundle-card ul { display: grid; gap: 0.4rem; margin: 0; padding: 0; list-style: none; }
+.product-bundle-card li { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.5rem; border-bottom: 1px dashed #dde5ea; padding-bottom: 0.4rem; }
+.product-bundle-card li:last-of-type { border-bottom: 0; padding-bottom: 0; }
+.product-bundle-card li strong { font-size: 0.9rem; color: #3d4d5c; }
+.product-bundle-card li small { font-size: 0.68rem; color: #6a7f90; }
+.product-bundle-note { display: block; margin-top: 0.55rem; font-size: 0.66rem; line-height: 1.6; color: #6a7f90; }
+
+.admin-quantity-price-rows { display: grid; gap: 0.6rem; }
+.admin-quantity-price-row { display: grid; grid-template-columns: 8rem 10rem 1fr auto; align-items: start; gap: 0.75rem; border: 1px solid #dde5ea; border-radius: 0.75rem; background: #fbfdfe; padding: 0.7rem 0.85rem; }
+.admin-quantity-price-row label { display: grid; gap: 0.3rem; margin: 0; font-size: 0.72rem; font-weight: 600; color: #3d4d5c; }
+.admin-quantity-price-row input { width: 100%; }
+.admin-quantity-price-row label small { font-weight: 400; font-size: 0.66rem; color: #a15954; }
+.admin-quantity-price-preview { align-self: center; margin: 0; font-size: 0.72rem; color: #52667a; }
+.admin-quantity-price-remove { align-self: center; border: 1px solid #dcc4c1; border-radius: 999px; background: #fdf6f5; padding: 0.35rem 0.85rem; font-size: 0.7rem; color: #8f4a45; cursor: pointer; }
+.admin-quantity-price-remove:hover { background: #f7e7e5; }
+.admin-quantity-price-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-top: 0.85rem; }
+.admin-quantity-price-actions > button { border: 1px dashed #b9cad6; border-radius: 999px; background: #f4f8fa; padding: 0.45rem 1rem; font-size: 0.74rem; font-weight: 600; color: #52667a; cursor: pointer; }
+.admin-quantity-price-actions > button:hover:not(:disabled) { background: #e8f1f5; }
+.admin-quantity-price-actions > button:disabled { cursor: not-allowed; opacity: 0.5; }
+.admin-quantity-price-example { margin: 0; font-size: 0.72rem; color: #52667a; }
+
+@media (max-width: 40rem) {
+  .admin-quantity-price-row { grid-template-columns: 1fr 1fr; }
+  .admin-quantity-price-preview { grid-column: 1 / -1; }
+  .admin-quantity-price-remove { grid-column: 1 / -1; justify-self: start; }
+}

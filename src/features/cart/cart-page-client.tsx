@@ -20,7 +20,7 @@ export function CartPageClient({ settings, isSignedIn = false, recommendedProduc
   recommendedProducts?: CatalogProduct[]
   couponAction?: (code: string, subtotal: number) => Promise<CouponValidation>
 }) {
-  const { items, hydrated, dispatch, replaceItems } = useCart()
+  const { items, hydrated, dispatch, replaceItems, quantityTiers } = useCart()
   const [refreshStatus, setRefreshStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [refreshAttempt, setRefreshAttempt] = useState(0)
   const [couponInput, setCouponInput] = useState('')
@@ -31,15 +31,18 @@ export function CartPageClient({ settings, isSignedIn = false, recommendedProduc
   const refreshKey = JSON.stringify(
     items.map(({ variantId, quantity }) => ({ variantId, quantity })),
   )
-  const totals = calculateCart(items, settings.shippingFee, settings.freeShippingThreshold)
+  const totals = calculateCart(items, settings.shippingFee, settings.freeShippingThreshold, quantityTiers)
   const itemCount = items.reduce((total, item) => total + item.quantity, 0)
+  // Free shipping tracks the discounted goods total, matching what we charge.
   const freeShippingRemaining = settings.freeShippingThreshold === null
     ? null
-    : Math.max(0, settings.freeShippingThreshold - totals.subtotal)
+    : Math.max(0, settings.freeShippingThreshold - totals.discountedSubtotal)
   const freeShippingProgress = settings.freeShippingThreshold && settings.freeShippingThreshold > 0
-    ? Math.min(100, Math.round((totals.subtotal / settings.freeShippingThreshold) * 100))
+    ? Math.min(100, Math.round((totals.discountedSubtotal / settings.freeShippingThreshold) * 100))
     : 100
-  const appliedCoupon = couponResult?.ok && couponResult.subtotal === totals.subtotal
+  // Coupon thresholds are checked against the post-bundle amount, exactly as
+  // the server does when the order is created.
+  const appliedCoupon = couponResult?.ok && couponResult.subtotal === totals.discountedSubtotal
     ? couponResult
     : null
   const payableTotal = Math.max(0, totals.total - (appliedCoupon?.discount ?? 0))
@@ -60,16 +63,16 @@ export function CartPageClient({ settings, isSignedIn = false, recommendedProduc
   }, [])
 
   useEffect(() => {
-    if (!hydrated || !appliedCouponCode || totals.subtotal <= 0 || !couponAction) return
+    if (!hydrated || !appliedCouponCode || totals.discountedSubtotal <= 0 || !couponAction) return
     let cancelled = false
     startCouponTransition(async () => {
-      const result = await couponAction(appliedCouponCode, totals.subtotal)
+      const result = await couponAction(appliedCouponCode, totals.discountedSubtotal)
       if (cancelled) return
-      setCouponResult({ ...result, subtotal: totals.subtotal })
+      setCouponResult({ ...result, subtotal: totals.discountedSubtotal })
       if (!result.ok) window.sessionStorage.removeItem(couponStorageKey)
     })
     return () => { cancelled = true }
-  }, [appliedCouponCode, couponAction, couponRequestId, hydrated, totals.subtotal])
+  }, [appliedCouponCode, couponAction, couponRequestId, hydrated, totals.discountedSubtotal])
 
   useEffect(() => {
     if (!hydrated || refreshKey === '[]') return
@@ -234,6 +237,7 @@ export function CartPageClient({ settings, isSignedIn = false, recommendedProduc
                   {couponResult ? <p className={couponResult.ok ? 'coupon-success' : 'coupon-error'} role="status">{couponResult.message}</p> : null}
                 </div>
                 <p><span>商品小計</span><strong>{formatTwd(totals.subtotal)}</strong></p>
+                {totals.bundleDiscount > 0 ? <p className="cart-discount"><span>多件優惠</span><strong>−{formatTwd(totals.bundleDiscount)}</strong></p> : null}
                 <p><span>運費</span><strong>{totals.shipping === 0 ? '免運' : formatTwd(totals.shipping)}</strong></p>
                 {appliedCoupon ? <p className="cart-discount"><span>優惠碼 {appliedCoupon.code}</span><strong>−{formatTwd(appliedCoupon.discount)}</strong></p> : null}
                 <p className="cart-total"><span>合計</span><strong>{formatTwd(payableTotal)}</strong></p>

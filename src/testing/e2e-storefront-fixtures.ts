@@ -412,7 +412,20 @@ export function getE2EVariants(variantIds: string[], store: E2EStoreState = getE
       stock: variant.stock,
       isPublished: true,
       imageUrl: product.imageUrl,
+      productSlug: product.slug,
+      quantityPrices: store.quantityPrices.get(product.slug) ?? [],
     })))
+}
+
+export function getE2EQuantityPriceMap() {
+  const store = getE2EStore()
+  const map: Record<string, Array<{ quantity: number; bundlePrice: number }>> = {}
+  for (const product of getMutableE2EProducts(store)) {
+    if (!store.publishedProductIds.has(product.id)) continue
+    const tiers = store.quantityPrices.get(product.slug)
+    if (tiers?.length) map[product.slug] = tiers
+  }
+  return map
 }
 
 export const E2E_STOREFRONT_SETTINGS = {

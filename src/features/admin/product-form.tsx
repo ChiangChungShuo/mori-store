@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { availableAtError, getProductValidationErrors, productSchema, slugifyProductName, type ProductInput, type ProductVariantErrors } from '@/lib/validation/product'
+import { availableAtError, getProductValidationErrors, productSchema, slugifyProductName, type ProductInput, type ProductVariantErrors, type QuantityPriceErrors } from '@/lib/validation/product'
 import { VariantGrid } from './variant-grid'
 import { defaultProductCategories } from '@/features/catalog/category-defaults'
 import { AGE_BANDS } from '@/lib/age-bands'
@@ -13,6 +13,8 @@ import { showToast } from '@/components/toast'
 import { compressImagesForUpload } from '@/lib/image-compression'
 import type { SaveDraftState } from '@/features/admin/product-drafts'
 import type { ProductSeries } from '@/features/catalog/product-series'
+import { priceProductBundle } from '@/features/cart/bundle-pricing'
+import { formatTwd } from '@/lib/money'
 
 type ProductActionResult = {
   ok: boolean
@@ -20,6 +22,7 @@ type ProductActionResult = {
   productId?: string
   fieldErrors?: Record<string, string[] | undefined>
   variantErrors?: ProductVariantErrors
+  quantityPriceErrors?: QuantityPriceErrors
 }
 
 type ProductFormProps = {
@@ -59,6 +62,7 @@ const FIELD_LABELS: Record<string, string> = {
   careInstructions: '洗滌說明',
   tags: '標籤',
   availableAt: '預約開賣時間',
+  quantityPrices: '多件優惠價',
 }
 
 const VARIANT_FIELD_LABELS: Record<string, string> = {
@@ -198,7 +202,7 @@ export function ProductImageOrderControls({
 
 export function ProductForm({ initialProduct, onSave, requireImage = false, categories = [...defaultProductCategories], series = [], materialPresets = [], carePresets = [], sizeOptions = [], draftId: initialDraftId = null, draftImages: initialDraftImages = [], draftImageAlt: initialDraftImageAlt = '', saveDraft, discardDraft }: ProductFormProps) {
   const router = useRouter()
-  const [product, setProduct] = useState<ProductInput>({ ...initialProduct, seriesIds: initialProduct.seriesIds ?? [] })
+  const [product, setProduct] = useState<ProductInput>({ ...initialProduct, seriesIds: initialProduct.seriesIds ?? [], quantityPrices: initialProduct.quantityPrices ?? [] })
   const [draftId, setDraftId] = useState<string | null>(initialDraftId)
   const [preorder, setPreorder] = useState(isPreorder(initialProduct.tags))
   const [pendingSave, setPendingSave] = useState<ProductInput | null>(null)
@@ -412,6 +416,72 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
     }))
   }
 
+  function addQuantityTier() {
+    setResult(null)
+    setProduct((current) => {
+      const used = new Set(current.quantityPrices.map((tier) => tier.quantity))
+      let quantity = 2
+      while (used.has(quantity) && quantity < 99) quantity += 1
+      const cheapest = current.variants.reduce(
+        (lowest, variant) => Math.min(lowest, variant.price || 0),
+        Number.POSITIVE_INFINITY,
+      )
+      // Suggest a round 10%-off price so the owner only has to adjust it.
+      const suggested = Number.isFinite(cheapest) && cheapest > 0
+        ? Math.round((cheapest * quantity * 0.9) / 10) * 10
+        : 0
+      return {
+        ...current,
+        quantityPrices: [...current.quantityPrices, { quantity, bundlePrice: suggested }],
+      }
+    })
+  }
+
+  function updateQuantityTier(index: number, patch: Partial<ProductInput['quantityPrices'][number]>) {
+    setResult(null)
+    setProduct((current) => ({
+      ...current,
+      quantityPrices: current.quantityPrices.map((tier, tierIndex) => (
+        tierIndex === index ? { ...tier, ...patch } : tier
+      )),
+    }))
+  }
+
+  function removeQuantityTier(index: number) {
+    setResult(null)
+    setProduct((current) => ({
+      ...current,
+      quantityPrices: current.quantityPrices.filter((_, tierIndex) => tierIndex !== index),
+    }))
+  }
+
+  const cheapestVariantPrice = product.variants.reduce(
+    (lowest, variant) => Math.min(lowest, variant.price || Number.POSITIVE_INFINITY),
+    Number.POSITIVE_INFINITY,
+  )
+  const exampleUnitPrice = Number.isFinite(cheapestVariantPrice) ? cheapestVariantPrice : 0
+  // Shows the owner what the largest configured tier actually saves.
+  const largestTier = product.quantityPrices.reduce<number>(
+    (largest, tier) => Math.max(largest, tier.quantity),
+    0,
+  )
+  const bundleExample = largestTier >= 2 && exampleUnitPrice > 0
+    ? (() => {
+      const pricing = priceProductBundle(
+        [{ unitPrice: exampleUnitPrice, quantity: largestTier }],
+        product.quantityPrices,
+      )
+      return pricing.discount > 0
+        ? {
+          quantity: largestTier,
+          original: pricing.originalSubtotal,
+          discounted: pricing.discountedSubtotal,
+          saving: pricing.discount,
+        }
+        : null
+    })()
+    : null
+
   return (
     <form className="admin-product-form" data-no-confirm onSubmit={submit} noValidate>
       {requireImage ? <div className="admin-product-progress"><div className="admin-product-steps" aria-label="商品建立流程"><span data-active={activeStep === 1} data-complete={activeStep > 1}>01 商品內容</span><span data-active={activeStep === 2} data-complete={activeStep > 2}>02 規格庫存</span><span data-active={activeStep === 3} data-complete={activeStep > 3}>03 商品圖片</span><span data-active={activeStep === 4}>04 確認建立</span></div><div aria-label="商品建立進度" aria-valuemax={100} aria-valuemin={0} aria-valuenow={Math.round(progress)} className="admin-product-progress-meter" role="progressbar"><i style={{ width: `${progress}%` }} /></div></div> : null}
@@ -454,6 +524,39 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
             <header><div><span>03</span><h2>規格與庫存</h2></div><p>每個顏色與尺寸都需要獨立 SKU、售價和庫存。</p></header>
             <VariantGrid variants={product.variants} onChange={(variants) => { setResult(null); setProduct((current) => ({ ...current, variants })) }} errors={attempted ? result?.variantErrors : undefined} sizeOptions={sizeOptions} />
             {attempted && result?.fieldErrors?.variants ? <p className="admin-variant-error" role="alert">請修正上方紅色標示的規格欄位；只建立一種規格也可以儲存。</p> : null}
+          </section>
+
+          <section className="admin-form-card admin-quantity-price-card">
+            <header><div><span>＋</span><h2>多件優惠價（選填）</h2></div><p>設定「任選 N 件多少錢」，顧客不需輸入優惠碼，購物車會自動算最便宜的組合。同一商品的不同顏色與尺寸可以混搭。</p></header>
+            {product.quantityPrices.length === 0
+              ? <p className="admin-panel-note">尚未設定多件優惠。例如單件 {formatTwd(exampleUnitPrice)}，可設定「任選 2 件」與「任選 3 件」的組合價。</p>
+              : <div className="admin-quantity-price-rows">
+                {product.quantityPrices.map((tier, index) => {
+                  const rowErrors = attempted ? result?.quantityPriceErrors?.[index] : undefined
+                  const preview = exampleUnitPrice > 0
+                    ? exampleUnitPrice * tier.quantity - tier.bundlePrice
+                    : 0
+                  return (
+                    <div className="admin-quantity-price-row" key={index}>
+                      <label>任選件數
+                        <input aria-invalid={Boolean(rowErrors?.quantity)} min={2} max={99} type="number" value={tier.quantity} onChange={(event) => updateQuantityTier(index, { quantity: Number(event.target.value) })} />
+                        {rowErrors?.quantity && <small>{rowErrors.quantity[0]}</small>}
+                      </label>
+                      <label>組合價
+                        <input aria-invalid={Boolean(rowErrors?.bundlePrice)} min={0} type="number" value={tier.bundlePrice} onChange={(event) => updateQuantityTier(index, { bundlePrice: Number(event.target.value) })} />
+                        {rowErrors?.bundlePrice && <small>{rowErrors.bundlePrice[0]}</small>}
+                      </label>
+                      <p className="admin-quantity-price-preview">{preview > 0 ? `每件約 ${formatTwd(Math.round(tier.bundlePrice / tier.quantity))}，省 ${formatTwd(preview)}` : '組合價需低於單買總額'}</p>
+                      <button type="button" className="admin-quantity-price-remove" onClick={() => removeQuantityTier(index)} aria-label={`移除任選 ${tier.quantity} 件的優惠`}>移除</button>
+                    </div>
+                  )
+                })}
+              </div>}
+            <div className="admin-quantity-price-actions">
+              <button type="button" onClick={addQuantityTier} disabled={product.quantityPrices.length >= 10}>＋ 新增件數階梯</button>
+              {bundleExample ? <p className="admin-quantity-price-example">試算：買 {bundleExample.quantity} 件原價 {formatTwd(bundleExample.original)}，優惠後 {formatTwd(bundleExample.discounted)}（省 {formatTwd(bundleExample.saving)}）</p> : null}
+            </div>
+            {attempted && result?.fieldErrors?.quantityPrices ? <p className="admin-variant-error" role="alert">{result.fieldErrors.quantityPrices[0]}</p> : null}
           </section>
 
           {requireImage ? <section className="admin-form-card admin-create-image-card">

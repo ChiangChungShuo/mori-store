@@ -14,6 +14,14 @@ import type { CouponValidation } from '@/features/checkout/coupons'
 const couponStorageKey = 'mori-checkout-coupon'
 const checkoutDraftStorageKey = 'mori-checkout-draft'
 
+/** Cart totals returned by /api/cart/refresh. */
+type CheckoutSummary = {
+  subtotal: number
+  bundleDiscount: number
+  shipping: number
+  total: number
+}
+
 type CheckoutFormProps = {
   action: (
     previousState: CheckoutActionState,
@@ -61,7 +69,7 @@ export function CheckoutForm({ action, couponAction, pickedStore, initialValues 
   const [refreshAttempt, setRefreshAttempt] = useState(0)
   const [refreshedKey, setRefreshedKey] = useState('')
   const [refreshErrorKey, setRefreshErrorKey] = useState('')
-  const [summary, setSummary] = useState<{ subtotal: number; shipping: number; total: number } | null>(null)
+  const [summary, setSummary] = useState<CheckoutSummary | null>(null)
   const [contact, setContact] = useState({
     email: initialValues?.email ?? '',
     recipientName: initialValues?.recipientName ?? '',
@@ -87,7 +95,8 @@ export function CheckoutForm({ action, couponAction, pickedStore, initialValues 
     && contact.recipientName.trim().length > 0
     && /^09\d{8}$/.test(contact.phone.trim())
   const checkoutComplete = contactComplete && storeName.trim().length > 0 && storeId.trim().length > 0
-  const appliedCoupon = couponResult?.ok && couponResult.subtotal === summary?.subtotal
+  const goodsTotal = summary ? summary.subtotal - summary.bundleDiscount : 0
+  const appliedCoupon = couponResult?.ok && summary && couponResult.subtotal === goodsTotal
     ? couponResult
     : null
   const payableTotal = Math.max(0, (summary?.total ?? 0) - (appliedCoupon?.discount ?? 0))
@@ -155,9 +164,9 @@ export function CheckoutForm({ action, couponAction, pickedStore, initialValues 
     if (!couponAction || !couponCode || !summary) return
     let cancelled = false
     startCouponTransition(async () => {
-      const result = await couponAction(couponCode, summary.subtotal)
+      const result = await couponAction(couponCode, summary.subtotal - summary.bundleDiscount)
       if (cancelled) return
-      setCouponResult({ ...result, subtotal: summary.subtotal })
+      setCouponResult({ ...result, subtotal: summary.subtotal - summary.bundleDiscount })
       if (!result.ok) window.sessionStorage.removeItem(couponStorageKey)
     })
     return () => { cancelled = true }
@@ -176,7 +185,7 @@ export function CheckoutForm({ action, couponAction, pickedStore, initialValues 
         })
         const payload = await response.json() as {
           items?: unknown
-          summary?: { subtotal?: unknown; shipping?: unknown; total?: unknown }
+          summary?: { subtotal?: unknown; shipping?: unknown; total?: unknown; bundleDiscount?: unknown }
         }
         const nextSummary = payload.summary
         if (!response.ok
@@ -190,7 +199,13 @@ export function CheckoutForm({ action, couponAction, pickedStore, initialValues 
         }
         if (!cancelled) {
           replaceItems(payload.items)
-          setSummary(nextSummary as { subtotal: number; shipping: number; total: number })
+          // bundleDiscount is optional so an older cached response still checks out.
+          setSummary({
+            ...(nextSummary as CheckoutSummary),
+            bundleDiscount: Number.isInteger(nextSummary.bundleDiscount)
+              ? nextSummary.bundleDiscount as number
+              : 0,
+          })
           setRefreshedKey(refreshKey)
           setRefreshErrorKey('')
         }
@@ -274,7 +289,7 @@ export function CheckoutForm({ action, couponAction, pickedStore, initialValues 
               }}>{couponPending ? '確認中…' : '套用'}</button></div>
               {couponResult ? <p className={couponResult.ok ? 'coupon-success' : 'coupon-error'} role="status">{couponResult.message}</p> : null}
             </div> : null}
-            <dl><div><dt>商品小計</dt><dd>{formatTwd(summary.subtotal)}</dd></div><div><dt>超商運費</dt><dd>{summary.shipping === 0 ? '免運' : formatTwd(summary.shipping)}</dd></div>{appliedCoupon ? <div className="checkout-discount"><dt>優惠碼 {appliedCoupon.code}</dt><dd>−{formatTwd(appliedCoupon.discount)}</dd></div> : null}<div className="checkout-grand-total"><dt>應付合計</dt><dd>{formatTwd(payableTotal)}</dd></div></dl>
+            <dl><div><dt>商品小計</dt><dd>{formatTwd(summary.subtotal)}</dd></div>{summary.bundleDiscount > 0 ? <div className="checkout-discount"><dt>多件優惠</dt><dd>−{formatTwd(summary.bundleDiscount)}</dd></div> : null}<div><dt>超商運費</dt><dd>{summary.shipping === 0 ? '免運' : formatTwd(summary.shipping)}</dd></div>{appliedCoupon ? <div className="checkout-discount"><dt>優惠碼 {appliedCoupon.code}</dt><dd>−{formatTwd(appliedCoupon.discount)}</dd></div> : null}<div className="checkout-grand-total"><dt>應付合計</dt><dd>{formatTwd(payableTotal)}</dd></div></dl>
             {couponPending ? <p className="checkout-coupon-status" aria-live="polite">正在確認購物車優惠碼…</p> : null}
           </div> : null}
           <div className="checkout-payment-note"><strong>下一步：確認並送出訂單</strong><p>下一頁會顯示完整商品、客戶、付款與送貨資料；確認送出後才會成立訂單並保留庫存。</p></div>

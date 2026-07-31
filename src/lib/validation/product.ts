@@ -17,6 +17,16 @@ const variantSchema = z.object({
   { message: '原價不可低於售價', path: ['compareAtPrice'] },
 )
 
+const quantityPriceSchema = z.object({
+  quantity: z.number()
+    .int('件數必須是整數')
+    .min(2, '多件優惠至少 2 件')
+    .max(99, '多件優惠最多 99 件'),
+  bundlePrice: z.number()
+    .int('組合價必須是整數')
+    .nonnegative('組合價不可小於 0'),
+}).strict()
+
 export const productSchema = z.object({
   name: z.string().trim().min(1, '商品名稱為必填'),
   slug: z.string().trim().default(''),
@@ -34,10 +44,37 @@ export const productSchema = z.object({
   isNew: z.boolean().default(false),
   availableAt: z.string().datetime({ offset: true }).nullable().optional(),
   variants: z.array(variantSchema).min(1, '至少需要一個商品規格'),
+  quantityPrices: z.array(quantityPriceSchema).max(10, '多件優惠最多 10 組').default([]),
 }).strict().superRefine((product, context) => {
   const skus = new Set<string>()
   const combinations = new Set<string>()
   const ids = new Set<string>()
+  const cheapestUnitPrice = product.variants.reduce(
+    (cheapest, variant) => Math.min(cheapest, variant.price),
+    Number.POSITIVE_INFINITY,
+  )
+  const tierQuantities = new Set<number>()
+
+  product.quantityPrices.forEach((tier, index) => {
+    if (tierQuantities.has(tier.quantity)) {
+      context.addIssue({
+        code: 'custom',
+        message: '同一件數只能設定一組價格',
+        path: ['quantityPrices', index, 'quantity'],
+      })
+    }
+    tierQuantities.add(tier.quantity)
+
+    // A tier that costs more than buying the items separately would never
+    // apply, so reject it at save time rather than silently ignoring it.
+    if (Number.isFinite(cheapestUnitPrice) && tier.bundlePrice >= cheapestUnitPrice * tier.quantity) {
+      context.addIssue({
+        code: 'custom',
+        message: `組合價需低於單買 ${tier.quantity} 件的 ${cheapestUnitPrice * tier.quantity} 元`,
+        path: ['quantityPrices', index, 'bundlePrice'],
+      })
+    }
+  })
 
   product.variants.forEach((variant, index) => {
     if (variant.id && !variant.updatedAt) {
@@ -156,21 +193,34 @@ export function availableAtError(
 
 export type ProductVariantField = keyof ProductInput['variants'][number]
 export type ProductVariantErrors = Array<Partial<Record<ProductVariantField, string[]>>>
+export type QuantityPriceField = keyof ProductInput['quantityPrices'][number]
+export type QuantityPriceErrors = Array<Partial<Record<QuantityPriceField, string[]>>>
 
 export function getProductValidationErrors(error: z.ZodError) {
   const fieldErrors = error.flatten().fieldErrors
   const variantErrors: ProductVariantErrors = []
+  const quantityPriceErrors: QuantityPriceErrors = []
 
   for (const issue of error.issues) {
-    if (issue.path[0] !== 'variants' || typeof issue.path[1] !== 'number') continue
     const index = issue.path[1]
     const field = issue.path[2]
-    if (typeof field !== 'string') continue
-    const row = variantErrors[index] ?? {}
-    const key = field as ProductVariantField
-    row[key] = [...(row[key] ?? []), issue.message]
-    variantErrors[index] = row
+    if (typeof index !== 'number' || typeof field !== 'string') continue
+
+    if (issue.path[0] === 'variants') {
+      const row = variantErrors[index] ?? {}
+      const key = field as ProductVariantField
+      row[key] = [...(row[key] ?? []), issue.message]
+      variantErrors[index] = row
+      continue
+    }
+
+    if (issue.path[0] === 'quantityPrices') {
+      const row = quantityPriceErrors[index] ?? {}
+      const key = field as QuantityPriceField
+      row[key] = [...(row[key] ?? []), issue.message]
+      quantityPriceErrors[index] = row
+    }
   }
 
-  return { fieldErrors, variantErrors }
+  return { fieldErrors, variantErrors, quantityPriceErrors }
 }

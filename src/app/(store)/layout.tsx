@@ -12,12 +12,13 @@ import { listProductCategories } from '@/features/catalog/categories'
 import { GoogleAnalytics } from '@/components/google-analytics'
 import { getPublicSiteSettings } from '@/features/admin/settings-actions'
 import { listProductSeries } from '@/features/catalog/product-series'
+import { getQuantityPriceMap } from '@/features/catalog/quantity-prices'
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
-  const [settings, user, isAdmin, categories, series, { googleAnalyticsId }] = await Promise.all([getStorefrontSettings(), getCurrentUser(), isCurrentUserAdmin(), listProductCategories(), listProductSeries(), getPublicSiteSettings()])
+  const [settings, user, isAdmin, categories, series, { googleAnalyticsId }, quantityTiers] = await Promise.all([getStorefrontSettings(), getCurrentUser(), isCurrentUserAdmin(), listProductCategories(), listProductSeries(), getPublicSiteSettings(), getQuantityPriceMap()])
 
   return (
-    <CartProvider>
+    <CartProvider quantityTiers={quantityTiers}>
       <WishlistAuthProvider isSignedIn={Boolean(user)}>
         <GoogleAnalytics measurementId={googleAnalyticsId} />
         <StorefrontTracker />

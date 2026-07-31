@@ -345,7 +345,7 @@ describe('admin store settings', () => {
   })
 
   it('charges shipping when the free-shipping threshold is disabled', () => {
-    expect(calculateCart([{ unitPrice: 2000, quantity: 1 }], 60, null)).toEqual({
+    expect(calculateCart([{ unitPrice: 2000, quantity: 1 }], 60, null)).toMatchObject({
       subtotal: 2000,
       shipping: 60,
       total: 2060,

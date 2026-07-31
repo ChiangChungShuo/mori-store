@@ -6,6 +6,7 @@ import {
   availableAtError,
   generateProductSlug,
   type ProductVariantErrors,
+  type QuantityPriceErrors,
   type ProductInput,
 } from '@/lib/validation/product'
 import type { Database } from '@/types/database'
@@ -19,6 +20,7 @@ type ActionResult = {
   productId?: string
   fieldErrors?: Record<string, string[] | undefined>
   variantErrors?: ProductVariantErrors
+  quantityPriceErrors?: QuantityPriceErrors
 }
 
 export type AdminProductSummary = {
@@ -105,12 +107,13 @@ const imageOrderSchema = z.array(imageIdSchema).min(1).max(30)
   .refine((imageIds) => new Set(imageIds).size === imageIds.length)
 
 function validationFailure(error: z.ZodError): ActionResult {
-  const { fieldErrors, variantErrors } = getProductValidationErrors(error)
+  const { fieldErrors, variantErrors, quantityPriceErrors } = getProductValidationErrors(error)
   return {
     ok: false,
     message: '請檢查商品資料',
     fieldErrors,
     variantErrors,
+    quantityPriceErrors,
   }
 }
 
@@ -529,6 +532,12 @@ function createFixtureProductRepository(): ProductRepository {
     ]
   }
 
+  function replaceQuantityPrices(slug: string, input: ProductInput) {
+    const store = getE2EStore()
+    if (input.quantityPrices.length) store.quantityPrices.set(slug, [...input.quantityPrices])
+    else store.quantityPrices.delete(slug)
+  }
+
   return {
     async createProduct(input) {
       validateSeries(input)
@@ -568,6 +577,7 @@ function createFixtureProductRepository(): ProductRepository {
         variants,
       })
       replaceSeriesAssignments(id, input.seriesIds)
+      replaceQuantityPrices(input.slug, input)
       return id
     },
     async updateProduct(productId, input) {
@@ -615,6 +625,7 @@ function createFixtureProductRepository(): ProductRepository {
         }),
       }
       replaceSeriesAssignments(productId, input.seriesIds)
+      replaceQuantityPrices(products[index].slug, input)
     },
     async setPublished(productId, published) {
       const product = getMutableE2EProducts().find((candidate) => candidate.id === productId)
@@ -751,6 +762,7 @@ export async function getAdminProduct(productId: string): Promise<AdminProductDe
         seriesIds: getE2EStore().productSeriesProducts
           .filter((assignment) => assignment.productId === product.id)
           .map((assignment) => assignment.seriesId),
+        quantityPrices: [...(getE2EStore().quantityPrices.get(product.slug) ?? [])],
         ageBands: [...product.ageBands],
         description: product.description,
         summary: product.summary ?? '',
@@ -796,6 +808,24 @@ export async function getAdminProduct(productId: string): Promise<AdminProductDe
   if (error) throw error
   if (!data) return null
 
+  // Read separately and tolerate failure so the edit page still loads if the
+  // quantity-pricing migration has not been applied yet.
+  let quantityPrices: Array<{ quantity: number; bundlePrice: number }> = []
+  try {
+    const { data: tierRows, error: tierError } = await createAdminClient()
+      .from('product_quantity_prices')
+      .select('quantity, bundle_price')
+      .eq('product_id', id.data)
+      .order('quantity')
+    if (tierError) throw tierError
+    quantityPrices = (tierRows ?? []).map((tier) => ({
+      quantity: tier.quantity,
+      bundlePrice: tier.bundle_price,
+    }))
+  } catch {
+    quantityPrices = []
+  }
+
   return {
     id: data.id,
     isPublished: data.is_published,
@@ -804,6 +834,7 @@ export async function getAdminProduct(productId: string): Promise<AdminProductDe
       slug: data.slug,
       category: data.category,
       seriesIds: data.product_series_products.map((assignment) => assignment.series_id),
+      quantityPrices,
       ageBands: data.age_bands,
       description: data.description,
       summary: data.summary ?? '',

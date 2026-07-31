@@ -19,6 +19,7 @@ const newProduct: ProductInput = {
   sizeGuide: '',
   isNew: false,
   variants: [{ sku: '', color: '', size: '', price: 0, cost: 0, stock: 0 }],
+  quantityPrices: [],
 }
 
 type NewProductPageProps = {
