@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ProductCard } from '@/features/catalog/product-card'
@@ -124,9 +125,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           {product.tags && product.tags.length > 0 ? <ul className="product-tags" aria-label="商品標籤">{product.tags.map((tag) => <li key={tag}>{tag}</li>)}</ul> : null}
           <div className="product-wishlist-row"><WishlistButton productId={product.id} productName={product.name} /><small>收藏後可在頁首的「收藏」快速找到這件商品。</small></div>
           <ul className="product-feature-list">
-            <li><span>觸感</span><strong>{product.material}</strong></li>
-            <li><span>活動</span><strong>為孩子日常跑跳保留舒適空間</strong></li>
             <li><span>寄送</span><strong>7-ELEVEN／全家門市取貨</strong></li>
+            <li><span>付款方式</span><strong>轉帳匯款</strong></li>
           </ul>
           <VariantPicker product={product} />
           <ProductShareButtons productName={product.name} />
@@ -138,9 +138,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <header className="section-heading"><div><p className="eyebrow">details & care</p><h2>穿之前，先了解這件衣服。</h2></div><p>從尺寸、材質到洗滌方式，都整理在這裡，讓替孩子選衣更安心。</p></header>
         <div className="product-info-layout">
           <div className="product-info-main">
-            <details open><summary>商品描述</summary><div><p className="product-description-body">{product.description}</p><dl className="product-notes"><div><dt>商品分類</dt><dd>{product.category}</dd></div><div><dt>適用年齡</dt><dd>{product.ageBands.join('、')} 歲</dd></div><div><dt>材質</dt><dd>{product.material}</dd></div></dl></div></details>
-            <details open><summary>商品特點</summary><div><ul className="detail-bullets"><li>{product.description}</li><li>材質：{product.material}</li><li>照顧方式：{product.careInstructions}</li></ul></div></details>
-            <details open><summary>尺寸表</summary><div><p>{product.sizeGuide}</p><div className="size-table-wrap"><table className="size-table"><thead><tr><th>標示尺寸</th><th>建議身高</th><th>可選顏色</th></tr></thead><tbody>{sizes.map((size) => { const variants = product.variants.filter((variant) => variant.size === size); return <tr key={size}><th>{size}</th><td>{/^\d+$/.test(size) ? `${size} cm 前後` : '依尺寸說明'}</td><td>{[...new Set(variants.map((variant) => variant.color))].join('、')}</td></tr> })}</tbody></table></div><small>手工測量可能有 1–2 cm 誤差；介於兩個尺寸時，建議依孩子身形與喜歡的穿著感選擇。</small></div></details>
+            <details open><summary>商品特點</summary><div><p className="product-description-body">{product.description}</p><dl className="product-notes"><div><dt>商品分類</dt><dd>{product.category}</dd></div><div><dt>適用年齡</dt><dd>{product.ageBands.join('、')} 歲</dd></div><div><dt>觸感</dt><dd>{product.material}</dd></div><div><dt>活動</dt><dd>為孩子日常跑跳保留舒適空間</dd></div><div><dt>照顧方式</dt><dd>{product.careInstructions}</dd></div></dl></div></details>
+            <details open><summary>尺寸表</summary><div><figure className="measurement-guide"><Image src="/images/children-clothing-flat-measurement-guide.png" alt="童裝平量方式：上衣、褲子、包屁衣與連身衣的衣長、胸寬、肩寬、袖長、腰寬、褲長與襠長量測位置" width={1774} height={887} sizes="(max-width: 58rem) calc(100vw - 2rem), 54rem" /><figcaption>將衣服自然攤平、不拉伸布料，再依圖示位置量測；胸寬與腰寬皆為平量單面尺寸。</figcaption></figure><p>{product.sizeGuide}</p><div className="size-table-wrap"><table className="size-table"><thead><tr><th>標示尺寸</th><th>建議身高</th><th>可選顏色</th></tr></thead><tbody>{sizes.map((size) => { const variants = product.variants.filter((variant) => variant.size === size); return <tr key={size}><th>{size}</th><td>{/^\d+$/.test(size) ? `${size} cm 前後` : '依尺寸說明'}</td><td>{[...new Set(variants.map((variant) => variant.color))].join('、')}</td></tr> })}</tbody></table></div><small>手工測量可能有 1–2 cm 誤差；介於兩個尺寸時，建議依孩子身形與喜歡的穿著感選擇。</small></div></details>
             <details><summary>購物須知</summary><div><ul className="detail-bullets"><li>本店使用 7-ELEVEN、全家超商取貨，門市到貨後請依通知期限領取。</li><li>商品圖片會因螢幕顯示與拍攝光線產生些微色差，實際顏色以收到商品為準。</li><li>鑑賞期並非試用期，退換貨時請保留吊牌、包裝與商品完整性。</li><li>付款完成後才會保留庫存；熱門尺寸可能較快售完。</li></ul></div></details>
           </div>
           <aside className="product-care-card"><p className="eyebrow">care note</p><h3>讓衣服陪孩子久一點</h3><p>{product.careInstructions}</p><div><span>01</span>深淺色分開洗滌</div><div><span>02</span>使用中性洗劑</div><div><span>03</span>依洗標方式晾乾</div></aside>
