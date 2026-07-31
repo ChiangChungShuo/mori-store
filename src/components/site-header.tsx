@@ -10,12 +10,13 @@ import { DesktopHeaderSearch } from '@/components/desktop-header-search'
 import { AutoCloseDetails } from '@/components/auto-close-details'
 import { CategorySeriesMenu } from '@/components/category-series-menu'
 import type { ProductSeries } from '@/features/catalog/product-series'
+import { formatTwd } from '@/lib/money'
 
-export function SiteHeader({ cart, isSignedIn = false, isAdmin = false, categories = [...defaultProductCategories], series = [] }: { cart?: ReactNode; isSignedIn?: boolean; isAdmin?: boolean; categories?: string[]; series?: ProductSeries[] }) {
+export function SiteHeader({ cart, isSignedIn = false, isAdmin = false, categories = [...defaultProductCategories], series = [], freeShippingThreshold = null }: { cart?: ReactNode; isSignedIn?: boolean; isAdmin?: boolean; categories?: string[]; series?: ProductSeries[]; freeShippingThreshold?: number | null }) {
   return (
     <header id="top">
       <div className="announcement">
-        <p>滿 NT$1,500 免運・7-ELEVEN 取貨</p>
+        <p>{freeShippingThreshold ? `滿 ${formatTwd(freeShippingThreshold)} 免運・7-ELEVEN 取貨` : '7-ELEVEN 超商取貨'}</p>
       </div>
       <nav aria-label="主要導覽" className="site-nav">
         <div className="store-mobile-left">

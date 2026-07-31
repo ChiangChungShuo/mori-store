@@ -22,7 +22,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <WishlistAuthProvider isSignedIn={Boolean(user)}>
         <GoogleAnalytics measurementId={googleAnalyticsId} />
         <StorefrontTracker />
-        <SiteHeader cart={<CartDrawer settings={settings} />} categories={categories} series={series} isSignedIn={Boolean(user)} isAdmin={isAdmin} />
+        <SiteHeader cart={<CartDrawer settings={settings} />} categories={categories} freeShippingThreshold={settings.freeShippingThreshold} series={series} isSignedIn={Boolean(user)} isAdmin={isAdmin} />
         {children}
         <SiteFooter />
         <BackToTop />

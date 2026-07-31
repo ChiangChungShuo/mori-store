@@ -1,6 +1,12 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { absoluteUrl } from '@/lib/site'
+import { formatTwd } from '@/lib/money'
+import { getStorefrontSettings } from '@/features/checkout/settings'
+
+// The free-shipping threshold comes from 商店設定, so render per-request
+// rather than freezing the value into a static page at build time.
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: '常見問題',
@@ -11,12 +17,12 @@ export const metadata: Metadata = {
 type FaqItem = { q: string; a: React.ReactNode }
 type FaqGroup = { eyebrow: string; heading: string; items: FaqItem[] }
 
-const faqGroups: FaqGroup[] = [
+const buildFaqGroups = (freeShipping: string | null): FaqGroup[] => [
   {
     eyebrow: 'shipping',
     heading: '配送與取貨',
     items: [
-      { q: '有哪些配送方式？', a: '目前僅提供 7-ELEVEN 超商取貨，配送範圍為台灣本島。單筆訂單滿 NT$1,500 即享免運。' },
+      { q: '有哪些配送方式？', a: `目前僅提供 7-ELEVEN 超商取貨，配送範圍為台灣本島。${freeShipping ? `單筆訂單滿 ${freeShipping} 即享免運。` : ''}` },
       { q: '多久會出貨？', a: '現貨下單後 1–3 個工作天，預購商品約 14–21 個工作天內出貨（不含週末與國定假日），出貨後會以 Email 通知取貨門市與代碼。' },
       { q: '可以寄送到外島或海外嗎？', a: '目前僅支援台灣本島超商取貨，暫不提供外島宅配與海外配送。' },
     ],
@@ -76,7 +82,11 @@ const faqGroups: FaqGroup[] = [
   },
 ]
 
-export default function FaqPage() {
+export default async function FaqPage() {
+  const settings = await getStorefrontSettings()
+  const faqGroups = buildFaqGroups(
+    settings.freeShippingThreshold ? formatTwd(settings.freeShippingThreshold) : null,
+  )
   return (
     <main className="section faq-page">
       <header className="page-heading faq-heading">

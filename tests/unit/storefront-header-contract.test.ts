@@ -9,7 +9,7 @@ describe('storefront header source contract', () => {
     expect(layout).toContain('getCurrentUser')
     expect(layout).toContain('listProductCategories')
     expect(layout).toContain('listProductSeries')
-    expect(layout).toMatch(/<SiteHeader cart=\{<CartDrawer settings=\{settings\} \/>\} categories=\{categories\} series=\{series\} isSignedIn=\{Boolean\(user\)\}/)
+    expect(layout).toMatch(/<SiteHeader cart=\{<CartDrawer settings=\{settings\} \/>\} categories=\{categories\} freeShippingThreshold=\{settings\.freeShippingThreshold\} series=\{series\} isSignedIn=\{Boolean\(user\)\}/)
   })
 
   it('keeps the approved desktop controls and storefront breakpoint', () => {

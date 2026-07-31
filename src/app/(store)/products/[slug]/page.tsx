@@ -6,6 +6,7 @@ import { ProductCard } from '@/features/catalog/product-card'
 import { VariantPicker } from '@/features/catalog/variant-picker'
 import { getProductBySlug, listProducts } from '@/features/catalog/queries'
 import { getProductQuantityPrices } from '@/features/catalog/quantity-prices'
+import { getStorefrontSettings } from '@/features/checkout/settings'
 import { describeQuantityTier } from '@/features/cart/bundle-pricing'
 import { formatTwd } from '@/lib/money'
 import { ProductViewTracker } from '@/features/analytics/storefront-tracker'
@@ -63,10 +64,11 @@ const standardKidsSizeGuide = [
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const [product, catalog, quantityPrices] = await Promise.all([
+  const [product, catalog, quantityPrices, storeSettings] = await Promise.all([
     getProductBySlug(slug),
     listProducts({ inStock: true }),
     getProductQuantityPrices(slug),
+    getStorefrontSettings(),
   ])
   if (!product) notFound()
 
@@ -153,7 +155,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </ul>
           <VariantPicker product={product} />
           <ProductShareButtons productName={product.name} />
-          <p className="product-service-note">滿 NT$1,500 免運・台灣本島超商配送・會員訂單可追蹤取貨進度</p>
+          <p className="product-service-note">{storeSettings.freeShippingThreshold ? `滿 ${formatTwd(storeSettings.freeShippingThreshold)} 免運・` : ''}台灣本島超商配送・會員訂單可追蹤取貨進度</p>
         </div>
       </section>
 
