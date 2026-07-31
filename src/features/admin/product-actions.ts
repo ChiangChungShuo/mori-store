@@ -118,6 +118,28 @@ function databaseErrorMessage(error: unknown) {
   return ''
 }
 
+// Maps known database conflicts to actionable admin-facing messages, so a
+// duplicate SKU/slug doesn't surface as an unexplained generic failure.
+function friendlyProductSaveError(error: unknown): string | null {
+  const message = databaseErrorMessage(error)
+  const details = error && typeof error === 'object' && 'details' in error
+    ? String((error as { details: unknown }).details ?? '')
+    : ''
+  if (message.includes('product_variants_sku_lower_key')) {
+    const match = details.match(/=\((.+?)\)/)
+    return match
+      ? `SKU「${match[1]}」已被其他商品使用，SKU 全店不可重複，請改用不同編號（例如加上商品代號）`
+      : 'SKU 已被其他商品使用，SKU 全店不可重複，請改用不同編號'
+  }
+  if (message.includes('products_slug_key')) {
+    return '網址代稱已被其他商品使用，請更換（留空會自動產生）'
+  }
+  if (message.includes('product_series_category_mismatch')) {
+    return '所選系列與商品分類不符，請重新選擇系列'
+  }
+  return null
+}
+
 function withAutomaticProductSeo(product: ProductInput): ProductInput {
   const titleSuffix = '｜MORIMUR BABY'
   const titleName = product.name.trim().slice(0, 70 - titleSuffix.length).trimEnd()
@@ -167,9 +189,9 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
       try {
         productId = await dependencies.repository.createProduct(data)
       } catch (error) {
-        if (databaseErrorMessage(error).includes('product_series_category_mismatch')) {
-          return { ok: false, message: '商品系列與分類不相符，請重新選擇' }
-        }
+        const friendly = friendlyProductSaveError(error)
+        if (friendly) return { ok: false, message: friendly }
+        logError(`product create failed: ${databaseErrorMessage(error)}`, {})
         return { ok: false, message: '目前無法建立商品，請稍後再試' }
       }
       await refreshAfterMutation(productId)
@@ -199,9 +221,9 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
         if (message.includes('stale_product_variant')) {
           return { ok: false, message: '商品庫存或規格已更新，請重新載入後再儲存' }
         }
-        if (message.includes('product_series_category_mismatch')) {
-          return { ok: false, message: '商品系列與分類不相符，請重新選擇' }
-        }
+        const friendly = friendlyProductSaveError(error)
+        if (friendly) return { ok: false, message: friendly }
+        logError(`product update failed: ${message}`, { productId: id.data })
         return { ok: false, message: '目前無法更新商品，請稍後再試' }
       }
       await refreshAfterMutation(id.data)

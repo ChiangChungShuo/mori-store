@@ -182,6 +182,27 @@ describe('admin product actions', () => {
     expect(repository.events).toEqual(['admin', `delete:${productId}`])
   })
 
+  it('explains duplicate SKU and slug conflicts instead of a generic failure', async () => {
+    const { actions, repository } = setup()
+    repository.createProduct = async () => {
+      throw Object.assign(new Error('duplicate key value violates unique constraint "product_variants_sku_lower_key"'), {
+        details: 'Key (lower(sku))=(su05) already exists.',
+      })
+    }
+    await expect(actions.createProduct(newProduct)).resolves.toMatchObject({
+      ok: false,
+      message: expect.stringContaining('SKU「su05」已被其他商品使用'),
+    })
+
+    repository.createProduct = async () => {
+      throw new Error('duplicate key value violates unique constraint "products_slug_key"')
+    }
+    await expect(actions.createProduct(newProduct)).resolves.toMatchObject({
+      ok: false,
+      message: expect.stringContaining('網址代稱已被其他商品使用'),
+    })
+  })
+
   it('automatically generates SEO content when a product is created', async () => {
     const { actions, repository } = setup()
     const input = {
