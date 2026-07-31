@@ -1,17 +1,21 @@
 'use client'
 
-import Link from 'next/link'
 import { useState } from 'react'
+import { FilterClearLink } from '@/components/filter-clear-link'
 import { type ProductFilters as ProductFilterValues } from '@/features/catalog/queries'
 import { defaultProductCategories } from '@/features/catalog/category-defaults'
 import { AGE_BANDS } from '@/lib/age-bands'
 
-export function ProductFilters({ filters, categories = [...defaultProductCategories] }: { filters: ProductFilterValues; categories?: string[] }) {
+export function ProductFilters({ filters, categories = [...defaultProductCategories], sizeOptions = [] }: { filters: ProductFilterValues; categories?: string[]; sizeOptions?: string[] }) {
   const sourceCategory = filters.category ?? ''
+  // Keep a size that came from the URL selectable even if it is no longer sold.
+  const sizes = filters.size && !sizeOptions.includes(filters.size)
+    ? [...sizeOptions, filters.size]
+    : sizeOptions
   const [categorySelection, setCategorySelection] = useState<{ source: string; value: string } | null>(null)
   const category = categorySelection?.source === sourceCategory ? categorySelection.value : sourceCategory
   return (
-    <form action="/products" method="get" aria-label="篩選商品" className="product-filters">
+    <form action="/products" method="get" aria-label="篩選商品" className="product-filters" onReset={() => setCategorySelection(null)}>
       {filters.series && category === filters.category ? <input name="series" type="hidden" value={filters.series} /> : null}
       <label className="product-search-field">
         搜尋商品
@@ -27,7 +31,14 @@ export function ProductFilters({ filters, categories = [...defaultProductCategor
 
       <label>
         尺寸
-        <input name="size" defaultValue={filters.size ?? ''} inputMode="numeric" placeholder="例：100" />
+        {sizes.length > 0 ? (
+          <select name="size" defaultValue={filters.size ?? ''}>
+            <option value="">全部尺寸</option>
+            {sizes.map((size) => <option value={size} key={size}>{size}</option>)}
+          </select>
+        ) : (
+          <input name="size" defaultValue={filters.size ?? ''} inputMode="numeric" placeholder="例：100" />
+        )}
       </label>
 
       <label>
@@ -50,7 +61,7 @@ export function ProductFilters({ filters, categories = [...defaultProductCategor
 
       <div className="filter-actions">
         <button type="submit" className="button">套用篩選</button>
-        <Link className="filter-clear-button" href="/products"><span aria-hidden="true">↺</span> 清除條件</Link>
+        <FilterClearLink href="/products" />
       </div>
     </form>
   )

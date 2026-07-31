@@ -870,7 +870,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-series-actions button:disabled { cursor: not-allowed; opacity: 0.4; }
 .admin-series-actions .admin-series-delete { border-color: #d9b3b3; color: #995959; padding-inline: 0.65rem; }
 .admin-series-create { display: grid; gap: 0.5rem; border-top: 1px solid var(--line); padding-top: 1.25rem; }
-.admin-series-create > div { display: grid; grid-template-columns: minmax(0, 26rem) auto; gap: 0.5rem; }
+.admin-series-create > div { display: grid; grid-template-columns: minmax(0, 26rem) max-content; gap: 0.5rem; }
 .admin-series-create small { color: var(--muted); font-size: 0.65rem; }
 .admin-series-chips { display: flex; flex-wrap: wrap; gap: 0.45rem; }
 .admin-series-chips button { display: inline-flex; gap: 0.35rem; align-items: center; min-height: 2.4rem; border: 1px dashed var(--sage); border-radius: 999px; background: var(--oat); color: var(--forest); padding: 0.35rem 0.9rem; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: background 150ms ease, color 150ms ease, border-color 150ms ease; }
@@ -1269,7 +1269,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .product-filters label { display: grid; gap: 0.3rem; font-size: 0.7rem; font-weight: 700; }
 .product-filters .product-search-field { grid-column: span 2; }
 .product-filters input, .product-filters select { min-height: 2.4rem; padding: 0.4rem 0.6rem; font-size: 0.82rem; }
-.product-filters .button, .product-filters .filter-clear-button { min-height: 2.4rem; padding: 0.45rem 1rem; font-size: 0.72rem; }
+.product-filters .button, .product-filters .filter-clear-button { min-height: 2.9rem; padding: 0.45rem 1rem; font-size: 0.72rem; }
 .product-filters input, .product-filters select, .cart-page select,
 .checkout-form input, .checkout-form select {
   min-height: 2.9rem;
@@ -2424,10 +2424,15 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 
 .admin-series-preset-create { margin-top: 1rem; }
 .admin-series-preset-create > div { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.admin-series-preset-create input { flex: 1 1 14rem; }
+.admin-series-preset-create input { flex: 1 1 14rem; min-height: 2.75rem; max-width: 26rem; border: 1px solid var(--sand); background: var(--paper); padding: 0.65rem 0.8rem; }
 .admin-series-preset-create > div > button {
-  border: 1px dashed #b9cad6; background: #f4f8fa; padding: 0.45rem 1.1rem;
+  min-height: 2.75rem; border: 1px dashed #b9cad6; background: #f4f8fa; padding: 0.45rem 1.1rem;
   font-size: 0.72rem; font-weight: 700; color: #52667a; cursor: pointer;
 }
 .admin-series-preset-create > div > button:hover:not(:disabled) { background: #e8f1f5; }
 .admin-series-preset-create > div > button:disabled { cursor: not-allowed; opacity: 0.5; }
+
+/* Admin orders page ---------------------------------------------------------- */
+.admin-order-review-section { margin-bottom: 1.5rem; }
+.admin-order-review-section h2 { margin: 0 0 0.5rem; color: var(--forest); font-size: 1.05rem; }
+.admin-order-review-section > p { margin: 0; color: var(--muted); font-size: 0.74rem; }

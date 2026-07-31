@@ -23,9 +23,8 @@ export default async function AdminPaymentReviewPage({
   return (
     <main className="section">
       <p><Link href="/admin/orders">← 返回訂單管理</Link></p>
-      <header className="page-heading">
-        <p>admin / payment review</p>
-        <h1>需人工處理的付款</h1>
+      <header className="admin-page-heading">
+        <div><p className="eyebrow">admin / payment review</p><h1>需人工處理的付款</h1></div>
       </header>
       <dl className="order-result">
         <div><dt>付款交易</dt><dd>{payment.id}</dd></div>

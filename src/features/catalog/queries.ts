@@ -219,6 +219,45 @@ const productFields = `
   matching_variants:product_variants!inner(id, size, color, stock)
 `
 
+// Distinct sizes available across published products, for the size filter
+// dropdown. Numeric sizes sort ascending, then any lettered ones.
+export function sortSizeOptions(sizes: Iterable<string>): string[] {
+  return [...new Set([...sizes].map((size) => size.trim()).filter(Boolean))].sort((a, b) => {
+    const first = Number(a)
+    const second = Number(b)
+    const firstNumeric = Number.isFinite(first)
+    const secondNumeric = Number.isFinite(second)
+    if (firstNumeric && secondNumeric) return first - second
+    if (firstNumeric) return -1
+    if (secondNumeric) return 1
+    return a.localeCompare(b, 'zh-Hant')
+  })
+}
+
+export async function listAvailableSizes(): Promise<string[]> {
+  if (isE2EMode()) {
+    const { listE2EProducts } = await import('@/testing/e2e-storefront-fixtures')
+    const products = await listE2EProducts({})
+    return sortSizeOptions(products.flatMap((product) => product.variants.map((variant) => variant.size)))
+  }
+  if (!resolveCatalogConfiguration()) return []
+
+  try {
+    const { createClient } = await import('@/lib/supabase/server')
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('product_variants')
+      .select('size, products!inner(is_published)')
+      .eq('is_active', true)
+      .eq('products.is_published', true)
+    if (error) throw error
+    return sortSizeOptions((data ?? []).map((row) => row.size as string))
+  } catch {
+    // The dropdown is an enhancement; an empty list falls back gracefully.
+    return []
+  }
+}
+
 export async function listProducts(filters: ProductFilters): Promise<CatalogProduct[]> {
   if (isE2EMode()) {
     const { listE2EProducts } = await import('@/testing/e2e-storefront-fixtures')

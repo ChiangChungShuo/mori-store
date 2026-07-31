@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { FilterClearLink } from '@/components/filter-clear-link'
 import { deleteProduct, filterAdminProductSummaries, listAdminProducts, setProductPublished, type AdminProductFilters } from '@/features/admin/product-actions'
 import { DeleteProductForm, ProductPublishForm } from '@/features/admin/product-form'
 import { formatTwd } from '@/lib/money'
@@ -53,12 +54,12 @@ export default async function AdminProductsPage({
           </ul>
         </section>
       ) : null}
-      <form action="/admin/products" className="admin-product-filters" method="get">
+      <form action="/admin/products" className="admin-product-filters" key={JSON.stringify(filters)} method="get">
         <label>搜尋商品<input defaultValue={filters.query} name="query" placeholder="商品名稱" type="search" /></label>
         <label>分類<select defaultValue={filters.category} name="category"><option value="">全部分類</option>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
         <label>上架狀態<select defaultValue={filters.status} name="status"><option value="">全部狀態</option><option value="published">已上架／預約</option><option value="draft">草稿</option></select></label>
         <label>庫存<select defaultValue={filters.stock} name="stock"><option value="">全部庫存</option><option value="in_stock">有庫存</option><option value="low_stock">低庫存（1–5）</option><option value="sold_out">已售完</option></select></label>
-        <div className="filter-actions"><button className="button" type="submit">套用篩選</button><Link className="filter-clear-button" href="/admin/products"><span aria-hidden="true">↺</span> 清除條件</Link></div>
+        <div className="filter-actions"><button className="button" type="submit">套用篩選</button><FilterClearLink href="/admin/products" /></div>
       </form>
       {products.length === 0 ? (
         <p>尚未建立商品。</p>

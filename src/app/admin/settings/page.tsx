@@ -46,7 +46,7 @@ export default async function AdminSettingsPage() {
           <small>建議包含品牌、商品特色與主要客群，最多 70 個字。</small>
         </label>
         <label>
-          Description
+          網站描述（Description）
           <textarea defaultValue={settings.siteDescription ?? defaultSitePresentation.siteDescription} maxLength={160} minLength={20} name="siteDescription" required rows={4} />
           <small>搜尋結果與社群分享會使用這段摘要，建議 80–160 個字。</small>
         </label>

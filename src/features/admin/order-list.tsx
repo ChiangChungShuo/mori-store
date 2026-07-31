@@ -29,7 +29,7 @@ export function AdminOrderList({
 
   return (
     <>
-      <section>
+      <section className="admin-order-review-section">
         <h2>需人工處理的付款</h2>
         {reviews.length === 0 ? <p>目前沒有需人工處理的付款。</p> : (
           <div className="admin-table-scroll"><table className="admin-product-table">

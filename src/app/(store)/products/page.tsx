@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { ProductCard } from '@/features/catalog/product-card'
 import { ProductFilters } from '@/features/catalog/product-filters'
 import { ProductSeriesFilter } from '@/features/catalog/product-series-filter'
-import { listProducts, parseProductFilters } from '@/features/catalog/queries'
+import { listAvailableSizes, listProducts, parseProductFilters } from '@/features/catalog/queries'
 import { ProductSearchTracker } from '@/features/analytics/product-search-tracker'
 import { listProductCategories } from '@/features/catalog/categories'
 import { listProductSeries } from '@/features/catalog/product-series'
@@ -23,10 +23,11 @@ export default async function ProductsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const filters = parseProductFilters(await searchParams)
-  const [products, categories, series] = await Promise.all([
+  const [products, categories, series, sizeOptions] = await Promise.all([
     listProducts(filters),
     listProductCategories(),
     filters.category ? listProductSeries(filters.category) : Promise.resolve([]),
+    listAvailableSizes(),
   ])
 
   return (
@@ -41,7 +42,8 @@ export default async function ProductsPage({
         {categories.map((category) => <Link aria-current={filters.category === category ? 'page' : undefined} href={`/products?category=${encodeURIComponent(category)}`} key={category}>{category}</Link>)}
       </nav>
       <ProductSeriesFilter filters={filters} series={series} />
-      <ProductFilters categories={categories} filters={filters} />
+      {/* Keyed by the applied filters so 清除條件 remounts the form with empty values. */}
+      <ProductFilters categories={categories} filters={filters} key={JSON.stringify(filters)} sizeOptions={sizeOptions} />
       <ProductSearchTracker query={filters.q} resultCount={products.length} />
       <p aria-live="polite" className="catalog-count">共 {products.length} 件商品</p>
       {products.length === 0 ? (
