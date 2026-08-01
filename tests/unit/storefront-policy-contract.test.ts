@@ -39,4 +39,13 @@ describe('storefront policy and service copy', () => {
     expect(returnsPage).toContain('3 日')
     expect(returnsPage).toContain('7 日')
   })
+
+  it('shows the pre-purchase reminder and links to returns FAQ', () => {
+    const productPage = source('src/app/(store)/products/[slug]/page.tsx')
+
+    expect(productPage).toContain('購買前請確認下列資訊，同意再行購買')
+    expect(productPage).toContain('購買前請確認尺寸、顏色、款式與商品描述')
+    expect(productPage).toContain('href="/faq#faq-returns"')
+    expect(productPage).toContain('常見問題－退換貨')
+  })
 })
