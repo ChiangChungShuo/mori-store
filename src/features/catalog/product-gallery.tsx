@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { useProductColor } from '@/features/catalog/product-color-context'
 import { imagesForColor, type CatalogProductImage } from '@/features/catalog/product-images'
@@ -65,11 +66,16 @@ export function ProductGallery({ images, isNew }: {
       {visibleImages.length > 1 ? <div className="product-gallery-thumbnails" aria-label="商品圖片">{visibleImages.map((candidate, index) => <button aria-label={`查看第 ${index + 1} 張商品圖片`} aria-pressed={active === index} key={`${candidate.url}-${index}`} onClick={() => setSelection({ color, index })} type="button">
         <Image alt="" fill sizes="5rem" src={candidate.url} />
       </button>)}</div> : null}
-      {zoomed && image ? <div aria-label="商品圖片放大檢視" aria-modal="true" className="product-gallery-lightbox" role="dialog" onClick={() => setZoomed(false)}>
-        <button aria-label="關閉放大圖片" type="button" onClick={() => setZoomed(false)}>×</button>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img alt={image.alt} src={image.url} onClick={(event) => event.stopPropagation()} />
-      </div> : null}
+      {/* Portalled to <body>: the sticky gallery column forms a stacking
+          context, which would trap the fixed lightbox under the site header. */}
+      {zoomed && image ? createPortal(
+        <div aria-label="商品圖片放大檢視" aria-modal="true" className="product-gallery-lightbox" role="dialog" onClick={() => setZoomed(false)}>
+          <button aria-label="關閉放大圖片" type="button" onClick={() => setZoomed(false)}>×</button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img alt={image.alt} src={image.url} onClick={(event) => event.stopPropagation()} />
+        </div>,
+        document.body,
+      ) : null}
     </div>
   )
 }
