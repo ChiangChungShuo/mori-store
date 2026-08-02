@@ -541,6 +541,7 @@ export type Database = {
       product_images: {
         Row: {
           alt_text: string
+          color: string | null
           created_at: string
           id: string
           position: number
@@ -550,6 +551,7 @@ export type Database = {
         }
         Insert: {
           alt_text: string
+          color?: string | null
           created_at?: string
           id?: string
           position?: number
@@ -559,6 +561,7 @@ export type Database = {
         }
         Update: {
           alt_text?: string
+          color?: string | null
           created_at?: string
           id?: string
           position?: number
@@ -798,7 +801,12 @@ export type Database = {
         Returns: string
       }
       admin_insert_product_image: {
-        Args: { p_alt_text: string; p_product_id: string; p_storage_path: string }
+        Args: {
+          p_alt_text: string
+          p_color?: string | null
+          p_product_id: string
+          p_storage_path: string
+        }
         Returns: string
       }
       admin_reorder_product_images: {
@@ -807,6 +815,10 @@ export type Database = {
       }
       admin_set_product_published: {
         Args: { p_product_id: string; p_published: boolean }
+        Returns: undefined
+      }
+      admin_set_product_image_color: {
+        Args: { p_color: string | null; p_image_id: string; p_product_id: string }
         Returns: undefined
       }
       admin_update_product: {
