@@ -1,77 +1,73 @@
 'use client'
 
-import { useState } from 'react'
 import { FilterClearLink } from '@/components/filter-clear-link'
 import { type ProductFilters as ProductFilterValues } from '@/features/catalog/queries'
-import { defaultProductCategories } from '@/features/catalog/category-defaults'
 import { AGE_BANDS } from '@/lib/age-bands'
 
-export function ProductFilters({ filters, categories = [...defaultProductCategories], sizeOptions = [], colorOptions = [] }: { filters: ProductFilterValues; categories?: string[]; sizeOptions?: string[]; colorOptions?: string[] }) {
-  const sourceCategory = filters.category ?? ''
-  // Keep a size that came from the URL selectable even if it is no longer sold.
+// Single-row filter toolbar. 分類 lives in the pill nav above the toolbar, so
+// the current category (and series) ride along as hidden inputs instead of a
+// second, redundant control.
+export function ProductFilters({ filters, sizeOptions = [], colorOptions = [] }: {
+  filters: ProductFilterValues
+  sizeOptions?: string[]
+  colorOptions?: string[]
+}) {
+  // Keep a value that came from the URL selectable even if it is no longer sold.
   const sizes = filters.size && !sizeOptions.includes(filters.size)
     ? [...sizeOptions, filters.size]
     : sizeOptions
   const colors = filters.color && !colorOptions.includes(filters.color)
     ? [...colorOptions, filters.color]
     : colorOptions
-  const [categorySelection, setCategorySelection] = useState<{ source: string; value: string } | null>(null)
-  const category = categorySelection?.source === sourceCategory ? categorySelection.value : sourceCategory
+  const clearHref = filters.category
+    ? `/products?category=${encodeURIComponent(filters.category)}`
+    : '/products'
+
   return (
-    <form action="/products" method="get" aria-label="篩選商品" className="product-filters" onReset={() => setCategorySelection(null)}>
-      {filters.series && category === filters.category ? <input name="series" type="hidden" value={filters.series} /> : null}
-      <label className="product-search-field">
-        搜尋商品
-        <input name="q" defaultValue={filters.q ?? ''} placeholder="輸入商品名稱" type="search" />
-      </label>
-      <label>
-        年齡
-        <select name="age" defaultValue={filters.age ?? ''}>
-          <option value="">全部年齡</option>
-          {AGE_BANDS.map((band) => <option value={band.value} key={band.value}>{band.label}｜{band.range}</option>)}
+    <form action="/products" method="get" aria-label="篩選商品" className="product-filterbar">
+      {filters.category ? <input name="category" type="hidden" value={filters.category} /> : null}
+      {filters.category && filters.series ? <input name="series" type="hidden" value={filters.series} /> : null}
+
+      <input
+        aria-label="搜尋商品"
+        className="product-filterbar-search"
+        defaultValue={filters.q ?? ''}
+        name="q"
+        placeholder="搜尋商品名稱"
+        type="search"
+      />
+
+      <select aria-label="年齡" defaultValue={filters.age ?? ''} name="age">
+        <option value="">全部年齡</option>
+        {AGE_BANDS.map((band) => <option value={band.value} key={band.value}>{band.label}｜{band.range}</option>)}
+      </select>
+
+      {sizes.length > 0 ? (
+        <select aria-label="尺寸" defaultValue={filters.size ?? ''} name="size">
+          <option value="">全部尺寸</option>
+          {sizes.map((size) => <option value={size} key={size}>{size}</option>)}
         </select>
-      </label>
+      ) : (
+        <input aria-label="尺寸" defaultValue={filters.size ?? ''} inputMode="numeric" name="size" placeholder="尺寸" />
+      )}
 
-      <label>
-        尺寸
-        {sizes.length > 0 ? (
-          <select name="size" defaultValue={filters.size ?? ''}>
-            <option value="">全部尺寸</option>
-            {sizes.map((size) => <option value={size} key={size}>{size}</option>)}
-          </select>
-        ) : (
-          <input name="size" defaultValue={filters.size ?? ''} inputMode="numeric" placeholder="例：100" />
-        )}
-      </label>
-
-      <label>
-        顏色
-        {colors.length > 0 ? (
-          <select name="color" defaultValue={filters.color ?? ''}>
-            <option value="">全部顏色</option>
-            {colors.map((color) => <option value={color} key={color}>{color}</option>)}
-          </select>
-        ) : (
-          <input name="color" defaultValue={filters.color ?? ''} placeholder="例：白色" />
-        )}
-      </label>
-
-      <label>
-        分類
-        <select name="category" value={category} onChange={(event) => setCategorySelection({ source: sourceCategory, value: event.target.value })}>
-          <option value="">全部分類</option>
-          {categories.map((category) => <option value={category} key={category}>{category}</option>)}
+      {colors.length > 0 ? (
+        <select aria-label="顏色" defaultValue={filters.color ?? ''} name="color">
+          <option value="">全部顏色</option>
+          {colors.map((color) => <option value={color} key={color}>{color}</option>)}
         </select>
-      </label>
+      ) : (
+        <input aria-label="顏色" defaultValue={filters.color ?? ''} name="color" placeholder="顏色" />
+      )}
 
-      <label className="checkbox-label">
-        <input name="inStock" type="checkbox" value="true" defaultChecked={filters.inStock} />
-        只顯示有庫存
+      <label className="product-filterbar-stock">
+        <input defaultChecked={filters.inStock} name="inStock" type="checkbox" value="true" />
+        <span>只顯示有庫存</span>
       </label>
 
       <div className="filter-actions">
         <button type="submit" className="button">套用篩選</button>
-        <FilterClearLink href="/products" />
+        <FilterClearLink href={clearHref} />
       </div>
     </form>
   )

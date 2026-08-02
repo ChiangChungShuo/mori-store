@@ -44,7 +44,7 @@ export default async function ProductsPage({
       </nav>
       <ProductSeriesFilter filters={filters} series={series} />
       {/* Keyed by the applied filters so 清除條件 remounts the form with empty values. */}
-      <ProductFilters categories={categories} colorOptions={colorOptions} filters={filters} key={JSON.stringify(filters)} sizeOptions={sizeOptions} />
+      <ProductFilters colorOptions={colorOptions} filters={filters} key={JSON.stringify(filters)} sizeOptions={sizeOptions} />
       <ProductSearchTracker query={filters.q} resultCount={products.length} />
       <p aria-live="polite" className="catalog-count">共 {products.length} 件商品</p>
       {products.length === 0 ? (

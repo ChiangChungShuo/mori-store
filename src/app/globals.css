@@ -2454,3 +2454,51 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 @keyframes store-loading-pulse { from { background-position: 130% 0; } to { background-position: -30% 0; } }
 @media (max-width: 58rem) { .store-loading-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (prefers-reduced-motion: reduce) { .store-loading-media, .store-loading-bar { animation: none; } }
+
+/* Storefront filter toolbar --------------------------------------------------- */
+.product-filterbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  margin-bottom: 2rem;
+  border: 1px solid var(--line);
+  background: var(--white);
+  padding: 0.85rem 1rem;
+}
+.product-filterbar input, .product-filterbar select {
+  min-height: 2.9rem;
+  border: 1px solid #bfc2c6;
+  background: var(--white);
+  padding: 0.55rem 0.7rem;
+  color: inherit;
+  font-size: 0.82rem;
+}
+.product-filterbar select { flex: 1 1 8.5rem; min-width: 0; }
+.product-filterbar-search { flex: 2 1 14rem; min-width: 0; }
+.product-filterbar-stock {
+  display: inline-flex;
+  gap: 0.45rem;
+  align-items: center;
+  min-height: 2.9rem;
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  padding: 0 1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
+}
+.product-filterbar-stock:has(:checked) { border-color: var(--forest); background: var(--forest); color: var(--white); }
+.product-filterbar-stock input { min-height: auto; accent-color: currentcolor; }
+.product-filterbar .filter-actions { flex: 0 0 auto; gap: 0.5rem; margin-left: auto; }
+.product-filterbar .button, .product-filterbar .filter-clear-button { min-height: 2.9rem; padding: 0.45rem 1rem; font-size: 0.72rem; white-space: nowrap; }
+
+@media (max-width: 58rem) {
+  .product-filterbar-search { flex-basis: 100%; }
+  .product-filterbar .filter-actions { margin-left: 0; width: 100%; }
+  .product-filterbar .filter-actions .button { flex: 1; }
+}

@@ -107,30 +107,26 @@ describe('parseProductFilters', () => {
 })
 
 describe('ProductFilters', () => {
-  it('updates the selected category after client-side navigation', () => {
-    const view = render(createElement(ProductFilters, {
-      categories: ['上衣', '褲裝'],
-      filters: {},
-    }))
-
-    view.rerender(createElement(ProductFilters, {
-      categories: ['上衣', '褲裝'],
+  it('carries the active category and series along as hidden inputs', () => {
+    const { container } = render(createElement(ProductFilters, {
       filters: { category: '上衣', series: 'Mori flora 漫花系列' },
     }))
 
-    expect(screen.getByLabelText('分類')).toHaveValue('上衣')
-    expect(view.container.querySelector('input[name="series"]')).toHaveValue('Mori flora 漫花系列')
+    expect(container.querySelector('input[name="category"]')).toHaveValue('上衣')
+    expect(container.querySelector('input[name="series"]')).toHaveValue('Mori flora 漫花系列')
+    // 分類 is picked from the pill nav above, not inside the toolbar.
+    expect(screen.queryByLabelText('分類')).toBeNull()
   })
 
-  it('preserves the active series for other filters and clears it when category changes', () => {
-    const { container } = render(createElement(ProductFilters, {
-      categories: ['上衣', '褲裝'],
-      filters: { category: '上衣', series: 'Mori flora 漫花系列' },
+  it('keeps 清除條件 inside the current category', () => {
+    render(createElement(ProductFilters, {
+      filters: { category: '上衣', q: '棉' },
     }))
 
-    expect(container.querySelector('input[name="series"]')).toHaveValue('Mori flora 漫花系列')
-    fireEvent.change(screen.getByLabelText('分類'), { target: { value: '褲裝' } })
-    expect(container.querySelector('input[name="series"]')).toBeNull()
+    const clear = screen.getByRole('link', { name: /清除條件/ })
+    const url = new URL(clear.getAttribute('href')!, 'http://localhost')
+    expect(url.pathname).toBe('/products')
+    expect(url.searchParams.get('category')).toBe('上衣')
   })
 
   it('renders a GET form whose values come from the current URL filters', () => {
