@@ -10,20 +10,21 @@ export function ProductGallery({ images, isNew }: {
   isNew: boolean
 }) {
   const { color } = useProductColor()
-  const [active, setActive] = useState(0)
+  const [selection, setSelection] = useState({ color, index: 0 })
   const [zoomed, setZoomed] = useState(false)
   const touchStart = useRef<number | null>(null)
   const visibleImages = imagesForColor(images, color)
+  const active = selection.color === color && selection.index < visibleImages.length
+    ? selection.index
+    : 0
   const image = visibleImages[active] ?? visibleImages[0]
 
   function show(offset: number) {
-    setActive((current) => (current + offset + visibleImages.length) % visibleImages.length)
+    setSelection({
+      color,
+      index: (active + offset + visibleImages.length) % visibleImages.length,
+    })
   }
-
-  useEffect(() => {
-    setActive(0)
-    setZoomed(false)
-  }, [color])
 
   useEffect(() => {
     if (!zoomed) return
@@ -61,7 +62,7 @@ export function ProductGallery({ images, isNew }: {
         </> : null}
         {visibleImages.length > 1 ? <div className="product-gallery-position">{active + 1} / {visibleImages.length}</div> : null}
       </div>
-      {visibleImages.length > 1 ? <div className="product-gallery-thumbnails" aria-label="商品圖片">{visibleImages.map((candidate, index) => <button aria-label={`查看第 ${index + 1} 張商品圖片`} aria-pressed={active === index} key={`${candidate.url}-${index}`} onClick={() => setActive(index)} type="button">
+      {visibleImages.length > 1 ? <div className="product-gallery-thumbnails" aria-label="商品圖片">{visibleImages.map((candidate, index) => <button aria-label={`查看第 ${index + 1} 張商品圖片`} aria-pressed={active === index} key={`${candidate.url}-${index}`} onClick={() => setSelection({ color, index })} type="button">
         <Image alt="" fill sizes="5rem" src={candidate.url} />
       </button>)}</div> : null}
       {zoomed && image ? <div aria-label="商品圖片放大檢視" aria-modal="true" className="product-gallery-lightbox" role="dialog" onClick={() => setZoomed(false)}>
