@@ -381,7 +381,7 @@ describe('CartPage refresh', () => {
     render(createElement(CartProvider, null, createElement(CartPageClient, { settings: storeSettings })))
 
     await screen.findByRole('alert')
-    expect(screen.getByRole('img', { name: pants.name })).toHaveAttribute('src', expect.stringContaining(encodeURIComponent(pants.imageUrl)))
+    expect(screen.getByRole('img', { name: pants.name })).toHaveAttribute('src', expect.stringContaining(encodeURIComponent(pants.imageUrl ?? '')))
     expect(screen.getByRole('button', { name: `減少 ${pants.name} 數量` })).toBeDisabled()
     fireEvent.click(screen.getByRole('button', { name: `增加 ${pants.name} 數量` }))
     expect(screen.getByLabelText(`${pants.name} 數量`)).toHaveTextContent('2')

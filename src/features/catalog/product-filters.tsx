@@ -6,12 +6,15 @@ import { type ProductFilters as ProductFilterValues } from '@/features/catalog/q
 import { defaultProductCategories } from '@/features/catalog/category-defaults'
 import { AGE_BANDS } from '@/lib/age-bands'
 
-export function ProductFilters({ filters, categories = [...defaultProductCategories], sizeOptions = [] }: { filters: ProductFilterValues; categories?: string[]; sizeOptions?: string[] }) {
+export function ProductFilters({ filters, categories = [...defaultProductCategories], sizeOptions = [], colorOptions = [] }: { filters: ProductFilterValues; categories?: string[]; sizeOptions?: string[]; colorOptions?: string[] }) {
   const sourceCategory = filters.category ?? ''
   // Keep a size that came from the URL selectable even if it is no longer sold.
   const sizes = filters.size && !sizeOptions.includes(filters.size)
     ? [...sizeOptions, filters.size]
     : sizeOptions
+  const colors = filters.color && !colorOptions.includes(filters.color)
+    ? [...colorOptions, filters.color]
+    : colorOptions
   const [categorySelection, setCategorySelection] = useState<{ source: string; value: string } | null>(null)
   const category = categorySelection?.source === sourceCategory ? categorySelection.value : sourceCategory
   return (
@@ -43,7 +46,14 @@ export function ProductFilters({ filters, categories = [...defaultProductCategor
 
       <label>
         顏色
-        <input name="color" defaultValue={filters.color ?? ''} placeholder="例：白色" />
+        {colors.length > 0 ? (
+          <select name="color" defaultValue={filters.color ?? ''}>
+            <option value="">全部顏色</option>
+            {colors.map((color) => <option value={color} key={color}>{color}</option>)}
+          </select>
+        ) : (
+          <input name="color" defaultValue={filters.color ?? ''} placeholder="例：白色" />
+        )}
       </label>
 
       <label>

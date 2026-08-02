@@ -234,6 +234,32 @@ export function sortSizeOptions(sizes: Iterable<string>): string[] {
   })
 }
 
+export async function listAvailableColors(): Promise<string[]> {
+  if (isE2EMode()) {
+    const { listE2EProducts } = await import('@/testing/e2e-storefront-fixtures')
+    const products = await listE2EProducts({})
+    return [...new Set(products.flatMap((product) => product.variants.map((variant) => variant.color.trim())).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, 'zh-Hant'))
+  }
+  if (!resolveCatalogConfiguration()) return []
+
+  try {
+    const { createClient } = await import('@/lib/supabase/server')
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('product_variants')
+      .select('color, products!inner(is_published)')
+      .eq('is_active', true)
+      .eq('products.is_published', true)
+    if (error) throw error
+    return [...new Set((data ?? []).map((row) => (row.color as string).trim()).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, 'zh-Hant'))
+  } catch {
+    // The dropdown is an enhancement; an empty list falls back gracefully.
+    return []
+  }
+}
+
 export async function listAvailableSizes(): Promise<string[]> {
   if (isE2EMode()) {
     const { listE2EProducts } = await import('@/testing/e2e-storefront-fixtures')
