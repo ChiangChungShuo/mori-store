@@ -651,7 +651,7 @@ function createFixtureProductRepository(): ProductRepository {
       const product = getMutableE2EProducts().find((candidate) => candidate.id === productId)
       const imageUrl = getE2EStore().uploadedProductImages.get(path)
       if (!product || !imageUrl) throw new Error('image_not_found')
-      product.images = [...(product.images ?? (product.imageUrl ? [{ url: product.imageUrl, alt: product.imageAlt }] : [])), { url: imageUrl, alt }]
+      product.images = [...(product.images ?? (product.imageUrl ? [{ url: product.imageUrl, alt: product.imageAlt, color: null }] : [])), { url: imageUrl, alt, color: null }]
       if (!product.imageUrl) {
         product.imageUrl = imageUrl
         product.imageAlt = alt
@@ -660,7 +660,7 @@ function createFixtureProductRepository(): ProductRepository {
     async deleteImage(productId, imageId) {
       const product = getMutableE2EProducts().find((candidate) => candidate.id === productId)
       if (!product) throw new Error('product_not_found')
-      const images = [...(product.images ?? (product.imageUrl ? [{ url: product.imageUrl, alt: product.imageAlt }] : []))]
+      const images = [...(product.images ?? (product.imageUrl ? [{ url: product.imageUrl, alt: product.imageAlt, color: null }] : []))]
       const indexText = imageId.startsWith(`${productId}-`) ? imageId.slice(productId.length + 1) : ''
       const index = Number(indexText)
       if (!Number.isInteger(index) || index < 0 || index >= images.length) throw new Error('image_not_found')
@@ -673,7 +673,7 @@ function createFixtureProductRepository(): ProductRepository {
     async reorderImages(productId, imageIds) {
       const product = getMutableE2EProducts().find((candidate) => candidate.id === productId)
       if (!product) throw new Error('product_not_found')
-      const images = [...(product.images ?? (product.imageUrl ? [{ url: product.imageUrl, alt: product.imageAlt }] : []))]
+      const images = [...(product.images ?? (product.imageUrl ? [{ url: product.imageUrl, alt: product.imageAlt, color: null }] : []))]
       const reordered = imageIds.map((imageId) => {
         const indexText = imageId.startsWith(`${productId}-`) ? imageId.slice(productId.length + 1) : ''
         const index = Number(indexText)

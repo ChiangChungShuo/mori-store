@@ -2,6 +2,7 @@ import type { AgeBand } from '@/types/store'
 import type { CartVariantSnapshot } from '@/features/cart/refresh'
 import { isE2EMode } from '@/testing/e2e-mode'
 import type { ProductSeries } from '@/features/catalog/product-series'
+import type { CatalogProductImage } from '@/features/catalog/product-images'
 
 const CATALOG_CONFIGURATION_ERROR = 'MORI catalog configuration error: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY are required.'
 
@@ -65,7 +66,7 @@ export type CatalogProduct = {
   availableAt?: string | null
   imageUrl: string | null
   imageAlt: string
-  images?: readonly { url: string; alt: string }[]
+  images?: readonly CatalogProductImage[]
   variants: readonly CatalogVariant[]
 }
 
@@ -121,7 +122,7 @@ type ProductRecord = {
   size_guide: string
   is_new: boolean
   available_at: string | null
-  product_images: Array<{ storage_path: string; alt_text: string; position: number }>
+  product_images: Array<{ storage_path: string; alt_text: string; position: number; color: string | null }>
   product_variants: Array<{
     id: string
     sku: string
@@ -144,7 +145,11 @@ function publicImageUrl(storagePath: string) {
 function mapProduct(record: ProductRecord): CatalogProduct {
   const images = [...record.product_images]
     .sort((a, b) => a.position - b.position)
-    .map((image) => ({ url: publicImageUrl(image.storage_path), alt: image.alt_text || record.name }))
+    .map((image) => ({
+      url: publicImageUrl(image.storage_path),
+      alt: image.alt_text || record.name,
+      color: image.color,
+    }))
   const image = images[0]
 
   return {
@@ -214,7 +219,7 @@ const productFields = `
   category, age_bands, material,
   care_instructions, size_guide, is_new, available_at,
   product_series_products(product_series(id, category_name, name, position)),
-  product_images(storage_path, alt_text, position),
+  product_images(storage_path, alt_text, position, color),
   product_variants(id, sku, color, size, price, compare_at_price, stock),
   matching_variants:product_variants!inner(id, size, color, stock)
 `
