@@ -149,12 +149,14 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </div> : null}
           <p className="product-lead">{product.summary || product.description}</p>
           {product.tags && product.tags.length > 0 ? <ul className="product-tags" aria-label="商品標籤">{product.tags.map((tag) => <li key={tag}>{tag}</li>)}</ul> : null}
+          {/* Picking colour/size/quantity is the page's job — it comes right
+              after the price so it is visible without scrolling. */}
+          <VariantPicker product={product} />
           <div className="product-wishlist-row"><WishlistButton productId={product.id} productName={product.name} /><small>收藏後可在頁首的「收藏」快速找到這件商品。</small></div>
           <ul className="product-feature-list">
             <li><span>寄送</span><strong>7-ELEVEN 門市取貨</strong></li>
             <li><span>付款方式</span><strong>轉帳匯款</strong></li>
           </ul>
-          <VariantPicker product={product} />
           <ProductShareButtons productName={product.name} />
           <p className="product-service-note">{storeSettings.freeShippingThreshold ? `滿 ${formatTwd(storeSettings.freeShippingThreshold)} 免運・` : ''}台灣本島超商配送・會員訂單可追蹤取貨進度</p>
         </div>
