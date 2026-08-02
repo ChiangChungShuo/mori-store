@@ -62,7 +62,7 @@ export type AdminProductDetail = {
   id: string
   isPublished: boolean
   product: ProductInput
-  images: Array<{ id: string; url: string; alt: string }>
+  images: Array<{ id: string; url: string; alt: string; color: string | null }>
 }
 
 export function listFixtureAdminProducts(): AdminProductSummary[] {
@@ -86,7 +86,8 @@ export interface ProductRepository {
   setPublished(productId: string, published: boolean): Promise<void>
   uploadFile(path: string, file: File): Promise<void>
   copyFile(fromPath: string, toPath: string): Promise<void>
-  insertImage(productId: string, path: string, alt: string): Promise<void>
+  insertImage(productId: string, path: string, alt: string, color: string | null): Promise<void>
+  setImageColor(productId: string, imageId: string, color: string | null): Promise<void>
   deleteImage(productId: string, imageId: string): Promise<string>
   reorderImages(productId: string, imageIds: string[]): Promise<void>
   removeFile(path: string): Promise<void>
@@ -286,7 +287,7 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
     // Reuses an image already stored for a draft: copies it into the product's
     // folder server-side, so draft images never round-trip through the browser
     // (which would hit the server-action body limit for phone-sized photos).
-    async adoptDraftImage(productId: string, storagePath: string, alt: string): Promise<ActionResult> {
+    async adoptDraftImage(productId: string, storagePath: string, alt: string, color: string | null = null): Promise<ActionResult> {
       await dependencies.requireAdmin()
       const id = productIdSchema.safeParse(productId)
       if (!id.success) return { ok: false, message: '商品不存在' }
@@ -300,7 +301,7 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
         return { ok: false, message: '目前無法沿用草稿圖片，請重新選擇圖片' }
       }
       try {
-        await dependencies.repository.insertImage(id.data, target, alt)
+        await dependencies.repository.insertImage(id.data, target, alt, color)
       } catch {
         try { await dependencies.repository.removeFile(target) } catch { /* ignore */ }
         return { ok: false, message: '圖片資料儲存失敗，請稍後再試' }
@@ -332,7 +333,7 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
       }
 
       try {
-        await dependencies.repository.insertImage(id.data, path, parsed.data.alt)
+        await dependencies.repository.insertImage(id.data, path, parsed.data.alt, parsed.data.color)
       } catch {
         try {
           await dependencies.repository.removeFile(path)
@@ -345,6 +346,24 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
 
       await refreshAfterMutation(id.data)
       return { ok: true, productId: id.data }
+    },
+
+    async updateProductImageColor(productId: string, imageId: string, color: string | null): Promise<ActionResult> {
+      await dependencies.requireAdmin()
+      const id = productIdSchema.safeParse(productId)
+      const parsedImageId = imageIdSchema.safeParse(imageId)
+      if (!id.success || !parsedImageId.success) return { ok: false, message: '商品圖片不存在' }
+
+      try {
+        await dependencies.repository.setImageColor(id.data, parsedImageId.data, color?.trim() || null)
+      } catch (error) {
+        if (databaseErrorMessage(error).includes('product_image_color_invalid')) {
+          return { ok: false, message: '這個顏色已不在商品規格中，請重新選擇' }
+        }
+        return { ok: false, message: '目前無法更新圖片顏色，請稍後再試' }
+      }
+      await refreshAfterMutation(id.data)
+      return { ok: true, productId: id.data, message: '圖片顏色已更新' }
     },
 
     async deleteProductImage(productId: string, imageId: string): Promise<ActionResult> {
@@ -454,12 +473,23 @@ function createSupabaseProductRepository(): ProductRepository {
       if (error) throw error
     },
 
-    async insertImage(productId, path, alt) {
+    async insertImage(productId, path, alt, color) {
       const supabase = await client()
       const { error } = await supabase.rpc('admin_insert_product_image', {
         p_product_id: productId,
         p_storage_path: path,
         p_alt_text: alt,
+        p_color: color,
+      })
+      if (error) throw error
+    },
+
+    async setImageColor(productId, imageId, color) {
+      const supabase = await client()
+      const { error } = await supabase.rpc('admin_set_product_image_color', {
+        p_product_id: productId,
+        p_image_id: imageId,
+        p_color: color,
       })
       if (error) throw error
     },
@@ -647,15 +677,28 @@ function createFixtureProductRepository(): ProductRepository {
       const existing = store.uploadedProductImages.get(fromPath)
       store.uploadedProductImages.set(toPath, existing ?? `data:image/png;base64,${fromPath}`)
     },
-    async insertImage(productId, path, alt) {
+    async insertImage(productId, path, alt, color) {
       const product = getMutableE2EProducts().find((candidate) => candidate.id === productId)
       const imageUrl = getE2EStore().uploadedProductImages.get(path)
       if (!product || !imageUrl) throw new Error('image_not_found')
-      product.images = [...(product.images ?? (product.imageUrl ? [{ url: product.imageUrl, alt: product.imageAlt, color: null }] : [])), { url: imageUrl, alt, color: null }]
+      product.images = [...(product.images ?? (product.imageUrl ? [{ url: product.imageUrl, alt: product.imageAlt, color: null }] : [])), { url: imageUrl, alt, color }]
       if (!product.imageUrl) {
         product.imageUrl = imageUrl
         product.imageAlt = alt
       }
+    },
+    async setImageColor(productId, imageId, color) {
+      const product = getMutableE2EProducts().find((candidate) => candidate.id === productId)
+      if (!product) throw new Error('product_not_found')
+      if (color !== null && !product.variants.some((variant) => variant.color === color)) {
+        throw new Error('product_image_color_invalid')
+      }
+      const images = [...(product.images ?? (product.imageUrl ? [{ url: product.imageUrl, alt: product.imageAlt, color: null }] : []))]
+      const indexText = imageId.startsWith(`${productId}-`) ? imageId.slice(productId.length + 1) : ''
+      const index = Number(indexText)
+      if (!Number.isInteger(index) || index < 0 || index >= images.length) throw new Error('image_not_found')
+      images[index] = { ...images[index], color }
+      product.images = images
     },
     async deleteImage(productId, imageId) {
       const product = getMutableE2EProducts().find((candidate) => candidate.id === productId)
@@ -786,7 +829,7 @@ export async function getAdminProduct(productId: string): Promise<AdminProductDe
           updatedAt: '2026-07-20T00:00:00.000Z',
         })),
       },
-      images: (product.images ?? (product.imageUrl ? [{ url: product.imageUrl, alt: product.imageAlt }] : []))
+      images: (product.images ?? (product.imageUrl ? [{ url: product.imageUrl, alt: product.imageAlt, color: null }] : []))
         .map((image, index) => ({ id: `${product.id}-${index}`, ...image })),
     }
   }
@@ -799,7 +842,7 @@ export async function getAdminProduct(productId: string): Promise<AdminProductDe
       summary, tags, seo_title, seo_description, material,
       care_instructions, size_guide, is_new, is_published, available_at,
       product_series_products(series_id),
-      product_images(id, storage_path, alt_text, position),
+      product_images(id, storage_path, alt_text, position, color),
       product_variants(id, sku, color, size, price, cost, compare_at_price, stock, updated_at)
     `)
     .eq('id', id.data)
@@ -864,6 +907,7 @@ export async function getAdminProduct(productId: string): Promise<AdminProductDe
         id: image.id,
         url: productImageUrl(image.storage_path),
         alt: image.alt_text,
+        color: image.color,
       })),
   }
 }
@@ -914,9 +958,16 @@ export async function createProductWithImage(input: unknown, formData?: FormData
   const files = (formData?.getAll('file') ?? []).filter((entry): entry is File => entry instanceof File && entry.size > 0)
   // Draft images already live in storage; they arrive as paths, not files.
   let draftPaths: string[] = []
+  let imageColors: Array<string | null> = []
   try {
     const parsed = JSON.parse(String(formData?.get('draftImagePaths') ?? '[]')) as unknown
     if (Array.isArray(parsed)) draftPaths = parsed.filter((path): path is string => typeof path === 'string')
+  } catch { /* ignore */ }
+  try {
+    const parsed = JSON.parse(String(formData?.get('imageColors') ?? '[]')) as unknown
+    if (Array.isArray(parsed)) {
+      imageColors = parsed.map((color) => typeof color === 'string' && color.trim() ? color.trim() : null)
+    }
   } catch { /* ignore */ }
 
   if (!formData || (files.length === 0 && draftPaths.length === 0)) {
@@ -928,16 +979,27 @@ export async function createProductWithImage(input: unknown, formData?: FormData
 
   const alt = String(formData.get('alt') ?? '')
   const altFor = (index: number) => (index === 0 ? alt : `${alt}（第 ${index + 1} 張）`)
+  const colorFor = (index: number) => imageColors[index] ?? null
 
   for (const [index, file] of files.entries()) {
-    const uploaded = await actions.uploadProductImage(created.productId, { alt: altFor(index), file })
+    const uploaded = await actions.uploadProductImage(created.productId, {
+      alt: altFor(index),
+      color: colorFor(index),
+      file,
+    })
     if (!uploaded.ok) {
       await actions.deleteProduct(created.productId)
       return uploaded
     }
   }
   for (const [index, path] of draftPaths.entries()) {
-    const adopted = await actions.adoptDraftImage(created.productId, path, altFor(files.length + index))
+    const imageIndex = files.length + index
+    const adopted = await actions.adoptDraftImage(
+      created.productId,
+      path,
+      altFor(imageIndex),
+      colorFor(imageIndex),
+    )
     if (!adopted.ok) {
       await actions.deleteProduct(created.productId)
       return adopted
@@ -961,8 +1023,18 @@ export async function uploadProductImage(productId: string, formData: FormData):
   'use server'
   return resolvedActions().uploadProductImage(productId, {
     alt: formData.get('alt'),
+    color: String(formData.get('color') ?? '').trim() || null,
     file: formData.get('file'),
   })
+}
+
+export async function updateProductImageColor(
+  productId: string,
+  imageId: string,
+  color: string | null,
+): Promise<ActionResult> {
+  'use server'
+  return resolvedActions().updateProductImageColor(productId, imageId, color)
 }
 
 export async function deleteProductImage(productId: string, imageId: string): Promise<ActionResult> {

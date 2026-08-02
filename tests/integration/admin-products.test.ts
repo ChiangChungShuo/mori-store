@@ -76,6 +76,7 @@ class MemoryProductRepository implements ProductRepository {
   inStockVariantCount = 1
   failImageInsert = false
   failImageRemove = false
+  failImageColor = false
   variantBelongsToProduct = true
 
   async createProduct(input: ProductInput) {
@@ -109,10 +110,15 @@ class MemoryProductRepository implements ProductRepository {
     this.uploadedPaths.push(toPath)
   }
 
-  async insertImage(_id: string, path: string) {
-    this.events.push(`insert-image:${path}`)
+  async insertImage(_id: string, path: string, _alt?: string, color: string | null = null) {
+    this.events.push(`insert-image:${path}${color ? `:${color}` : ''}`)
     if (this.failImageInsert) throw new Error('image row failed')
     this.imageCount += 1
+  }
+
+  async setImageColor(id: string, imageId: string, color: string | null) {
+    if (this.failImageColor) throw new Error('product_image_color_invalid')
+    this.events.push(`set-image-color:${id}:${imageId}:${color ?? 'shared'}`)
   }
 
   async removeFile(path: string) {
@@ -449,6 +455,36 @@ describe('admin product actions', () => {
       `upload:${productId}/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb.png`,
       `insert-image:${productId}/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb.png`,
     ])
+  })
+
+  it('stores an allowed color while uploading a product image', async () => {
+    const { actions, repository } = setup()
+
+    const result = await actions.uploadProductImage(productId, {
+      alt: '黃色上衣正面',
+      color: '黃色',
+      file: imageFile('image/png'),
+    })
+
+    expect(result.ok).toBe(true)
+    expect(repository.events).toContain(
+      `insert-image:${productId}/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb.png:黃色`,
+    )
+  })
+
+  it('updates an existing image color and reports an invalid color', async () => {
+    const { actions, repository } = setup()
+
+    await expect(actions.updateProductImageColor(productId, 'image-1', '黃色'))
+      .resolves.toMatchObject({ ok: true, message: '圖片顏色已更新' })
+    expect(repository.events).toContain(`set-image-color:${productId}:image-1:黃色`)
+
+    repository.failImageColor = true
+    await expect(actions.updateProductImageColor(productId, 'image-1', '不存在'))
+      .resolves.toMatchObject({
+        ok: false,
+        message: '這個顏色已不在商品規格中，請重新選擇',
+      })
   })
 
   it('removes a newly uploaded file when the image transaction fails', async () => {

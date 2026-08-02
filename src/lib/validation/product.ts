@@ -153,6 +153,7 @@ const imageFileSchema = z.custom<File>(
 
 export const productImageSchema = z.object({
   alt: z.string().trim().min(1, '圖片替代文字為必填'),
+  color: z.string().trim().max(80, '圖片顏色過長').nullable().default(null),
   file: imageFileSchema,
 }).strict()
 
