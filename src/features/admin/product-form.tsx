@@ -200,6 +200,41 @@ export function ProductImageOrderControls({
   </div>
 }
 
+export function ProductImageColorForm({
+  imageNumber,
+  color,
+  colors,
+  onSave,
+}: {
+  imageNumber: number
+  color: string | null
+  colors: readonly string[]
+  onSave: (color: string | null) => Promise<ProductActionResult>
+}) {
+  const router = useRouter()
+  const [selected, setSelected] = useState(color ?? '')
+  const [pending, startTransition] = useTransition()
+  const hasLegacyColor = Boolean(color && !colors.includes(color))
+
+  return <label className="admin-image-color-field">
+    對應顏色
+    <select aria-label={`圖片 ${imageNumber} 對應顏色`} disabled={pending} value={selected} onChange={(event) => {
+      const nextColor = event.target.value
+      setSelected(nextColor)
+      startTransition(async () => {
+        const outcome = await onSave(nextColor || null)
+        showToast(outcome.message ?? (outcome.ok ? '圖片顏色已更新' : '更新失敗'), outcome.ok)
+        if (outcome.ok) router.refresh()
+        else setSelected(color ?? '')
+      })
+    }}>
+      <option value="">共用圖片</option>
+      {hasLegacyColor ? <option value={color!}>{color}（規格已移除）</option> : null}
+      {colors.map((choice) => <option key={choice} value={choice}>{choice}</option>)}
+    </select>
+  </label>
+}
+
 export function ProductForm({ initialProduct, onSave, requireImage = false, categories = [...defaultProductCategories], series = [], materialPresets = [], carePresets = [], sizeOptions = [], draftId: initialDraftId = null, draftImages: initialDraftImages = [], draftImageAlt: initialDraftImageAlt = '', saveDraft, discardDraft }: ProductFormProps) {
   const router = useRouter()
   const [product, setProduct] = useState<ProductInput>({ ...initialProduct, seriesIds: initialProduct.seriesIds ?? [], quantityPrices: initialProduct.quantityPrices ?? [] })
@@ -215,11 +250,15 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
   const [draftImages, setDraftImages] = useState<string[]>(initialDraftImages)
   const [imageAlt, setImageAlt] = useState(initialDraftImageAlt)
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
+  const [imageColors, setImageColors] = useState<Array<string | null>>(
+    () => initialDraftImages.map(() => null),
+  )
   const [minimumAvailableAt] = useState(() => toDateTimeLocalValue(new Date()))
   const imagePreviewsRef = useRef<string[]>([])
   const availableSeries = series
     .filter((item) => item.categoryName === product.category)
     .sort((first, second) => first.position - second.position)
+  const productColors = [...new Set(product.variants.map((variant) => variant.color.trim()).filter(Boolean))]
 
   useEffect(() => { imagePreviewsRef.current = imagePreviews }, [imagePreviews])
   useEffect(() => () => { imagePreviewsRef.current.forEach((preview) => URL.revokeObjectURL(preview)) }, [])
@@ -301,6 +340,7 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
       } else {
         const imageData = new FormData()
         imageData.set('alt', imageAlt)
+        imageData.set('imageColors', JSON.stringify(imageColors))
         if (imageFiles.length) {
           imageFiles.forEach((file) => imageData.append('file', file))
         } else {
@@ -379,6 +419,7 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
       const payload = new FormData()
       payload.set('product', JSON.stringify(product))
       payload.set('alt', imageAlt)
+      payload.set('imageColors', JSON.stringify(imageColors))
       payload.set('existingImages', JSON.stringify(imageFiles.length ? [] : draftImages))
       imageFiles.forEach((file) => payload.append('file', file))
       const outcome = await saveDraft(draftId, payload)
@@ -453,6 +494,13 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
       ...current,
       quantityPrices: current.quantityPrices.filter((_, tierIndex) => tierIndex !== index),
     }))
+  }
+
+  function updateImageColor(index: number, color: string | null) {
+    setResult(null)
+    setImageColors((current) => current.map((existing, imageIndex) => (
+      imageIndex === index ? color : existing
+    )))
   }
 
   const cheapestVariantPrice = product.variants.reduce(
@@ -574,6 +622,7 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
                   imagePreviews.forEach((preview) => URL.revokeObjectURL(preview))
                   setImageFiles(files)
                   setImagePreviews(files.map((file) => URL.createObjectURL(file)))
+                  setImageColors(files.map(() => null))
                   setDraftImages([])
                   setCompressing(false)
                 })
@@ -588,17 +637,19 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
             </label>
             {!imagePreviews.length && draftImages.length ? <div className="admin-create-image-previews" aria-label="草稿保存的商品圖片">{draftImages.map((url, index) => <figure key={url}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img alt={`草稿圖片 ${index + 1}`} src={url} /><figcaption>{index === 0 ? '主圖' : `${index + 1}`}</figcaption><button aria-label={`移除草稿圖片 ${index + 1}`} type="button" onClick={() => {
+              <img alt={`草稿圖片 ${index + 1}`} src={url} /><figcaption>{index === 0 ? '主圖' : `${index + 1}`}</figcaption><label className="admin-image-color-field">圖片 {index + 1} 對應顏色<select aria-label={`圖片 ${index + 1} 對應顏色`} value={imageColors[index] ?? ''} onChange={(event) => updateImageColor(index, event.target.value || null)}><option value="">共用圖片</option>{productColors.map((color) => <option key={color} value={color}>{color}</option>)}</select></label><button aria-label={`移除草稿圖片 ${index + 1}`} type="button" onClick={() => {
                 setDraftImages((current) => current.filter((_, imageIndex) => imageIndex !== index))
+                setImageColors((current) => current.filter((_, imageIndex) => imageIndex !== index))
                 setResult(null)
               }}>×</button>
             </figure>)}</div> : null}
             {imagePreviews.length ? <div className="admin-create-image-previews" aria-label="已選擇的商品圖片">{imagePreviews.map((preview, index) => <figure key={preview}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img alt={`商品圖片預覽 ${index + 1}`} src={preview} /><figcaption>{index === 0 ? '主圖' : `${index + 1}`}</figcaption><button aria-label={`移除待上傳圖片 ${index + 1}`} type="button" onClick={() => {
+              <img alt={`商品圖片預覽 ${index + 1}`} src={preview} /><figcaption>{index === 0 ? '主圖' : `${index + 1}`}</figcaption><label className="admin-image-color-field">圖片 {index + 1} 對應顏色<select aria-label={`圖片 ${index + 1} 對應顏色`} value={imageColors[index] ?? ''} onChange={(event) => updateImageColor(index, event.target.value || null)}><option value="">共用圖片</option>{productColors.map((color) => <option key={color} value={color}>{color}</option>)}</select></label><button aria-label={`移除待上傳圖片 ${index + 1}`} type="button" onClick={() => {
                 URL.revokeObjectURL(preview)
                 setImageFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))
                 setImagePreviews((current) => current.filter((_, previewIndex) => previewIndex !== index))
+                setImageColors((current) => current.filter((_, colorIndex) => colorIndex !== index))
                 setResult(null)
               }}>×</button>
             </figure>)}</div> : null}

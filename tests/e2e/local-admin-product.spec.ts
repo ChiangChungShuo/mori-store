@@ -28,7 +28,7 @@ test('owner creates a product with one complete variant in local fixture mode', 
   await page.getByLabel('顏色').fill('森林綠')
   await page.getByLabel('尺寸', { exact: true }).selectOption('110')
   await page.getByLabel('售價').fill('690')
-  await page.getByLabel('庫存').selectOption('5')
+  await page.getByLabel('庫存', { exact: true }).selectOption('5')
 
   await expect(page.locator('.admin-product-steps').getByText('03 商品圖片')).toHaveAttribute('data-active', 'true')
   const imageBuffer = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64')
@@ -37,6 +37,7 @@ test('owner creates a product with one complete variant in local fixture mode', 
     { name: 'single-product-back.png', mimeType: 'image/png', buffer: imageBuffer },
   ])
   await expect(page.getByText('已選擇 2 張圖片')).toBeVisible()
+  await page.getByLabel('圖片 1 對應顏色').selectOption('森林綠')
   await page.getByLabel('圖片說明').fill('單一規格測試上衣正面照')
 
   await expect(page.locator('.admin-product-steps').getByText('04 確認建立')).toHaveAttribute('data-active', 'true')
@@ -50,6 +51,7 @@ test('owner creates a product with one complete variant in local fixture mode', 
   await page.getByRole('row').filter({ has: page.getByRole('rowheader', { name: productName }) })
     .getByRole('link', { name: '編輯' }).click()
   await expect(page.locator('.admin-product-image-grid img')).toHaveCount(2)
+  await expect(page.getByLabel('圖片 1 對應顏色')).toHaveValue('森林綠')
   const originalImageSources = await page.locator('.admin-product-image-grid img').evaluateAll((images) => images.map((image) => image.getAttribute('src')))
   await page.getByRole('button', { name: '將圖片 1 往後移' }).click()
   await expect(page.getByRole('status')).toContainText('商品圖片順序已更新')

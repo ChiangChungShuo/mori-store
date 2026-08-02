@@ -656,6 +656,39 @@ describe('admin product form', () => {
     view.unmount()
   })
 
+  it('lets the owner assign each selected new image to a variant color', async () => {
+    const view = render(createElement(ProductForm, {
+      initialProduct: newProduct,
+      onSave: vi.fn(),
+      requireImage: true,
+    }))
+    const form = within(view.container)
+
+    fireEvent.change(form.getByLabelText('商品圖片'), {
+      target: { files: [imageFile('image/png'), imageFile('image/png')] },
+    })
+
+    await vi.waitFor(() => {
+      expect(form.getAllByLabelText(/圖片 \d+ 對應顏色/)).toHaveLength(2)
+    })
+    expect(form.getAllByRole('option', { name: '黃色' })).toHaveLength(2)
+    expect(form.getAllByRole('option', { name: '共用圖片' })).toHaveLength(2)
+    view.unmount()
+  })
+
+  it('includes a shared-image color option in the standalone uploader', () => {
+    const view = render(createElement(ImageUploader, {
+      upload: vi.fn(),
+      colors: ['黃色', '藍色'],
+    }))
+    const uploader = within(view.container)
+
+    expect(uploader.getByLabelText('對應顏色')).toHaveValue('')
+    expect(uploader.getByRole('option', { name: '共用圖片' })).toBeInTheDocument()
+    expect(uploader.getByRole('option', { name: '藍色' })).toBeInTheDocument()
+    view.unmount()
+  })
+
   it('adds and removes concrete color-size rows', () => {
     function VariantHarness() {
       const [variants, setVariants] = useState(product.variants)

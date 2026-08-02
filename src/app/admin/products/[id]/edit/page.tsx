@@ -7,10 +7,11 @@ import {
   reorderProductImages,
   setProductPublished,
   updateProduct,
+  updateProductImageColor,
   uploadProductImage,
 } from '@/features/admin/product-actions'
 import { ImageUploader } from '@/features/admin/image-uploader'
-import { DeleteProductImageForm, ProductForm, ProductImageOrderControls, ProductPublishForm } from '@/features/admin/product-form'
+import { DeleteProductImageForm, ProductForm, ProductImageColorForm, ProductImageOrderControls, ProductPublishForm } from '@/features/admin/product-form'
 import { listProductCategories } from '@/features/catalog/categories'
 import { listContentPresets } from '@/features/catalog/content-presets'
 import { listProductSeries } from '@/features/catalog/product-series'
@@ -42,6 +43,7 @@ export default async function EditAdminProductPage({
     .sort()
     .join(':')
   const imageIds = product.images.map((image) => image.id)
+  const colors = [...new Set(product.product.variants.map((variant) => variant.color))]
   const moveImage = (index: number, offset: -1 | 1) => {
     const reordered = [...imageIds]
     ;[reordered[index], reordered[index + offset]] = [reordered[index + offset], reordered[index]]
@@ -68,6 +70,12 @@ export default async function EditAdminProductPage({
                 {index === 0 ? <span>主圖</span> : <span>{String(index + 1).padStart(2, '0')}</span>}
                 <Image alt={image.alt} height={160} src={image.url} unoptimized width={128} />
                 <p>{image.alt}</p>
+                <ProductImageColorForm
+                  imageNumber={index + 1}
+                  color={image.color}
+                  colors={colors}
+                  onSave={updateProductImageColor.bind(null, productId, image.id)}
+                />
                 <ProductImageOrderControls
                   imageNumber={index + 1}
                   onMoveEarlier={index > 0 ? reorderProductImages.bind(null, productId, moveImage(index, -1)) : undefined}
@@ -78,7 +86,7 @@ export default async function EditAdminProductPage({
             ))}
           </ul>
         )}
-        <ImageUploader upload={upload} />
+        <ImageUploader colors={colors} upload={upload} />
       </section>
     </main>
   )

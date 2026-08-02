@@ -8,8 +8,10 @@ type UploadResult = { ok: boolean; message?: string }
 
 export function ImageUploader({
   upload,
+  colors = [],
 }: {
   upload: (formData: FormData) => Promise<UploadResult>
+  colors?: readonly string[]
 }) {
   const [result, setResult] = useState<UploadResult | null>(null)
   const [pending, startTransition] = useTransition()
@@ -56,6 +58,7 @@ export function ImageUploader({
           <img alt="待上傳預覽" src={preview} /><strong>{fileName}</strong><span>點擊可重新選擇圖片</span>
         </> : <><b>＋</b><strong>選擇商品圖片</strong><span>建議使用直式 4:5 圖片，前台呈現最完整</span></>}
       </label>
+      <label className="admin-image-color-field">對應顏色<select aria-label="對應顏色" name="color" defaultValue=""><option value="">共用圖片</option>{colors.map((color) => <option key={color} value={color}>{color}</option>)}</select><small>選擇顧客點擊這個顏色時要顯示的照片；細節照可保留共用。</small></label>
       <label className="admin-image-alt">圖片替代文字<input aria-label="圖片替代文字" name="alt" placeholder="例：孩子穿著鼠尾草綠 T 恤的正面照" required /><small>這段文字會提供給看不到圖片的使用者，也有助於搜尋。</small></label>
       <button className="button" type="submit" disabled={pending}>{pending ? '圖片上傳中…' : '上傳圖片'}</button>
       {result?.message && !result.ok ? <p className="admin-upload-error" role="alert">{result.message}</p> : null}

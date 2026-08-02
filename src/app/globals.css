@@ -1088,6 +1088,9 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-product-image-grid li > span { position: absolute; z-index: 1; top: 0.8rem; left: 0.8rem; padding: 0.25rem 0.4rem; background: var(--forest); color: var(--white); font-size: 0.55rem; font-weight: 800; }
 .admin-product-image-grid img { width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; }
 .admin-product-image-grid p { margin: 0.5rem 0 0; overflow-wrap: anywhere; color: var(--muted); font-size: 0.62rem; }
+.admin-image-color-field { display: grid; gap: 0.35rem; margin-top: 0.55rem; color: var(--forest); font-size: 0.68rem; font-weight: 800; }
+.admin-image-color-field select { width: 100%; min-height: 2.5rem; border: 1px solid var(--line); border-radius: 0; background: #fbfbfb; color: var(--ink); padding: 0.45rem 0.6rem; font: inherit; font-weight: 600; }
+.admin-image-color-field small { color: var(--muted); font-size: 0.6rem; font-weight: 500; line-height: 1.5; }
 .admin-image-order-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; margin-top: 0.55rem; }
 .admin-image-order-controls button { min-height: 2.25rem; border: 1px solid var(--line); background: var(--white); color: var(--forest); font-size: 0.6rem; font-weight: 800; }
 .admin-image-order-controls button:hover:not(:disabled) { border-color: var(--forest); background: var(--oat); }
@@ -1108,8 +1111,9 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-create-image-previews { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.55rem; margin-top: 0.75rem; }
 .admin-create-image-previews figure { position: relative; margin: 0; overflow: hidden; border: 1px solid var(--line); background: var(--oat); }
 .admin-create-image-previews img { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; }
-.admin-create-image-previews figcaption { position: absolute; right: 0.3rem; bottom: 0.3rem; padding: 0.2rem 0.35rem; background: rgb(249 249 250 / 90%); color: var(--forest); font-size: 0.55rem; font-weight: 800; }
+.admin-create-image-previews figcaption { position: absolute; top: 0.3rem; left: 0.3rem; padding: 0.2rem 0.35rem; background: rgb(249 249 250 / 90%); color: var(--forest); font-size: 0.55rem; font-weight: 800; }
 .admin-create-image-previews button { position: absolute; z-index: 2; top: 0.3rem; right: 0.3rem; display: grid; width: 1.65rem; height: 1.65rem; place-items: center; border: 0; border-radius: 50%; background: rgb(90 108 131 / 88%); color: var(--white); cursor: pointer; font-size: 1rem; }
+.admin-create-image-previews .admin-image-color-field { margin: 0; background: var(--paper); padding: 0.5rem; font-size: 0.6rem; }
 .admin-success-modal { position: fixed; z-index: 120; inset: 0; display: grid; place-items: center; background: rgb(67 83 102 / 66%); padding: 1rem; backdrop-filter: blur(0.25rem); animation: modal-fade-in 180ms ease-out both; }
 .admin-success-modal > div { width: min(100%, 31rem); border-top: 0.35rem solid var(--lime); background: var(--white); box-shadow: 0 1.8rem 5rem rgb(58 73 92 / 28%); padding: clamp(2rem, 5vw, 3rem); text-align: center; animation: modal-card-in 240ms ease-out both; }
 .admin-success-modal > div > span { display: grid; width: 3.5rem; height: 3.5rem; place-items: center; margin: 0 auto 1.2rem; border-radius: 50%; background: var(--forest); color: var(--white); font-size: 1.35rem; }
@@ -1131,6 +1135,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-image-alt input { min-height: 3rem; border: 1px solid #d5d7da; background: #fbfbfb; padding: 0.65rem 0.75rem; }
 .admin-image-alt small { color: var(--muted); font-size: 0.62rem; font-weight: 500; }
 .admin-image-alt small.admin-field-error, .admin-field-error { color: #a15954; font-weight: 700; }
+.admin-image-uploader > .admin-image-color-field, .admin-image-uploader > .admin-image-alt { grid-column: 2; }
 .admin-image-uploader > .button { grid-column: 2; width: 100%; }
 .admin-upload-error, .admin-upload-success { grid-column: 2; margin: 0; padding: 0.7rem; font-size: 0.68rem; }
 .admin-upload-error { background: #fcf9f9; color: #a15954; }
