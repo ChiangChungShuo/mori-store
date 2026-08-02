@@ -14,9 +14,9 @@ describe('ProductGallery', () => {
   it('supports arrow navigation and an enlarged image view', () => {
     render(createElement(ProductGallery, { images, isNew: true }))
 
-    expect(screen.getByRole('img', { name: '商品正面' })).toHaveAttribute('src', '/front.jpg')
+    expect(screen.getByRole('img', { name: '商品正面' })).toHaveAttribute('src', expect.stringContaining(encodeURIComponent('/front.jpg')))
     fireEvent.click(screen.getByRole('button', { name: '下一張商品圖片' }))
-    expect(screen.getByRole('img', { name: '商品背面' })).toHaveAttribute('src', '/back.jpg')
+    expect(screen.getByRole('img', { name: '商品背面' })).toHaveAttribute('src', expect.stringContaining(encodeURIComponent('/back.jpg')))
 
     fireEvent.click(screen.getByRole('button', { name: '放大圖片' }))
     expect(screen.getByRole('dialog', { name: '商品圖片放大檢視' })).toBeInTheDocument()

@@ -195,7 +195,7 @@ header#top { position: sticky; z-index: 60; top: 0; background: var(--paper); bo
   background: var(--oat);
 }
 .hero-carousel { height: clamp(38rem, 56vw, 47rem); min-height: 0; overflow: hidden; touch-action: pan-y; user-select: none; }
-.hero-carousel-image { height: 100%; min-height: 0; overflow: hidden; background: var(--oat); }
+.hero-carousel-image { position: relative; height: 100%; min-height: 0; overflow: hidden; background: var(--oat); }
 .hero-carousel-image img { width: 100%; height: 100%; object-fit: cover; animation: hero-image-in 520ms ease-out both; }
 .hero-carousel .hero-copy { animation: hero-copy-in 420ms ease-out both; }
 .hero-carousel-controls { position: absolute; z-index: 2; right: 1rem; bottom: 1rem; display: flex; gap: 0.35rem; padding: 0.35rem; background: rgb(249 249 250 / 88%); backdrop-filter: blur(0.45rem); }
@@ -1312,7 +1312,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .product-gallery-main .product-image { animation: product-image-in 260ms ease-out both; }
 .product-gallery-position { position: absolute; right: 0.75rem; bottom: 0.75rem; padding: 0.35rem 0.5rem; background: rgb(249 249 250 / 88%); color: var(--forest); font-size: 0.62rem; font-weight: 800; }
 .product-gallery-thumbnails { display: grid; width: min(100%, 34rem); grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.7rem; margin: 0.8rem auto 0; }
-.product-gallery-thumbnails button { overflow: hidden; aspect-ratio: 4 / 5; border: 1px solid transparent; background: var(--oat); padding: 0; opacity: 0.62; }
+.product-gallery-thumbnails button { position: relative; overflow: hidden; aspect-ratio: 4 / 5; border: 1px solid transparent; background: var(--oat); padding: 0; opacity: 0.62; }
 .product-gallery-thumbnails button[aria-pressed="true"] { border-color: var(--forest); opacity: 1; }
 .product-gallery-thumbnails img { width: 100%; height: 100%; object-fit: cover; }
 .product-gallery-arrow { position: absolute; top: 50%; display: grid; width: 2.7rem; height: 2.7rem; place-items: center; border: 0; border-radius: 50%; background: rgb(249 249 250 / 88%); color: var(--forest); font-family: Georgia, serif; font-size: 1.8rem; transform: translateY(-50%); }
@@ -2436,3 +2436,21 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-order-review-section { margin-bottom: 1.5rem; }
 .admin-order-review-section h2 { margin: 0 0 0.5rem; color: var(--forest); font-size: 1.05rem; }
 .admin-order-review-section > p { margin: 0; color: var(--muted); font-size: 0.74rem; }
+
+/* Storefront loading skeleton ------------------------------------------------ */
+.store-loading { min-height: 60vh; }
+.store-loading-heading { display: grid; gap: 0.8rem; margin-bottom: 2rem; }
+.store-loading-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3rem 1rem; }
+.store-loading-card { display: grid; gap: 0.55rem; }
+.store-loading-media { aspect-ratio: 4 / 5; }
+.store-loading-media, .store-loading-bar {
+  display: block;
+  height: 0.9rem;
+  animation: store-loading-pulse 1.4s ease-in-out infinite;
+  background: linear-gradient(100deg, var(--oat) 40%, #f2f4f5 50%, var(--oat) 60%);
+  background-size: 200% 100%;
+}
+.store-loading-media { height: auto; }
+@keyframes store-loading-pulse { from { background-position: 130% 0; } to { background-position: -30% 0; } }
+@media (max-width: 58rem) { .store-loading-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: reduce) { .store-loading-media, .store-loading-bar { animation: none; } }

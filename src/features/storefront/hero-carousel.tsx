@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import type { BannerSlide } from './banner-settings'
 
@@ -48,8 +49,7 @@ export function HeroCarousel({ slides }: { slides: BannerSlide[] }) {
         <div className="hero-actions"><Link href={slide.buttonHref} className="button">{slide.buttonLabel}</Link><Link href="/products" className="text-link">瀏覽所有商品 →</Link></div>
       </div>
       <div className="hero-carousel-image" key={`${active}-image`}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img alt={slide.imageAlt} src={slide.imageUrl} />
+        <Image alt={slide.imageAlt} fill priority sizes="(max-width: 58rem) 100vw, 66vw" src={slide.imageUrl} />
       </div>
       {slides.length > 1 ? <><button className="hero-carousel-arrow hero-carousel-arrow-previous" type="button" aria-label="上一張輪播圖片" onClick={showPrevious}>←</button><button className="hero-carousel-arrow hero-carousel-arrow-next" type="button" aria-label="下一張輪播圖片" onClick={showNext}>→</button></> : null}
       {slides.length > 1 ? <div className="hero-carousel-controls" aria-label="選擇輪播圖片">{slides.map((candidate, index) => <button aria-label={`顯示第 ${index + 1} 張：${candidate.title.replaceAll('\n', '')}`} aria-pressed={index === active} key={`${candidate.imageUrl}-${index}`} onClick={() => setActive(index)} type="button">{String(index + 1).padStart(2, '0')}</button>)}</div> : null}

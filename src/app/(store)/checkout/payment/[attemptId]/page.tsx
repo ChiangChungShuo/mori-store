@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { getAuthorizedPaymentAttempt } from '@/features/checkout/service'
 import { OrderSubmitPanel } from '@/features/checkout/order-submit-panel'
@@ -35,8 +36,7 @@ export default async function TestPaymentPage({ params }: TestPaymentPageProps) 
             {payment.items.map((item) => (
               <li key={item.variantId}>
                 <div className="payment-product-image">{item.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img alt={item.productName} src={item.imageUrl} />
+                  <Image alt={item.productName} height={100} src={item.imageUrl} width={80} />
                 ) : <span>mori</span>}</div>
                 <div className="payment-product-copy">
                   <h3>{item.productName}</h3>

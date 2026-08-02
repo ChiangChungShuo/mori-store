@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useCart } from '@/features/cart/cart-provider'
 import { isCartItem } from '@/features/cart/types'
 import { StorePicker, type StoreChain } from '@/features/checkout/store-picker'
@@ -276,10 +277,9 @@ export function CheckoutForm({ action, couponAction, pickedStore, initialValues 
           {effectiveRefreshStatus === 'error' ? <div className="checkout-error" role="alert"><p>無法更新購物車，請再試一次。</p><button className="button button-secondary" type="button" onClick={retryRefresh}>重試</button></div> : null}
           {effectiveRefreshStatus === 'success' && summary && cart.length > 0 ? <div className="checkout-order-summary" aria-label="訂單摘要">
             <div className="checkout-summary-heading"><div><p>order summary</p><h2>訂單摘要</h2></div><Link href="/cart">返回修改購物車</Link></div>
-            <ul>{items.map((item) => <li key={item.variantId}><div className="checkout-summary-image">{item.imageUrl ? <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img alt="" src={item.imageUrl} />
-            </> : <span>mori</span>}<b>{item.quantity}</b></div><div><strong>{item.name}</strong><small>{item.color}／尺寸 {item.size}</small></div><em>{formatTwd(item.unitPrice * item.quantity)}</em></li>)}</ul>
+            <ul>{items.map((item) => <li key={item.variantId}><div className="checkout-summary-image">{item.imageUrl
+              ? <Image alt="" height={90} src={item.imageUrl} width={72} />
+              : <span>mori</span>}<b>{item.quantity}</b></div><div><strong>{item.name}</strong><small>{item.color}／尺寸 {item.size}</small></div><em>{formatTwd(item.unitPrice * item.quantity)}</em></li>)}</ul>
             {couponAction ? <div className="cart-coupon-panel checkout-coupon-panel">
               <div className="cart-coupon-heading"><span aria-hidden="true">%</span><div><label htmlFor="checkout-coupon">優惠碼</label><small>每張訂單限用一組優惠碼</small></div></div>
               <div className="cart-coupon-form"><input id="checkout-coupon" aria-label="優惠碼" autoComplete="off" placeholder="請輸入優惠碼" value={couponInput} onChange={(event) => setCouponInput(event.target.value.toUpperCase())} /><button type="button" disabled={couponPending || !couponInput.trim()} onClick={() => {

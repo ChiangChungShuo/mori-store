@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { formatTwd } from '@/lib/money'
 import type { CatalogProduct } from '@/features/catalog/queries'
 import { WishlistButton } from '@/features/wishlist/wishlist-button'
@@ -18,8 +19,13 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
     : null
   const image = <>
     {product.imageUrl ? (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={product.imageUrl} alt={product.imageAlt} className="product-image" />
+      <Image
+        alt={product.imageAlt}
+        className="product-image"
+        fill
+        sizes="(max-width: 40rem) 50vw, (max-width: 64rem) 33vw, 25vw"
+        src={product.imageUrl}
+      />
     ) : (
       <span className="product-image-placeholder" aria-hidden="true">mori</span>
     )}

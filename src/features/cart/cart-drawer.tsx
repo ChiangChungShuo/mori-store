@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import { useCart } from '@/features/cart/cart-provider'
 import { getCartQuantityLimit } from '@/features/cart/types'
@@ -67,8 +68,7 @@ export function CartDrawer({ settings }: { settings: StorefrontSettings }) {
               <li key={item.variantId}>
                 <Link className="cart-drawer-image" href={`/products/${item.productSlug}`}>
                   {item.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img alt={item.name} src={item.imageUrl} />
+                    <Image alt={item.name} height={100} src={item.imageUrl} width={80} />
                   ) : <span aria-label={item.name} role="img">mori</span>}
                 </Link>
                 <div className="cart-drawer-item-copy">

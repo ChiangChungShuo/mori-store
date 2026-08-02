@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useCart } from '@/features/cart/cart-provider'
 import { getCartQuantityLimit, isCartItem } from '@/features/cart/types'
@@ -173,8 +174,7 @@ export function CartPageClient({ settings, isSignedIn = false, recommendedProduc
                     <div className="cart-product-info">
                       <Link className="cart-product-image" href={`/products/${item.productSlug}`}>
                         {item.imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={item.imageUrl} alt={item.name} />
+                          <Image alt={item.name} height={120} src={item.imageUrl} width={96} />
                         ) : <span aria-hidden="true">mori</span>}
                       </Link>
                       <div>

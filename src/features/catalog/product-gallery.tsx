@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 
 export function ProductGallery({ images, isNew }: {
   images: readonly { url: string; alt: string }[]
@@ -32,10 +33,17 @@ export function ProductGallery({ images, isNew }: {
         if (Math.abs(distance) > 45) show(distance > 0 ? -1 : 1)
         touchStart.current = null
       }}>
-        {image ? <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img alt={image.alt} className="product-image" key={image.url} src={image.url} />
-        </> : <span className="product-image-placeholder" aria-hidden="true">mori</span>}
+        {image ? (
+          <Image
+            alt={image.alt}
+            className="product-image"
+            fill
+            key={image.url}
+            priority={active === 0}
+            sizes="(max-width: 58rem) 100vw, 34rem"
+            src={image.url}
+          />
+        ) : <span className="product-image-placeholder" aria-hidden="true">mori</span>}
         <div className="product-image-badges">{isNew && <span>NEW</span>}<span>0–12 KIDS</span></div>
         {image ? <button className="product-gallery-zoom" type="button" onClick={() => setZoomed(true)}>放大圖片</button> : null}
         {images.length > 1 ? <>
@@ -45,8 +53,7 @@ export function ProductGallery({ images, isNew }: {
         {images.length > 1 ? <div className="product-gallery-position">{active + 1} / {images.length}</div> : null}
       </div>
       {images.length > 1 ? <div className="product-gallery-thumbnails" aria-label="商品圖片">{images.map((candidate, index) => <button aria-label={`查看第 ${index + 1} 張商品圖片`} aria-pressed={active === index} key={`${candidate.url}-${index}`} onClick={() => setActive(index)} type="button">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img alt="" src={candidate.url} />
+        <Image alt="" fill sizes="5rem" src={candidate.url} />
       </button>)}</div> : null}
       {zoomed && image ? <div aria-label="商品圖片放大檢視" aria-modal="true" className="product-gallery-lightbox" role="dialog" onClick={() => setZoomed(false)}>
         <button aria-label="關閉放大圖片" type="button" onClick={() => setZoomed(false)}>×</button>
