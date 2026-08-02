@@ -2,17 +2,24 @@ import { createElement } from 'react'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ProductGallery } from '@/features/catalog/product-gallery'
+import { ProductColorProvider, useProductColor } from '@/features/catalog/product-color-context'
 
 afterEach(cleanup)
 
 describe('ProductGallery', () => {
   const images = [
-    { url: '/front.jpg', alt: '商品正面' },
-    { url: '/back.jpg', alt: '商品背面' },
+    { url: '/front.jpg', alt: '商品正面', color: null },
+    { url: '/back.jpg', alt: '商品背面', color: null },
   ]
 
+  function renderGallery(galleryImages = images, initialColor = '藍色') {
+    return render(createElement(ProductColorProvider, { initialColor },
+      createElement(ProductGallery, { images: galleryImages, isNew: true }),
+    ))
+  }
+
   it('supports arrow navigation and an enlarged image view', () => {
-    render(createElement(ProductGallery, { images, isNew: true }))
+    renderGallery()
 
     expect(screen.getByRole('img', { name: '商品正面' })).toHaveAttribute('src', expect.stringContaining(encodeURIComponent('/front.jpg')))
     fireEvent.click(screen.getByRole('button', { name: '下一張商品圖片' }))
@@ -22,5 +29,28 @@ describe('ProductGallery', () => {
     expect(screen.getByRole('dialog', { name: '商品圖片放大檢視' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '關閉放大圖片' }))
     expect(screen.queryByRole('dialog', { name: '商品圖片放大檢視' })).not.toBeInTheDocument()
+  })
+
+  it('點選顏色後切換為該顏色圖片，並保留共用細節圖', () => {
+    function ColorButtons() {
+      const { setColor } = useProductColor()
+      return createElement('button', { type: 'button', onClick: () => setColor('粉色') }, '選擇粉色')
+    }
+    const colorImages = [
+      { url: '/blue.jpg', alt: '藍色正面', color: '藍色' },
+      { url: '/pink.jpg', alt: '粉色正面', color: '粉色' },
+      { url: '/detail.jpg', alt: '共用細節', color: null },
+    ]
+
+    render(createElement(ProductColorProvider, { initialColor: '藍色' },
+      createElement(ColorButtons),
+      createElement(ProductGallery, { images: colorImages, isNew: false }),
+    ))
+
+    expect(screen.getByRole('img', { name: '藍色正面' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /查看第/ })).toHaveLength(2)
+    fireEvent.click(screen.getByRole('button', { name: '選擇粉色' }))
+    expect(screen.getByRole('img', { name: '粉色正面' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /查看第/ })).toHaveLength(2)
   })
 })

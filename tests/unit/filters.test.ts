@@ -4,14 +4,16 @@ import { resolve } from 'node:path'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SiteHeader } from '@/components/site-header'
-import { CartProvider } from '@/features/cart/cart-provider'
+import { CartProvider, useCart } from '@/features/cart/cart-provider'
 import { ProductCard } from '@/features/catalog/product-card'
 import { ProductFilters } from '@/features/catalog/product-filters'
 import { ProductSeriesFilter } from '@/features/catalog/product-series-filter'
 import { applyCatalogFilters, listProducts, parseProductFilters } from '@/features/catalog/queries'
+import type { CatalogProduct } from '@/features/catalog/queries'
 import { VariantPicker } from '@/features/catalog/variant-picker'
+import { ProductColorProvider } from '@/features/catalog/product-color-context'
 
-const product = {
+const product: CatalogProduct = {
   id: 'product-1',
   slug: 'mori-organic-cotton-tee',
   name: '有機棉小樹 T 恤',
@@ -27,10 +29,14 @@ const product = {
   isNew: true,
   imageUrl: null,
   imageAlt: '有機棉小樹 T 恤',
+  images: [
+    { url: '/sage.jpg', alt: '鼠尾草綠正面', color: '鼠尾草綠' },
+    { url: '/pink.jpg', alt: '珊瑚粉正面', color: '珊瑚粉' },
+  ],
   variants: [
-    { id: 'sage-100', sku: 'SAGE-100', color: '鼠尾草綠', size: '100', price: 680, compareAtPrice: null, stock: 2 },
-    { id: 'sage-120', sku: 'SAGE-120', color: '鼠尾草綠', size: '120', price: 780, compareAtPrice: null, stock: 0 },
-    { id: 'pink-110', sku: 'PINK-110', color: '珊瑚粉', size: '110', price: 720, compareAtPrice: null, stock: 3 },
+    { id: '10000000-0000-4000-8000-000000000101', sku: 'SAGE-100', color: '鼠尾草綠', size: '100', price: 680, compareAtPrice: null, stock: 2 },
+    { id: '10000000-0000-4000-8000-000000000102', sku: 'SAGE-120', color: '鼠尾草綠', size: '120', price: 780, compareAtPrice: null, stock: 0 },
+    { id: '10000000-0000-4000-8000-000000000103', sku: 'PINK-110', color: '珊瑚粉', size: '110', price: 720, compareAtPrice: null, stock: 3 },
   ],
 }
 
@@ -302,17 +308,29 @@ describe('storefront metadata and owner shortcuts', () => {
 })
 
 describe('VariantPicker', () => {
+  function CartImageProbe() {
+    const { items } = useCart()
+    return createElement('output', { 'data-testid': 'cart-image' }, items[0]?.imageUrl ?? '')
+  }
+
+  function renderPicker(catalogProduct = product, withProbe = false) {
+    return render(createElement(CartProvider, null,
+      createElement(ProductColorProvider, { initialColor: catalogProduct.variants[0]?.color ?? '' },
+        createElement(VariantPicker, { product: catalogProduct }),
+        withProbe ? createElement(CartImageProbe) : null,
+      ),
+    ))
+  }
+
   it('presents scheduled availability as a clear coming-soon notice', () => {
-    render(createElement(CartProvider, null, createElement(VariantPicker, {
-      product: { ...product, availableAt: '2099-01-01T00:00:00.000Z' },
-    })))
+    renderPicker({ ...product, availableAt: '2099-01-01T00:00:00.000Z' })
 
     expect(screen.getByRole('button', { name: '尚未開放購買' })).toBeDisabled()
   })
 
   it('lets a shopper request a restock notice for a sold-out product', () => {
     const soldOutProduct = { ...product, variants: product.variants.map((variant) => ({ ...variant, stock: 0 })) }
-    render(createElement(CartProvider, null, createElement(VariantPicker, { product: soldOutProduct })))
+    renderPicker(soldOutProduct)
 
     fireEvent.click(screen.getByRole('button', { name: '貨到通知我' }))
 
@@ -321,7 +339,7 @@ describe('VariantPicker', () => {
   })
 
   it('derives sizes from the selected color and disables unavailable variants', () => {
-    render(createElement(CartProvider, null, createElement(VariantPicker, { product })))
+    renderPicker()
 
     expect(screen.queryByRole('button', { name: '尺寸 110' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: '尺寸 120（缺貨）' })).toBeDisabled()
@@ -340,14 +358,16 @@ describe('VariantPicker', () => {
     const onCartAdded = vi.fn()
     window.addEventListener('mori:cart-added', onCartAdded)
 
-    render(createElement(CartProvider, null, createElement(VariantPicker, { product })))
-    fireEvent.click(screen.getByRole('button', { name: '尺寸 100' }))
+    renderPicker(product, true)
+    fireEvent.click(screen.getByRole('button', { name: '顏色 珊瑚粉' }))
+    fireEvent.click(screen.getByRole('button', { name: '尺寸 110' }))
     fireEvent.click(screen.getByRole('button', { name: '加入購物車' }))
 
     expect(screen.getByRole('button', { name: '已加入購物車' })).toHaveAttribute(
       'data-cart-state',
       'added',
     )
+    expect(screen.getByTestId('cart-image')).toHaveTextContent('/pink.jpg')
     expect(onCartAdded).toHaveBeenCalledTimes(1)
     window.removeEventListener('mori:cart-added', onCartAdded)
   })

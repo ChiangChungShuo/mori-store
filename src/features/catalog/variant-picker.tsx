@@ -5,9 +5,12 @@ import { useCart } from '@/features/cart/cart-provider'
 import type { CatalogProduct } from '@/features/catalog/queries'
 import { trackStorefrontEvent } from '@/features/analytics/tracker'
 import { getProductAvailability } from '@/features/catalog/availability'
+import { useProductColor } from '@/features/catalog/product-color-context'
+import { primaryImageForColor } from '@/features/catalog/product-images'
 
 export function VariantPicker({ product }: { product: CatalogProduct }) {
   const { dispatch } = useCart()
+  const { color, setColor } = useProductColor()
   const feedbackTimer = useRef<number | null>(null)
   const [added, setAdded] = useState(false)
   const [restockRequested, setRestockRequested] = useState(false)
@@ -15,7 +18,6 @@ export function VariantPicker({ product }: { product: CatalogProduct }) {
     () => [...new Set(product.variants.map((variant) => variant.color))],
     [product.variants],
   )
-  const [color, setColor] = useState(colors[0] ?? '')
   const [size, setSize] = useState('')
   const variantsForColor = product.variants.filter((variant) => variant.color === color)
   const selectedVariant = variantsForColor.find((variant) => variant.size === size)
@@ -96,7 +98,7 @@ export function VariantPicker({ product }: { product: CatalogProduct }) {
               variantId: selectedVariant.id,
               productSlug: product.slug,
               name: product.name,
-              imageUrl: product.imageUrl,
+              imageUrl: primaryImageForColor(product.images ?? [], selectedVariant.color)?.url ?? product.imageUrl,
               color: selectedVariant.color,
               size: selectedVariant.size,
               unitPrice: selectedVariant.price,

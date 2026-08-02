@@ -16,6 +16,7 @@ import { ProductShareButtons } from '@/components/social-share-menu'
 import { getProductAvailability } from '@/features/catalog/availability'
 import { isPreorder, PREORDER_NOTE } from '@/lib/preorder'
 import { absoluteUrl } from '@/lib/site'
+import { ProductColorProvider } from '@/features/catalog/product-color-context'
 
 export const dynamic = 'force-dynamic'
 
@@ -85,7 +86,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const popularProducts = shuffle(catalog.filter((candidate) => candidate.id !== product.id)).slice(0, 4)
   const productImages = product.images?.length
     ? product.images
-    : product.imageUrl ? [{ url: product.imageUrl, alt: product.imageAlt }] : []
+    : product.imageUrl ? [{ url: product.imageUrl, alt: product.imageAlt, color: null }] : []
 
   const availabilitySchema = availability === 'available'
     ? 'https://schema.org/InStock'
@@ -129,7 +130,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <Link href="/">首頁</Link><span>/</span><Link href="/products">所有商品</Link><span>/</span><span>{product.name}</span>
       </nav>
 
-      <section className="section product-page">
+      <ProductColorProvider initialColor={product.variants[0]?.color ?? ''}><section className="section product-page">
         <div className="product-detail-image"><ProductGallery images={productImages} isNew={product.isNew} /></div>
         <div className="product-detail-copy">
           <div className="product-title-row">
@@ -157,7 +158,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <ProductShareButtons productName={product.name} />
           <p className="product-service-note">{storeSettings.freeShippingThreshold ? `滿 ${formatTwd(storeSettings.freeShippingThreshold)} 免運・` : ''}台灣本島超商配送・會員訂單可追蹤取貨進度</p>
         </div>
-      </section>
+      </section></ProductColorProvider>
 
       <section className="section product-information">
         <header className="section-heading"><div><p className="eyebrow">details & care</p><h2>穿之前，先了解這件衣服。</h2></div><p>從尺寸、材質到洗滌方式，都整理在這裡，讓替孩子選衣更安心。</p></header>
