@@ -58,8 +58,12 @@ export function ProductGallery({ images, isNew }: {
         <div className="product-image-badges">{isNew && <span>NEW</span>}<span>0–12 KIDS</span></div>
         {image ? <button className="product-gallery-zoom" type="button" onClick={() => setZoomed(true)}>放大圖片</button> : null}
         {visibleImages.length > 1 ? <>
-          <button aria-label="上一張商品圖片" className="product-gallery-arrow product-gallery-prev" type="button" onClick={() => show(-1)}>‹</button>
-          <button aria-label="下一張商品圖片" className="product-gallery-arrow product-gallery-next" type="button" onClick={() => show(1)}>›</button>
+          <button aria-label="上一張商品圖片" className="product-gallery-arrow product-gallery-prev" type="button" onClick={() => show(-1)}>
+            <svg aria-hidden="true" fill="none" height="14" viewBox="0 0 9 14" width="9"><path d="M7.5 1 1.5 7l6 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" /></svg>
+          </button>
+          <button aria-label="下一張商品圖片" className="product-gallery-arrow product-gallery-next" type="button" onClick={() => show(1)}>
+            <svg aria-hidden="true" fill="none" height="14" viewBox="0 0 9 14" width="9"><path d="M1.5 1l6 6-6 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" /></svg>
+          </button>
         </> : null}
         {visibleImages.length > 1 ? <div className="product-gallery-position">{active + 1} / {visibleImages.length}</div> : null}
       </div>

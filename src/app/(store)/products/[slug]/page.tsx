@@ -14,7 +14,7 @@ import { WishlistButton } from '@/features/wishlist/wishlist-button'
 import { ProductGallery } from '@/features/catalog/product-gallery'
 import { ProductShareButtons } from '@/components/social-share-menu'
 import { getProductAvailability } from '@/features/catalog/availability'
-import { isPreorder, PREORDER_NOTE } from '@/lib/preorder'
+import { isPreorder, PREORDER_NOTE, PREORDER_TAG } from '@/lib/preorder'
 import { absoluteUrl } from '@/lib/site'
 import { ProductColorProvider } from '@/features/catalog/product-color-context'
 
@@ -84,6 +84,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     .map((tier) => describeQuantityTier(tier, minimumPrice))
     .filter((tier) => tier.saving > 0)
   const popularProducts = shuffle(catalog.filter((candidate) => candidate.id !== product.id)).slice(0, 4)
+  // The ◷ banner above already says 預購商品, so the tag chip would repeat it.
+  const visibleTags = (product.tags ?? []).filter((tag) => tag !== PREORDER_TAG)
   const productImages = product.images?.length
     ? product.images
     : product.imageUrl ? [{ url: product.imageUrl, alt: product.imageAlt, color: null }] : []
@@ -148,7 +150,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <small className="product-bundle-note">同一商品的不同顏色與尺寸可混搭，購物車會自動套用最優惠的組合。</small>
           </div> : null}
           <p className="product-lead">{product.summary || product.description}</p>
-          {product.tags && product.tags.length > 0 ? <ul className="product-tags" aria-label="商品標籤">{product.tags.map((tag) => <li key={tag}>{tag}</li>)}</ul> : null}
+          {visibleTags.length > 0 ? <ul className="product-tags" aria-label="商品標籤">{visibleTags.map((tag) => <li key={tag}>{tag}</li>)}</ul> : null}
           {/* Picking colour/size/quantity is the page's job — it comes right
               after the price so it is visible without scrolling. */}
           <VariantPicker product={product} />
