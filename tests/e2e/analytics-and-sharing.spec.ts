@@ -2,11 +2,12 @@ import { expect, test } from '@playwright/test'
 
 test('visitor can search from the header and share a product', async ({ page }) => {
   await page.goto('/')
+  await page.getByRole('button', { name: '開啟商品搜尋' }).click()
   await page.getByRole('search').getByPlaceholder('搜尋商品').fill('洋裝')
   await page.getByRole('button', { name: '開始搜尋' }).click()
   await expect(page).toHaveURL(/q=%E6%B4%8B%E8%A3%9D/)
   await expect(page.getByRole('heading', { name: '花野洋裝' })).toBeVisible()
-  await expect(page.getByText('共 1 件商品')).toBeVisible()
+  await expect(page.getByRole('main').getByText('共 1 件商品')).toBeVisible()
 
   await page.getByRole('link', { name: '花野洋裝', exact: true }).click()
   const mainImage = await page.locator('.product-gallery-main').boundingBox()
@@ -14,7 +15,9 @@ test('visitor can search from the header and share a product', async ({ page }) 
     ? await page.locator('.product-gallery-thumbnails button').first().boundingBox()
     : null
   expect(mainImage?.width).toBeGreaterThan(280)
+  expect(mainImage?.width).toBeLessThanOrEqual(470)
   expect(mainImage?.height).toBeGreaterThan(350)
+  await expect(page.locator('.product-gallery-main .product-image')).toHaveCSS('object-fit', 'contain')
   if (thumbnail) expect(mainImage!.width).toBeGreaterThan(thumbnail.width * 3)
   await expect(page.getByText('目前庫存')).toHaveCount(0)
   await expect(page.getByText(/庫存 \d+ 件/)).toHaveCount(0)
