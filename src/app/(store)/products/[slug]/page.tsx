@@ -7,6 +7,7 @@ import { VariantPicker } from '@/features/catalog/variant-picker'
 import { getProductBySlug, listProducts } from '@/features/catalog/queries'
 import { getProductQuantityPrices } from '@/features/catalog/quantity-prices'
 import { listCustomerPhotos } from '@/features/storefront/customer-photos'
+import { splitProductDisplayName } from '@/features/catalog/product-presentation'
 import { getStorefrontSettings } from '@/features/checkout/settings'
 import { describeQuantityTier } from '@/features/cart/bundle-pricing'
 import { formatTwd } from '@/lib/money'
@@ -75,6 +76,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   if (!product) notFound()
   const customerPhotos = await listCustomerPhotos(product.id)
 
+  const displayName = splitProductDisplayName(product.name)
   const minimumPrice = Math.min(...product.variants.map((variant) => variant.price))
   const availability = getProductAvailability(product)
   const saleDate = availability === 'coming_soon'
@@ -138,7 +140,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <div className="product-detail-image"><ProductGallery images={productImages} isNew={product.isNew} /></div>
         <div className="product-detail-copy">
           <div className="product-title-row">
-            <div><p className="product-kicker">{product.category} · {product.ageBands.join('／')} 歲</p><h1>{product.name}</h1></div>
+            <div><p className="product-kicker">{[displayName.series, product.category, `${product.ageBands.join('／')} 歲`].filter(Boolean).join(' · ')}</p><h1>{displayName.title}</h1></div>
           </div>
           {saleDate ? <div className="product-detail-availability" role="status"><span aria-hidden="true">◷</span><p><small>預計開賣</small><strong>商品將於 <time dateTime={product.availableAt!}>{saleDate}</time> 開始販售</strong></p></div> : null}
           {isPreorder(product.tags) ? <div className="product-detail-availability" data-variant="preorder" role="status"><span aria-hidden="true">◷</span><p><small>預購商品</small><strong>{PREORDER_NOTE}</strong></p></div> : null}

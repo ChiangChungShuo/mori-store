@@ -361,7 +361,7 @@ header#top { position: sticky; z-index: 60; top: 0; background: var(--paper); bo
 .product-card-footer { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
 .product-card-footer p { margin: 0; color: var(--muted); font-size: 0.68rem; }
 .product-card-options { display: flex; min-width: 0; flex-wrap: wrap; gap: 0.2rem; }
-.product-card-body h2 { min-height: 2.8em; margin: 0 0 0.45rem; overflow: hidden; font-size: 0.94rem; font-weight: 600; line-height: 1.4; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+.product-card-body h2 { margin: 0 0 0.3rem; overflow: hidden; font-size: 0.94rem; font-weight: 600; line-height: 1.4; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
 .product-card-body h2 a { text-decoration: none; }
 .product-kicker { font-weight: 700 !important; letter-spacing: 0.13em; text-transform: uppercase; }
 .product-price { flex: 0 0 auto; color: var(--forest) !important; font-size: 0.8rem !important; font-weight: 800; }
@@ -2688,7 +2688,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .customer-photo-form { max-width: 36rem; }
 
 /* Product card presentation ---------------------------------------------------- */
-.product-card-series { margin: 0.55rem 0 0; color: var(--muted); font-size: 0.58rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+.product-card-series { margin: 0.4rem 0 0; color: var(--muted); font-size: 0.58rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
 .product-card-series + h2 { margin-top: 0.2rem; }
 .product-price-group { display: flex; gap: 0.4rem; align-items: baseline; margin: 0; }
 .product-price-group .product-price { font-size: 0.9rem; font-weight: 800; }
