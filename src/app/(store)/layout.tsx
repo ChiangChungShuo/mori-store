@@ -24,7 +24,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
         <StorefrontTracker />
         <SiteHeader cart={<CartDrawer settings={settings} />} categories={categories} freeShippingThreshold={settings.freeShippingThreshold} series={series} isSignedIn={Boolean(user)} isAdmin={isAdmin} />
         {children}
-        <SiteFooter />
+        <SiteFooter isSignedIn={Boolean(user)} />
         <BackToTop />
       </WishlistAuthProvider>
     </CartProvider>

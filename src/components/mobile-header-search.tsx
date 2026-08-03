@@ -57,9 +57,19 @@ export function MobileHeaderSearch() {
     {open ? <div className="mobile-header-search-panel" id="mobile-header-search-panel" ref={panelRef}>
       <form action="/products" method="get" role="search">
         <label htmlFor="mobile-header-product-search">搜尋商品</label>
-        <input id="mobile-header-product-search" name="q" placeholder="搜尋商品" ref={inputRef} type="search" />
-        <button aria-label="開始搜尋" type="submit">搜尋</button>
-        <button aria-label="關閉商品搜尋" onClick={close} type="button">×</button>
+        <div className="mobile-header-search-field">
+          <svg aria-hidden="true" fill="none" height="16" viewBox="0 0 16 16" width="16">
+            <circle cx="6.8" cy="6.8" r="5.2" stroke="currentColor" strokeWidth="1.6" />
+            <path d="m10.8 10.8 3.7 3.7" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" />
+          </svg>
+          <input id="mobile-header-product-search" name="q" placeholder="搜尋商品名稱" ref={inputRef} type="search" />
+          <button aria-label="關閉商品搜尋" className="mobile-header-search-close" onClick={close} type="button">
+            <svg aria-hidden="true" fill="none" height="14" viewBox="0 0 14 14" width="14">
+              <path d="m3 3 8 8M11 3l-8 8" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" />
+            </svg>
+          </button>
+        </div>
+        <button className="mobile-header-search-submit" type="submit">搜尋</button>
       </form>
     </div> : null}
   </>
