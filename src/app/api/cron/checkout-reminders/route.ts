@@ -5,9 +5,10 @@ import type { PaymentAttemptItem } from '@/features/checkout/service'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-// Hourly Vercel cron. Mails shoppers whose bank-transfer checkout has sat in
-// `pending` longer than the configured delay — once per attempt, and only for
-// attempts younger than 7 days so a backlog never spams old carts.
+// Daily Vercel cron (09:00 Taipei; Hobby plans allow at most one run per day).
+// Mails shoppers whose bank-transfer checkout has sat in `pending` longer than
+// the configured delay — once per attempt, and only for attempts younger than
+// 7 days so a backlog never spams old carts.
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET
   if (!secret || request.headers.get('authorization') !== `Bearer ${secret}`) {
