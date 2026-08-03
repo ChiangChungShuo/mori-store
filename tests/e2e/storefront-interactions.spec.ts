@@ -17,7 +17,7 @@ test('homepage carousel, wishlist and cart drawer stay interactive', async ({ pa
   await expect(page.locator('.wishlist-toast')).toHaveText('已加入收藏')
   await expect(page.locator('.wishlist-header-count')).toHaveText('1')
   await expect(page.locator('.wishlist-header-link')).toHaveAttribute('data-has-items', 'true')
-  await expect(page.locator('.wishlist-header-link > span').first()).toHaveText('♥')
+  await expect(page.locator('.wishlist-header-link > svg')).toHaveAttribute('data-filled', 'true')
   await expect(page.getByRole('button', { name: '移除 有機棉小樹 T 恤' })).toHaveAttribute('aria-pressed', 'true')
 
   await page.getByRole('button', { name: '尺寸 100' }).click()

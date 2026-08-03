@@ -305,6 +305,24 @@ describe('CartProvider', () => {
     expect(screen.getByText('運費').closest('p')).toHaveTextContent('運費免運')
     expect(screen.getByText('合計').closest('p')).toHaveTextContent('合計NT$1,760')
   })
+
+  it('asks for confirmation before removing an item from the cart drawer', async () => {
+    window.localStorage.setItem('mori-cart-v1', JSON.stringify([pants]))
+    render(createElement(CartProvider, null, createElement(CartDrawer, { settings: storeSettings })))
+
+    await screen.findByText('自在長褲')
+    fireEvent.click(screen.getByRole('button', { name: '移除 自在長褲' }))
+
+    expect(screen.getByRole('dialog', { name: '移除「自在長褲」？' })).toBeInTheDocument()
+    expect(screen.getByText('自在長褲')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '保留商品' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByText('自在長褲')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '移除 自在長褲' }))
+    fireEvent.click(screen.getByRole('button', { name: '確定移除' }))
+    expect(await screen.findByText('購物車目前是空的，去看看本週新品吧。')).toBeInTheDocument()
+  })
 })
 
 describe('CartPage refresh', () => {
@@ -374,7 +392,7 @@ describe('CartPage refresh', () => {
     expect(summary.querySelector('.cart-total')).toHaveTextContent('合計NT$940')
   })
 
-  it('shows product imagery, quantity controls and a clear-cart action', async () => {
+  it('shows product imagery, quantity controls and confirms before clearing the cart', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
     window.localStorage.setItem('mori-cart-v1', JSON.stringify([pants]))
 
@@ -386,6 +404,13 @@ describe('CartPage refresh', () => {
     fireEvent.click(screen.getByRole('button', { name: `增加 ${pants.name} 數量` }))
     expect(screen.getByLabelText(`${pants.name} 數量`)).toHaveTextContent('2')
     fireEvent.click(screen.getByRole('button', { name: '清空購物車' }))
+
+    expect(screen.getByRole('dialog', { name: '確定清空購物車？' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '繼續保留' }))
+    expect(screen.getByLabelText(`${pants.name} 數量`)).toHaveTextContent('2')
+
+    fireEvent.click(screen.getByRole('button', { name: '清空購物車' }))
+    fireEvent.click(screen.getByRole('button', { name: '確定清空' }))
     expect(await screen.findByText('購物車目前是空的。')).toBeInTheDocument()
   })
 

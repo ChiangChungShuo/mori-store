@@ -36,7 +36,7 @@ export function VariantPicker({ product }: { product: CatalogProduct }) {
     <div className="variant-picker">
       <fieldset>
         <legend>顏色</legend>
-        <div className="choice-list">
+        <div className="choice-list color-choice-list">
           {colors.map((choice) => (
             <button
               aria-label={`顏色 ${choice}`}
@@ -56,7 +56,7 @@ export function VariantPicker({ product }: { product: CatalogProduct }) {
 
       <fieldset>
         <legend>尺寸</legend>
-        <div className="choice-list">
+        <div className="choice-list size-choice-list">
           {variantsForColor.map((variant) => (
             <button
               aria-label={`尺寸 ${variant.size}${variant.stock === 0 ? '（缺貨）' : ''}`}

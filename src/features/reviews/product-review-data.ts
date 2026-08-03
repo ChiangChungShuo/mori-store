@@ -14,17 +14,12 @@ function averageRating(reviews: ProductReview[]) {
   return reviews.reduce((total, review) => total + review.rating, 0) / reviews.length
 }
 
-function productVariantIds(productId: string) {
-  const { getE2EStore } = require('@/testing/e2e-store') as typeof import('@/testing/e2e-store')
-  const product = getE2EStore().products.find((candidate) => candidate.id === productId)
-  return new Set(product?.variants.map((variant) => variant.id) ?? [])
-}
-
 export async function hasPurchasedProduct(userId: string, productId: string) {
   if (isE2EMode()) {
     const { getE2EStore } = await import('@/testing/e2e-store')
     const store = getE2EStore()
-    const variantIds = productVariantIds(productId)
+    const product = store.products.find((candidate) => candidate.id === productId)
+    const variantIds = new Set(product?.variants.map((variant) => variant.id) ?? [])
     return [...store.orders.values()].some((order) => (
       order.userId === userId
       && reviewableOrderStatuses.includes(order.status as (typeof reviewableOrderStatuses)[number])

@@ -12,8 +12,10 @@ import { CheckoutProgress } from '@/features/checkout/checkout-progress'
 import type { CouponValidation } from '@/features/checkout/coupons'
 import type { CatalogProduct } from '@/features/catalog/queries'
 import { ProductCard } from '@/features/catalog/product-card'
+import { ConfirmModal } from '@/components/confirm-modal'
 
 const couponStorageKey = 'mori-checkout-coupon'
+type PendingCartAction = { type: 'remove'; variantId: string; name: string } | { type: 'clear' }
 
 export function CartPageClient({ settings, isSignedIn = false, recommendedProducts, couponAction }: {
   settings: StorefrontSettings
@@ -28,6 +30,7 @@ export function CartPageClient({ settings, isSignedIn = false, recommendedProduc
   const [appliedCouponCode, setAppliedCouponCode] = useState('')
   const [couponRequestId, setCouponRequestId] = useState(0)
   const [couponResult, setCouponResult] = useState<(CouponValidation & { subtotal: number }) | null>(null)
+  const [pendingCartAction, setPendingCartAction] = useState<PendingCartAction | null>(null)
   const [couponPending, startCouponTransition] = useTransition()
   const refreshKey = JSON.stringify(
     items.map(({ variantId, quantity }) => ({ variantId, quantity })),
@@ -51,6 +54,16 @@ export function CartPageClient({ settings, isSignedIn = false, recommendedProduc
   const suggestions = (recommendedProducts ?? [])
     .filter((product) => !cartProductSlugs.has(product.slug))
     .slice(0, 4)
+
+  function confirmCartAction() {
+    if (!pendingCartAction) return
+    if (pendingCartAction.type === 'clear') {
+      dispatch({ type: 'clear' })
+    } else {
+      dispatch({ type: 'remove', variantId: pendingCartAction.variantId })
+    }
+    setPendingCartAction(null)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -146,7 +159,7 @@ export function CartPageClient({ settings, isSignedIn = false, recommendedProduc
             <section className="cart-products-card" aria-labelledby="cart-products-title">
               <header className="cart-card-heading">
                 <h2 id="cart-products-title">購物車 <span>（{itemCount} 件）</span></h2>
-                <button className="text-button" type="button" onClick={() => dispatch({ type: 'clear' })}>
+                <button className="text-button" type="button" onClick={() => setPendingCartAction({ type: 'clear' })}>
                   清空購物車
                 </button>
               </header>
@@ -211,7 +224,7 @@ export function CartPageClient({ settings, isSignedIn = false, recommendedProduc
                       aria-label={`移除 ${item.name}`}
                       className="cart-remove-button"
                       type="button"
-                      onClick={() => dispatch({ type: 'remove', variantId: item.variantId })}
+                      onClick={() => setPendingCartAction({ type: 'remove', variantId: item.variantId, name: item.name })}
                     >×</button>
                   </li>
                 ))}
@@ -256,6 +269,16 @@ export function CartPageClient({ settings, isSignedIn = false, recommendedProduc
           </section> : null}
         </>
       )}
+      <ConfirmModal
+        open={Boolean(pendingCartAction)}
+        title={pendingCartAction?.type === 'remove' ? `移除「${pendingCartAction.name}」？` : '確定清空購物車？'}
+        message={pendingCartAction?.type === 'remove' ? '移除後如需購買，必須重新選擇顏色與尺寸。' : '購物車內的所有商品都會被移除。'}
+        cancelLabel={pendingCartAction?.type === 'remove' ? '保留商品' : '繼續保留'}
+        confirmLabel={pendingCartAction?.type === 'remove' ? '確定移除' : '確定清空'}
+        tone="danger"
+        onCancel={() => setPendingCartAction(null)}
+        onConfirm={confirmCartAction}
+      />
     </main>
   )
 }

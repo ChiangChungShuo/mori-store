@@ -21,7 +21,7 @@ export function SiteFooter() {
         <nav aria-label="會員服務"><strong>會員服務</strong><Link href="/account">會員中心</Link><Link href="/login">會員登入</Link><Link href="/signup">建立帳號</Link><Link href="/contact">聯絡我們</Link></nav>
         <section className="footer-service"><strong>配送與服務</strong><p>7-ELEVEN<br />台灣本島超商取貨</p><p>客服時間<br />週一至週五 10:00–18:00</p><div className="footer-payments"><span>銀行匯款</span></div></section>
       </div>
-      <div className="footer-bottom"><p>© 2026 mori kids select</p><nav className="footer-legal" aria-label="政策與條款"><Link href="/privacy">隱私權政策</Link><Link href="/terms">服務條款</Link><Link href="/returns">退換貨政策</Link><Link href="/faq">常見問題</Link></nav></div>
+      <div className="footer-bottom"><p>© 2026 mori kids select</p><nav className="footer-legal" aria-label="政策與條款"><Link href="/faq#faq-shopping">購物須知</Link><Link href="/returns">退換貨政策</Link><Link href="/faq">常見問題</Link><Link href="/privacy">隱私權政策</Link><Link href="/terms">服務條款</Link></nav></div>
     </footer>
   )
 }

@@ -19,6 +19,17 @@ type FaqGroup = { eyebrow: string; heading: string; items: FaqItem[] }
 
 const buildFaqGroups = (freeShipping: string | null): FaqGroup[] => [
   {
+    eyebrow: 'shopping',
+    heading: '購物須知',
+    items: [
+      { q: '下單前需要確認哪些資訊？', a: '購買前請先確認商品價格、尺寸、顏色、款式、數量、商品描述及預計出貨時間，確認無誤後再完成下單。' },
+      { q: '什麼時候會保留商品庫存？', a: '付款完成後才會保留商品庫存；熱門商品與尺寸可能較快售完，如遇缺貨將由客服主動與您聯繫。' },
+      { q: '商品照片會有色差嗎？', a: '商品照片皆為實品拍攝，但可能因拍攝光線、螢幕顯示設定不同，而與實際商品略有色差，請以收到商品為準。' },
+      { q: '收到商品後需要注意什麼？', a: '收到商品後請儘速確認商品內容。如有瑕疵、寄錯商品或缺件，請立即與我們聯繫；為協助確認商品與物流狀況，也建議開箱時全程錄影。' },
+      { q: '商品或訂單有問題如何聯繫？', a: <>歡迎透過 LINE 線上客服與我們聯繫（客服時間：週一至週五 10:00–18:00），也可使用<Link href="/contact">聯絡我們</Link>頁面的 Email 或 Instagram，我們會盡快回覆。</> },
+    ],
+  },
+  {
     eyebrow: 'shipping',
     heading: '配送與取貨',
     items: [
@@ -40,7 +51,7 @@ const buildFaqGroups = (freeShipping: string | null): FaqGroup[] => [
     heading: '退換貨',
     items: [
       { q: '可以退換貨嗎？', a: <div className="faq-policy-copy">
-        <p><strong>一般網購商品依法提供收貨次日起七日解除權</strong>；鑑賞期並非試用期。下單前仍請確認尺寸、顏色、款式與商品描述，如不確定歡迎先訊息詢問。</p>
+        <p><strong>一般網購商品依法提供收貨次日起七日鑑賞期（法律上的七日解除權）</strong>；鑑賞期並非試用期。下單前仍請確認尺寸、顏色、款式與商品描述，如不確定歡迎先訊息詢問。</p>
         <p>除依法得行使的七日解除權，以及商品瑕疵、寄錯或缺件情形外，<strong>商品售出後不做退換</strong>。</p>
         <p>如需辦理退貨，請於期限內聯繫客服，並盡量保持商品本體、吊牌、配件及包裝完整；若因超出必要檢查範圍而造成商品價值減損，將依相關規定處理。</p>
         <p>出貨前，商品皆會檢查是否有瑕疵與損壞；如有問題會提前訊息告知，確認要更換或退款。</p>
@@ -50,6 +61,7 @@ const buildFaqGroups = (freeShipping: string | null): FaqGroup[] => [
           <li>新品布料或染劑氣味通風後會逐漸散去，單純氣味不列為瑕疵。</li>
           <li>店到店逾期未領遭退回，重新寄送運費由買方負擔。</li>
         </ul>
+        <p>完整申請方式與注意事項請見 <Link href="/returns">退換貨政策</Link>。</p>
       </div> },
       { q: '瑕疵品如何定義？', a: <div className="faq-policy-copy">
         <p>需有明顯污穢、破損或缺件，並請拍照清楚標示瑕疵處。</p>

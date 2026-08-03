@@ -8,11 +8,13 @@ import { getCartQuantityLimit } from '@/features/cart/types'
 import { calculateCart } from '@/features/cart/totals'
 import type { StorefrontSettings } from '@/features/checkout/settings'
 import { formatTwd } from '@/lib/money'
+import { ConfirmModal } from '@/components/confirm-modal'
 
 export function CartDrawer({ settings }: { settings: StorefrontSettings }) {
   const { items, dispatch, quantityTiers } = useCart()
   const [bumping, setBumping] = useState(false)
   const [open, setOpen] = useState(false)
+  const [pendingRemoval, setPendingRemoval] = useState<{ variantId: string; name: string } | null>(null)
   const bumpTimer = useRef<number | null>(null)
   const itemCount = items.reduce((total, item) => total + item.quantity, 0)
   const totals = calculateCart(items, settings.shippingFee, settings.freeShippingThreshold, quantityTiers)
@@ -40,7 +42,7 @@ export function CartDrawer({ settings }: { settings: StorefrontSettings }) {
     }
   }, [])
 
-  return (
+  return <>
     <details
       aria-label="購物車內容"
       className="cart-drawer"
@@ -95,7 +97,7 @@ export function CartDrawer({ settings }: { settings: StorefrontSettings }) {
                   aria-label={`移除 ${item.name}`}
                   className="cart-remove-button"
                   type="button"
-                  onClick={() => dispatch({ type: 'remove', variantId: item.variantId })}
+                  onClick={() => setPendingRemoval({ variantId: item.variantId, name: item.name })}
                 >×</button>
               </li>
             ))}
@@ -126,5 +128,19 @@ export function CartDrawer({ settings }: { settings: StorefrontSettings }) {
         </div>
       </div>
     </details>
-  )
+    <ConfirmModal
+      open={Boolean(pendingRemoval)}
+      title={pendingRemoval ? `移除「${pendingRemoval.name}」？` : '移除商品？'}
+      message="移除後如需購買，必須重新選擇顏色與尺寸。"
+      cancelLabel="保留商品"
+      confirmLabel="確定移除"
+      tone="danger"
+      onCancel={() => setPendingRemoval(null)}
+      onConfirm={() => {
+        if (!pendingRemoval) return
+        dispatch({ type: 'remove', variantId: pendingRemoval.variantId })
+        setPendingRemoval(null)
+      }}
+    />
+  </>
 }
