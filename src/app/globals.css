@@ -388,7 +388,7 @@ header#top { position: sticky; z-index: 60; top: 0; background: var(--paper); bo
 .story-values dt { color: var(--moss); font-size: 0.75rem; }
 .story-values dd { margin: 0; }
 
-.site-footer-shell { margin-top: clamp(4rem, 9vw, 9rem); background: var(--forest); color: var(--white); }
+.site-footer-shell { margin-top: clamp(1.25rem, 2.5vw, 2.5rem); background: var(--forest); color: var(--white); }
 .site-footer {
   display: grid;
   grid-template-columns: minmax(16rem, 1.5fr) repeat(3, minmax(9rem, 0.7fr));
@@ -2486,17 +2486,12 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
   gap: 0.55rem;
   align-items: center;
   margin-bottom: 2rem;
-  border: 1px solid var(--line);
-  border-radius: 1.2rem;
-  background: var(--white);
-  padding: 0.9rem 1rem;
-  box-shadow: 0 0.6rem 1.6rem rgb(73 96 121 / 6%);
 }
 .product-filterbar input, .product-filterbar select {
   min-height: 2.9rem;
   border: 1px solid var(--sand);
   border-radius: 999px;
-  background: var(--paper);
+  background: var(--white);
   padding: 0.55rem 1.05rem;
   color: var(--ink);
   font-size: 0.82rem;
@@ -2536,7 +2531,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
   flex: 0 0 auto;
   border: 1px solid var(--sand);
   border-radius: 999px;
-  background: var(--paper);
+  background: var(--white);
   padding: 0 1.1rem;
   font-size: 0.72rem;
   font-weight: 700;
@@ -2572,7 +2567,6 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .product-filterbar .filter-clear-button:hover { border-color: var(--sand); background: var(--paper); color: var(--forest); transform: none; }
 
 @media (max-width: 58rem) {
-  .product-filterbar { border-radius: 1rem; }
   .product-filterbar-search { flex-basis: 100%; }
   .product-filterbar .filter-actions { margin-left: 0; width: 100%; }
   .product-filterbar .filter-actions .button { flex: 1; }
@@ -2702,3 +2696,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .product-card-image-swap { position: absolute; inset: 0; display: block; }
 .product-image-hover { opacity: 0; transition: opacity 240ms ease; }
 .product-image-link:hover .product-image-hover { opacity: 1; }
+
+/* Catalog page density --------------------------------------------------------- */
+.catalog-page { padding-block-start: 1.6rem; }
+.catalog-page .page-heading { margin-bottom: 2rem; }
