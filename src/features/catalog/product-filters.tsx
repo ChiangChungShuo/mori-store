@@ -20,13 +20,14 @@ export function ProductFilters({ filters, sizeOptions = [], colorOptions = [] }:
     ? [...colorOptions, filters.color]
     : colorOptions
   const clearHref = filters.category
-    ? `/products?category=${encodeURIComponent(filters.category)}`
-    : '/products'
+    ? `/products?category=${encodeURIComponent(filters.category)}${filters.view ? `&view=${filters.view}` : ''}`
+    : filters.view ? `/products?view=${filters.view}` : '/products'
 
   return (
     <form action="/products" method="get" aria-label="篩選商品" className="product-filterbar">
       {filters.category ? <input name="category" type="hidden" value={filters.category} /> : null}
       {filters.category && filters.series ? <input name="series" type="hidden" value={filters.series} /> : null}
+      {filters.view ? <input name="view" type="hidden" value={filters.view} /> : null}
 
       <input
         aria-label="搜尋商品"

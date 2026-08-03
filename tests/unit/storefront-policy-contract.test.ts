@@ -33,23 +33,25 @@ describe('storefront policy and service copy', () => {
     expect(productPage).toContain("size: '140'")
   })
 
-  it('states the no-returns policy with the defect exception everywhere', () => {
+  it('states the statutory return window consistently across storefront policy surfaces', () => {
     const returnsPage = source('src/app/(store)/returns/page.tsx')
-    expect(returnsPage).toContain('售出後不做退換')
+    expect(returnsPage).toContain('七日解除權')
+    expect(returnsPage).toContain('收貨次日起七日內')
     expect(returnsPage).toContain('瑕疵品定義')
-    expect(returnsPage).toContain('3 日')
-    // The old 7-day trial-period framing must not resurface.
-    expect(returnsPage).not.toContain('鑑賞期')
+    expect(returnsPage).toContain('鑑賞期並非試用期')
+    expect(returnsPage).toContain('商品售出後不做退換')
 
-    expect(source('src/app/(store)/faq/page.tsx')).toContain('售出後不做退換')
-    expect(source('src/app/(store)/products/[slug]/page.tsx')).toContain('售出後不做退換')
+    expect(source('src/app/(store)/faq/page.tsx')).toContain('商品售出後不做退換')
+    expect(source('src/app/(store)/products/[slug]/page.tsx')).toContain('商品售出後不做退換')
   })
 
   it('shows the pre-purchase reminder and links to returns FAQ', () => {
     const productPage = source('src/app/(store)/products/[slug]/page.tsx')
 
     expect(productPage).toContain('購買前請確認下列資訊，同意再行購買')
-    expect(productPage).toContain('購買前請確認尺寸、顏色、款式與商品描述')
+    expect(productPage).toContain('商品價格、尺寸、顏色、款式、數量、商品描述與預計出貨時間')
+    expect(productPage).toContain('建議開箱時全程錄影')
+    expect(productPage).toContain('商品本體、吊牌、配件及包裝完整')
     expect(productPage).toContain('href="/faq#faq-returns"')
     expect(productPage).toContain('常見問題－退換貨')
   })

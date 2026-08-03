@@ -13,6 +13,7 @@ import type { Database } from '@/types/database'
 import { getMutableE2EProducts } from '@/testing/e2e-storefront-fixtures'
 import { getE2EStore } from '@/testing/e2e-store'
 import { isE2EMode } from '@/testing/e2e-mode'
+import { normalizeProductName } from '@/features/catalog/product-presentation'
 
 type ActionResult = {
   ok: boolean
@@ -170,14 +171,16 @@ function friendlyProductSaveError(
 }
 
 function withAutomaticProductSeo(product: ProductInput): ProductInput {
+  const normalizedName = normalizeProductName(product.name)
   const titleSuffix = '｜MORIMUR BABY'
-  const titleName = product.name.trim().slice(0, 70 - titleSuffix.length).trimEnd()
-  const description = (product.summary?.trim() || product.description.trim() || product.name.trim())
+  const titleName = normalizedName.slice(0, 70 - titleSuffix.length).trimEnd()
+  const description = (product.summary?.trim() || product.description.trim() || normalizedName)
     .replace(/\s+/g, ' ')
     .slice(0, 160)
 
   return {
     ...product,
+    name: normalizedName,
     seoTitle: `${titleName}${titleSuffix}`,
     seoDescription: description,
   }

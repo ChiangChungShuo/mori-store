@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { ProductSeries } from '@/features/catalog/product-series'
+import { normalizeProductName } from '@/features/catalog/product-presentation'
 
 function categoryHref(category: string) {
   return `/products?category=${encodeURIComponent(category)}`
@@ -36,7 +37,7 @@ export function CategorySeriesMenu({
               <div>
                 <Link className="mobile-category-view-all" href={categoryHref(category)}>全部{category}</Link>
                 {categorySeries.map((item) => (
-                  <Link href={seriesHref(category, item.name)} key={item.id}>{item.name}</Link>
+                  <Link href={seriesHref(category, item.name)} key={item.id}>{normalizeProductName(item.name)}</Link>
                 ))}
               </div>
             </details>
@@ -71,7 +72,7 @@ export function CategorySeriesMenu({
                   </Link>
                   <div className="desktop-series-links">
                     {categorySeries.map((item) => (
-                      <Link href={seriesHref(category, item.name)} key={item.id}>{item.name}</Link>
+                      <Link href={seriesHref(category, item.name)} key={item.id}>{normalizeProductName(item.name)}</Link>
                     ))}
                     {categorySeries.length === 0 ? <span className="desktop-series-empty">此分類目前沒有另外分系列</span> : null}
                   </div>

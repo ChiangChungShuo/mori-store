@@ -103,6 +103,15 @@ export type E2EStoreState = {
   contentPresets: { material: string[]; care: string[]; size: string[]; series: string[] }
   productDrafts: Array<{ id: string; label: string; data: unknown; updatedAt: string }>
   customerPhotos: Array<{ id: string; productId: string | null; imageUrl: string; caption: string }>
+  productReviews: Array<{
+    id: string
+    productId: string
+    userId: string
+    rating: number
+    body: string
+    createdAt: string
+    updatedAt: string
+  }>
   products: CatalogProduct[]
   /** Product slug → quantity tiers, mirroring product_quantity_prices. */
   quantityPrices: Map<string, Array<{ quantity: number; bundlePrice: number }>>
@@ -247,6 +256,7 @@ export function createE2EStore(): E2EStoreState {
     contentPresets: { material: [...defaultMaterialPresets], care: [...defaultCarePresets], size: [...defaultSizePresets], series: [] },
     productDrafts: [],
     customerPhotos: [],
+    productReviews: [],
     products: [],
     // One tiered product so fixture/E2E runs exercise bundle pricing. Kept off
     // the tee, whose totals other specs assert.

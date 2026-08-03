@@ -1,16 +1,20 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import { formatTwd } from '@/lib/money'
 import type { CatalogProduct } from '@/features/catalog/queries'
 import { WishlistButton } from '@/features/wishlist/wishlist-button'
 import { getProductAvailability } from '@/features/catalog/availability'
+import { splitProductDisplayName } from '@/features/catalog/product-presentation'
+import { ProductCardImage } from '@/features/catalog/product-card-image'
 import { isPreorder } from '@/lib/preorder'
 
 export function ProductCard({ product }: { product: CatalogProduct }) {
   const colors = new Set(product.variants.map((variant) => variant.color))
   const sizes = [...new Set(product.variants.map((variant) => variant.size))]
     .sort((a, b) => a.localeCompare(b, 'zh-Hant', { numeric: true }))
+  const sizeLabel = sizes.length === 1 ? sizes[0] : `${sizes[0]}–${sizes.at(-1)}`
   const minimumPrice = Math.min(...product.variants.map((variant) => variant.price))
+  const compareAtPrice = Math.max(...product.variants.map((variant) => variant.compareAtPrice ?? 0))
+  const displayName = splitProductDisplayName(product.name)
   const availability = getProductAvailability(product)
   const preorder = isPreorder(product.tags)
   const soldOut = availability === 'sold_out'
@@ -21,12 +25,10 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
     : null
   const image = <>
     {product.imageUrl ? (
-      <Image
+      <ProductCardImage
         alt={product.imageAlt}
-        className="product-image"
-        fill
-        sizes="(max-width: 40rem) 50vw, (max-width: 64rem) 33vw, 25vw"
-        src={product.imageUrl}
+        hoverUrl={product.images?.[1]?.url ?? null}
+        url={product.imageUrl}
       />
     ) : (
       <span className="product-image-placeholder" aria-hidden="true">mori</span>
@@ -46,15 +48,11 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
         aria-label={`查看 ${product.name}`}
       >{image}</Link>
       <div className="product-card-body">
-        <div className="product-card-meta">
-          <p className="product-kicker">{product.isNew ? 'new arrival' : product.category}</p>
-          <p><span className="sr-only">{colors.size} 種顏色</span>{[...colors].slice(0, 3).join('・')}</p>
-        </div>
-        <h2><Link href={`/products/${product.slug}`}>{product.name}</Link></h2>
-        {product.summary ? <p className="product-card-summary">{product.summary}</p> : null}
+        {displayName.series ? <p className="product-card-series">{displayName.series}</p> : null}
+        <h2><Link href={`/products/${product.slug}`}>{displayName.title}</Link></h2>
         <div className="product-card-footer">
-          <p>尺寸 {sizes[0]}–{sizes.at(-1)}</p>
-          <p className="product-price">{formatTwd(minimumPrice)}</p>
+          <p className="product-card-options"><span><span className="sr-only">{colors.size} 種顏色</span><span aria-hidden="true">{colors.size} 色</span></span><span aria-hidden="true">・</span><span>尺寸 {sizeLabel}</span></p>
+          <p className="product-price-group"><span className="product-price">{formatTwd(minimumPrice)}</span>{compareAtPrice > minimumPrice ? <del>{formatTwd(compareAtPrice)}</del> : null}</p>
         </div>
         {bundleTier && bundleSaving > 0 ? <p className="product-card-bundle">買 {bundleTier.quantity} 件省 {formatTwd(bundleSaving)}・組合價 {formatTwd(bundleTier.bundlePrice)}</p> : null}
       </div>

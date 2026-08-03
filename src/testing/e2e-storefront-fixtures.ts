@@ -2,6 +2,8 @@ import type { CartVariantSnapshot } from '@/features/cart/refresh'
 import type { CatalogProduct, ProductFilters } from '@/features/catalog/queries'
 import type { CheckoutVariant } from '@/features/checkout/service'
 import { getE2EStore, type E2EStoreState } from '@/testing/e2e-store'
+import { colorFamily } from '@/features/catalog/product-presentation'
+import { isPreorder } from '@/lib/preorder'
 
 const TREE_TEE: CatalogProduct = {
   id: '00000000-0000-4000-8000-000000000000',
@@ -342,12 +344,16 @@ function matchesProduct(product: CatalogProduct, filters: ProductFilters) {
   return (!query || searchable.includes(query))
     && (!filters.age || product.ageBands.includes(filters.age))
     && (!filters.size || product.variants.some((variant) => variant.size === filters.size))
-    && (!filters.color || product.variants.some((variant) => variant.color.includes(filters.color!)))
+    && (!filters.color || product.variants.some((variant) => colorFamily(variant.color) === filters.color))
     && (!filters.category || product.category === filters.category)
     && (!filters.series || product.series.some((series) => (
       series.categoryName === filters.category && series.name === filters.series
     )))
     && (!filters.inStock || product.variants.some((variant) => variant.stock > 0))
+    && (!filters.view || filters.view === 'series'
+      || (filters.view === 'ready' && !isPreorder(product.tags) && product.variants.some((variant) => variant.stock > 0))
+      || (filters.view === 'preorder' && isPreorder(product.tags))
+      || (filters.view === 'popular' && product.tags?.includes('熱賣')))
 }
 
 function toCartSnapshot(

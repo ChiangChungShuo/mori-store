@@ -3,6 +3,8 @@ import type { CartVariantSnapshot } from '@/features/cart/refresh'
 import { isE2EMode } from '@/testing/e2e-mode'
 import type { ProductSeries } from '@/features/catalog/product-series'
 import type { CatalogProductImage } from '@/features/catalog/product-images'
+import { colorFamily, listColorFamilies, normalizeProductName } from '@/features/catalog/product-presentation'
+import { isPreorder } from '@/lib/preorder'
 
 const CATALOG_CONFIGURATION_ERROR = 'MORI catalog configuration error: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY are required.'
 
@@ -35,6 +37,7 @@ export type ProductFilters = {
   category?: string
   series?: string
   inStock?: boolean
+  view?: 'ready' | 'preorder' | 'popular' | 'series'
 }
 
 export type CatalogVariant = {
@@ -88,6 +91,8 @@ export function parseProductFilters(searchParams: SearchParams): ProductFilters 
   const category = first(searchParams.category)?.trim()
   const series = first(searchParams.series)?.trim()
   const inStock = first(searchParams.inStock)
+  const view = first(searchParams.view)
+  const views: ProductFilters['view'][] = ['ready', 'preorder', 'popular', 'series']
 
   return {
     ...(q ? { q: q.slice(0, 120) } : {}),
@@ -97,6 +102,7 @@ export function parseProductFilters(searchParams: SearchParams): ProductFilters 
     ...(category ? { category } : {}),
     ...(category && series ? { series } : {}),
     ...(inStock === 'true' ? { inStock: true } : {}),
+    ...(views.includes(view as ProductFilters['view']) ? { view: view as ProductFilters['view'] } : {}),
   }
 }
 
@@ -157,11 +163,11 @@ function mapProduct(record: ProductRecord): CatalogProduct {
   return {
     id: record.id,
     slug: record.slug,
-    name: record.name,
+    name: normalizeProductName(record.name),
     description: record.description,
     summary: record.summary ?? '',
     tags: record.tags ?? [],
-    seoTitle: record.seo_title ?? '',
+    seoTitle: normalizeProductName(record.seo_title ?? ''),
     seoDescription: record.seo_description ?? '',
     category: record.category,
     series: record.product_series_products.flatMap((assignment) => assignment.product_series ? [{
@@ -207,12 +213,16 @@ export function applyCatalogFilters(products: CatalogProduct[], filters: Product
     return (!term || searchable.includes(term))
       && (!filters.age || product.ageBands.includes(filters.age))
       && (!filters.size || product.variants.some((variant) => variant.size === filters.size))
-      && (!filters.color || product.variants.some((variant) => variant.color.includes(filters.color!)))
+      && (!filters.color || product.variants.some((variant) => colorFamily(variant.color) === filters.color))
       && (!filters.category || product.category === filters.category)
       && (!filters.series || product.series.some((series) => (
         series.categoryName === filters.category && series.name === filters.series
       )))
       && (!filters.inStock || product.variants.some((variant) => variant.stock > 0))
+      && (!filters.view || filters.view === 'series'
+        || (filters.view === 'ready' && !isPreorder(product.tags) && product.variants.some((variant) => variant.stock > 0))
+        || (filters.view === 'preorder' && isPreorder(product.tags))
+        || (filters.view === 'popular' && product.tags?.includes('熱賣')))
   })
 }
 
@@ -245,8 +255,7 @@ export async function listAvailableColors(): Promise<string[]> {
   if (isE2EMode()) {
     const { listE2EProducts } = await import('@/testing/e2e-storefront-fixtures')
     const products = await listE2EProducts({})
-    return [...new Set(products.flatMap((product) => product.variants.map((variant) => variant.color.trim())).filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b, 'zh-Hant'))
+    return listColorFamilies(products.flatMap((product) => product.variants.map((variant) => variant.color)))
   }
   if (!resolveCatalogConfiguration()) return []
 
@@ -259,8 +268,7 @@ export async function listAvailableColors(): Promise<string[]> {
       .eq('is_active', true)
       .eq('products.is_published', true)
     if (error) throw error
-    return [...new Set((data ?? []).map((row) => (row.color as string).trim()).filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b, 'zh-Hant'))
+    return listColorFamilies((data ?? []).map((row) => row.color as string))
   } catch {
     // The dropdown is an enhancement; an empty list falls back gracefully.
     return []
@@ -310,7 +318,8 @@ export async function listProducts(filters: ProductFilters): Promise<CatalogProd
   if (filters.age) query = query.contains('age_bands', [filters.age])
   if (filters.category) query = query.eq('category', filters.category)
   if (filters.size) query = query.eq('matching_variants.size', filters.size)
-  if (filters.color) query = query.eq('matching_variants.color', filters.color)
+  // 顏色篩選使用「藍、粉、咖」等色系；實際規格仍保留完整名稱，
+  // 因此不能在資料庫用完整字串比對，交由 applyCatalogFilters 判斷。
   if (filters.inStock) query = query.gt('matching_variants.stock', 0)
 
   const { data, error } = await query.order('created_at', { ascending: false })

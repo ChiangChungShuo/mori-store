@@ -4,7 +4,7 @@ import { absoluteUrl } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: '退換貨政策',
-  description: 'MORIMUR BABY 商品售出後不做退換；瑕疵品與寄錯商品的處理方式說明。',
+  description: 'MORIMUR BABY 七日解除權、退貨申請，以及瑕疵品與寄錯商品的處理方式說明。',
   alternates: { canonical: absoluteUrl('/returns') },
 }
 
@@ -14,7 +14,7 @@ export default function ReturnsPage() {
       <header className="page-heading">
         <p>returns</p>
         <h1>退換貨政策</h1>
-        <span>售出後不做退換，下單前請務必確認尺寸與顏色；瑕疵與寄錯商品我們一定負責處理。</span>
+        <span>下單前請確認商品資訊；收到商品後如需退貨，或發現瑕疵與寄錯情形，請依以下方式聯繫我們。</span>
       </header>
       <div className="legal-content">
         <section>
@@ -24,9 +24,11 @@ export default function ReturnsPage() {
           <p>若仍有檢查疏漏或衣服細部重大瑕疵，真的非常抱歉，請立刻聯絡我們協助處理。</p>
         </section>
         <section>
-          <h2>售出後不做退換</h2>
-          <p>本店商品售出後不提供退換貨服務，再麻煩各位媽咪下單前確認好尺寸、顏色及款式；如真的不確定，歡迎先訊息詢問我們。</p>
-          <p>唯以下兩種情況，我們一定負責處理：<strong>商品有瑕疵</strong>，或<strong>收到的商品與訂單款式、顏色不符</strong>——將協助更換或退款。</p>
+          <h2>七日解除權</h2>
+          <p>本店一般網購商品依法提供收貨次日起七日解除權，無須說明理由；鑑賞期並非試用期。</p>
+          <p>預購僅代表延後出貨，除非商品確實依消費者個別需求製作並於購買前明確告知，否則仍適用七日解除權。</p>
+          <p>除依法得行使的七日解除權，以及商品瑕疵、寄錯或缺件情形外，<strong>商品售出後不做退換</strong>。</p>
+          <p>如需辦理退貨，請於期限內聯繫客服，並盡量保持商品本體、吊牌、配件及包裝完整。因必要檢查而拆封不影響解除權；若因超出必要檢查範圍而造成商品價值減損，將依相關規定處理。</p>
         </section>
         <section>
           <h2>出貨前仍可修改</h2>
@@ -51,7 +53,8 @@ export default function ReturnsPage() {
           <h2>申請方式與退款</h2>
           <ul>
             <li>來信 <a href="mailto:moribaby0612@gmail.com">moribaby0612@gmail.com</a>、私訊 Instagram <a href="https://www.instagram.com/mori.murbebe/" rel="noreferrer" target="_blank">@mori.murbebe</a>，或於訂單留言，附上訂單編號、申請原因與瑕疵照片。</li>
-            <li>瑕疵或寄錯商品請於收到後 3 日內告知；我們確認後會回覆寄回方式，收到商品並檢查無誤後，換貨將重新出貨，退款約 3–7 個工作天辦理。</li>
+            <li>一般退貨請於收貨次日起七日內聯繫；瑕疵、寄錯或缺件請儘速拍照告知。為協助釐清商品與物流狀況，建議開箱時全程錄影。</li>
+            <li>我們確認申請後會回覆寄回方式；收到商品並檢查無誤後，換貨將重新出貨，退款約 3–7 個工作天辦理。</li>
           </ul>
         </section>
         <p>更多常見問題請見 <Link href="/faq">常見問題</Link>。</p>

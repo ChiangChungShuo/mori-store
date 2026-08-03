@@ -83,6 +83,15 @@ describe('fixture catalog', () => {
     const soldOut = { ...product, variants: product.variants.map((variant) => ({ ...variant, stock: 0 })) }
     expect(applyCatalogFilters([soldOut, product], { inStock: true })).toEqual([product])
   })
+
+  it('separates ready, preorder, and popular products', () => {
+    const ready = { ...product, id: 'ready', tags: [] }
+    const preorder = { ...product, id: 'preorder', tags: ['預購'] }
+    const popular = { ...product, id: 'popular', tags: ['熱賣'] }
+    expect(applyCatalogFilters([ready, preorder, popular], { view: 'ready' })).toEqual([ready, popular])
+    expect(applyCatalogFilters([ready, preorder, popular], { view: 'preorder' })).toEqual([preorder])
+    expect(applyCatalogFilters([ready, preorder, popular], { view: 'popular' })).toEqual([popular])
+  })
 })
 
 describe('parseProductFilters', () => {
@@ -109,6 +118,11 @@ describe('parseProductFilters', () => {
       size: '100',
       category: '上衣',
     })
+  })
+
+  it('accepts only supported storefront views', () => {
+    expect(parseProductFilters({ view: 'preorder' })).toEqual({ view: 'preorder' })
+    expect(parseProductFilters({ view: 'discounted' })).toEqual({})
   })
 })
 
@@ -173,7 +187,7 @@ describe('ProductSeriesFilter', () => {
 
     const forestUrl = new URL(screen.getByRole('link', { name: 'Mori forest 森林系列' }).getAttribute('href')!, 'http://localhost')
     expect(forestUrl.searchParams.get('series')).toBe('Mori forest 森林系列')
-    expect(screen.getByRole('link', { name: 'Mori flora 漫花系列' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Mori Flora' })).toHaveAttribute('aria-current', 'page')
   })
 })
 
@@ -226,9 +240,11 @@ describe('store navigation', () => {
 })
 
 describe('ProductCard', () => {
-  it('shows color count, size range and minimum variant price', () => {
+  it('keeps the catalog card focused on options and price, only badging exceptions', () => {
     render(createElement(ProductCard, { product }))
 
+    // 現貨 is the default state — only 預購/售完/即將上架 earn a badge.
+    expect(screen.queryByText('現貨')).not.toBeInTheDocument()
     expect(screen.getByText('2 種顏色')).toBeInTheDocument()
     expect(screen.getByText('尺寸 100–120')).toBeInTheDocument()
     expect(screen.getByText('NT$680')).toBeInTheDocument()
@@ -237,6 +253,35 @@ describe('ProductCard', () => {
       'href',
       '/products/mori-organic-cotton-tee',
     )
+  })
+
+  it('splits the series prefix into an eyebrow and strips the colour count', () => {
+    render(createElement(ProductCard, {
+      product: { ...product, name: 'Mori Olive｜華夫格條紋套裝（2色）' },
+    }))
+
+    expect(screen.getByText('Mori Olive')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '華夫格條紋套裝' })).toBeInTheDocument()
+    expect(screen.queryByText(/（2色）/)).not.toBeInTheDocument()
+  })
+
+  it('shows the crossed-out original price when a variant has one', () => {
+    render(createElement(ProductCard, {
+      product: {
+        ...product,
+        variants: product.variants.map((variant) => ({ ...variant, compareAtPrice: 790 })),
+      },
+    }))
+
+    expect(screen.getByText('NT$790')).toBeInTheDocument()
+    expect(screen.getByText('NT$790').tagName).toBe('DEL')
+  })
+
+  it('does not repeat a single available size', () => {
+    render(createElement(ProductCard, { product: { ...product, variants: [product.variants[0]] } }))
+
+    expect(screen.getByText('尺寸 100')).toBeInTheDocument()
+    expect(screen.queryByText('尺寸 100–100')).not.toBeInTheDocument()
   })
 
   it('shows sold-out and scheduled product states', () => {
