@@ -102,6 +102,7 @@ export type E2EStoreState = {
   productSeriesProducts: Array<{ productId: string; seriesId: string }>
   contentPresets: { material: string[]; care: string[]; size: string[]; series: string[] }
   productDrafts: Array<{ id: string; label: string; data: unknown; updatedAt: string }>
+  customerPhotos: Array<{ id: string; productId: string | null; imageUrl: string; caption: string }>
   products: CatalogProduct[]
   /** Product slug → quantity tiers, mirroring product_quantity_prices. */
   quantityPrices: Map<string, Array<{ quantity: number; bundlePrice: number }>>
@@ -245,6 +246,7 @@ export function createE2EStore(): E2EStoreState {
     ],
     contentPresets: { material: [...defaultMaterialPresets], care: [...defaultCarePresets], size: [...defaultSizePresets], series: [] },
     productDrafts: [],
+    customerPhotos: [],
     products: [],
     // One tiered product so fixture/E2E runs exercise bundle pricing. Kept off
     // the tee, whose totals other specs assert.
@@ -288,6 +290,7 @@ export function getE2EStore() {
   fixtureGlobal.__moriE2EStore.events ??= createE2EStore().events
   fixtureGlobal.__moriE2EStore.settings ??= createE2EStore().settings
   fixtureGlobal.__moriE2EStore.products ??= []
+  fixtureGlobal.__moriE2EStore.customerPhotos ??= []
   fixtureGlobal.__moriE2EStore.productCategories ??= [...defaultProductCategories]
   fixtureGlobal.__moriE2EStore.productSeries ??= createE2EStore().productSeries
   fixtureGlobal.__moriE2EStore.productSeriesProducts ??= createE2EStore().productSeriesProducts

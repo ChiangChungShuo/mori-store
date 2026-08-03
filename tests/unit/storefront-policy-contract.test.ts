@@ -33,11 +33,16 @@ describe('storefront policy and service copy', () => {
     expect(productPage).toContain("size: '140'")
   })
 
-  it('includes returns timing and defect guidance', () => {
+  it('states the no-returns policy with the defect exception everywhere', () => {
     const returnsPage = source('src/app/(store)/returns/page.tsx')
+    expect(returnsPage).toContain('售出後不做退換')
     expect(returnsPage).toContain('瑕疵品定義')
     expect(returnsPage).toContain('3 日')
-    expect(returnsPage).toContain('7 日')
+    // The old 7-day trial-period framing must not resurface.
+    expect(returnsPage).not.toContain('鑑賞期')
+
+    expect(source('src/app/(store)/faq/page.tsx')).toContain('售出後不做退換')
+    expect(source('src/app/(store)/products/[slug]/page.tsx')).toContain('售出後不做退換')
   })
 
   it('shows the pre-purchase reminder and links to returns FAQ', () => {

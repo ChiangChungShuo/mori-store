@@ -6,6 +6,7 @@ import { ProductCard } from '@/features/catalog/product-card'
 import { VariantPicker } from '@/features/catalog/variant-picker'
 import { getProductBySlug, listProducts } from '@/features/catalog/queries'
 import { getProductQuantityPrices } from '@/features/catalog/quantity-prices'
+import { listCustomerPhotos } from '@/features/storefront/customer-photos'
 import { getStorefrontSettings } from '@/features/checkout/settings'
 import { describeQuantityTier } from '@/features/cart/bundle-pricing'
 import { formatTwd } from '@/lib/money'
@@ -72,6 +73,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     getStorefrontSettings(),
   ])
   if (!product) notFound()
+  const customerPhotos = await listCustomerPhotos(product.id)
 
   const minimumPrice = Math.min(...product.variants.map((variant) => variant.price))
   const availability = getProductAvailability(product)
@@ -144,8 +146,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           {quantityTiers.length > 0 ? <div className="product-bundle-card">
             <p className="product-bundle-heading"><span aria-hidden="true">＋</span>多件優惠・不需優惠碼</p>
             <ul>{quantityTiers.map((tier) => <li key={tier.quantity}>
-              <strong>{tier.label} {formatTwd(tier.bundlePrice)}</strong>
-              <small>每件約 {formatTwd(tier.perUnit)}，省 {formatTwd(tier.saving)}</small>
+              <strong>買 {tier.quantity} 件省 {formatTwd(tier.saving)}</strong>
+              <small>組合價 {formatTwd(tier.bundlePrice)}・每件約 {formatTwd(tier.perUnit)}</small>
             </li>)}</ul>
             <small className="product-bundle-note">同一商品的不同顏色與尺寸可混搭，購物車會自動套用最優惠的組合。</small>
           </div> : null}
@@ -169,12 +171,24 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <div className="product-info-layout">
           <div className="product-info-main">
             <details open><summary>商品特點</summary><div><p className="product-description-body">{product.description}</p><dl className="product-notes"><div><dt>商品分類</dt><dd>{product.category}</dd></div><div><dt>適用年齡</dt><dd>{product.ageBands.join('、')} 歲</dd></div><div><dt>觸感</dt><dd>{product.material}</dd></div><div><dt>活動</dt><dd>為孩子日常跑跳保留舒適空間</dd></div><div><dt>照顧方式</dt><dd>{product.careInstructions}</dd></div></dl></div></details>
-            <details open><summary>尺寸表</summary><div><figure className="measurement-guide"><Image src="/images/children-clothing-flat-measurement-guide.png" alt="童裝平量方式：上衣、褲子、包屁衣與連身衣的衣長、胸寬、肩寬、袖長、腰寬、褲長與襠長量測位置" width={1774} height={887} sizes="(max-width: 58rem) calc(100vw - 2rem), 54rem" /><figcaption>將衣服自然攤平、不拉伸布料，再依圖示位置量測；胸寬與腰寬皆為平量單面尺寸。</figcaption></figure><p>{product.sizeGuide}</p><div className="size-table-wrap"><table className="size-table"><thead><tr><th>尺寸</th><th>建議年齡</th><th>建議身高</th><th>建議體重</th></tr></thead><tbody>{standardKidsSizeGuide.map((row) => <tr key={row.size}><th>{row.size}</th><td>{row.age}</td><td>{row.height}</td><td>{row.weight}</td></tr>)}</tbody></table></div><small>此表為固定參考值；每位孩子身形不同，購買前請再依商品描述與實際平量尺寸選擇。手工測量可能有 1–2 cm 誤差。</small></div></details>
-            <details><summary>購物須知</summary><div><ul className="detail-bullets"><li>購買前請確認下列資訊，同意再行購買</li><li>購買前請確認尺寸、顏色、款式與商品描述</li><li>本店使用 7-ELEVEN 超商取貨，門市到貨後請依通知期限領取。</li><li>商品圖片會因螢幕顯示與拍攝光線產生些微色差，實際顏色以收到商品為準。</li><li>鑑賞期並非試用期，退換貨時請保留吊牌、包裝與商品完整性。有關退換貨詳情，請參見「<Link href="/faq#faq-returns">常見問題－退換貨</Link>」。</li><li>付款完成後才會保留庫存；熱門尺寸可能較快售完。</li></ul></div></details>
+            <details open><summary>尺寸表</summary><div><figure className="measurement-guide"><Image src="/images/children-clothing-flat-measurement-guide.png" alt="童裝平量方式：上衣、褲子、包屁衣與連身衣的衣長、胸寬、肩寬、袖長、腰寬、褲長與襠長量測位置" width={1774} height={887} sizes="(max-width: 58rem) calc(100vw - 2rem), 54rem" /><figcaption>將衣服自然攤平、不拉伸布料，再依圖示位置量測；胸寬與腰寬皆為平量單面尺寸。</figcaption></figure><section className="product-fit-guide" aria-label="本商品尺寸與版型資訊"><h3>本商品實際平量與穿著建議</h3><p>{product.sizeGuide || '本商品平量資料整理中，下單前可先向客服詢問孩子適合的尺寸。'}</p></section><div className="size-table-wrap"><table className="size-table"><thead><tr><th>尺寸</th><th>建議年齡</th><th>建議身高</th><th>建議體重</th></tr></thead><tbody>{standardKidsSizeGuide.map((row) => <tr key={row.size}><th>{row.size}</th><td>{row.age}</td><td>{row.height}</td><td>{row.weight}</td></tr>)}</tbody></table></div><small>此表為固定參考值；每位孩子身形不同，購買前請優先依上方商品實際平量、模特兒資訊與版型建議選擇。手工測量可能有 1–2 cm 誤差。</small></div></details>
+            <details><summary>購物須知</summary><div><ul className="detail-bullets"><li>購買前請確認下列資訊，同意再行購買</li><li>購買前請確認尺寸、顏色、款式與商品描述</li><li>本店使用 7-ELEVEN 超商取貨，門市到貨後請依通知期限領取。</li><li>商品圖片會因螢幕顯示與拍攝光線產生些微色差，實際顏色以收到商品為準。</li><li>商品售出後不做退換，下單前請確認好尺寸、顏色及款式；商品瑕疵或寄錯一定負責處理。詳情請見「<Link href="/faq#faq-returns">常見問題－退換貨</Link>」。</li><li>付款完成後才會保留庫存；熱門尺寸可能較快售完。</li></ul></div></details>
           </div>
           <aside className="product-care-card"><p className="eyebrow">care note</p><h3>讓衣服陪孩子久一點</h3><p>{product.careInstructions}</p><div><span>01</span>深淺色分開洗滌</div><div><span>02</span>使用中性洗劑</div><div><span>03</span>依洗標方式晾乾</div></aside>
         </div>
       </section>
+
+      {customerPhotos.length > 0 ? <section className="section customer-photo-section">
+        <header className="section-heading"><div><p className="eyebrow">community</p><h2>大家怎麼穿</h2></div><p>謝謝媽咪們分享的日常穿搭（皆經同意刊登）。</p></header>
+        <div className="customer-photo-strip">
+          {customerPhotos.map((photo) => (
+            <figure key={photo.id}>
+              <Image alt={photo.caption || '顧客穿搭分享'} fill sizes="(max-width: 40rem) 60vw, 18rem" src={photo.imageUrl} />
+              {photo.caption ? <figcaption>{photo.caption}</figcaption> : null}
+            </figure>
+          ))}
+        </div>
+      </section> : null}
 
       {popularProducts.length > 0 && <section className="section product-recommendations"><header className="section-heading"><div><p className="eyebrow">popular right now</p><h2>大家也在看</h2></div><p>每次隨機整理不同熱門款式，看看還有哪些適合孩子的日常選擇。</p></header><div className="product-grid">{popularProducts.map((candidate) => <ProductCard key={candidate.id} product={candidate} />)}</div></section>}
     </main>

@@ -14,6 +14,8 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
   const availability = getProductAvailability(product)
   const preorder = isPreorder(product.tags)
   const soldOut = availability === 'sold_out'
+  const bundleTier = [...(product.quantityPrices ?? [])].sort((a, b) => a.quantity - b.quantity)[0]
+  const bundleSaving = bundleTier ? Math.max(0, minimumPrice * bundleTier.quantity - bundleTier.bundlePrice) : 0
   const comingSoonDate = availability === 'coming_soon' && product.availableAt
     ? new Intl.DateTimeFormat('zh-TW', { month: 'numeric', day: 'numeric' }).format(new Date(product.availableAt))
     : null
@@ -54,6 +56,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
           <p>尺寸 {sizes[0]}–{sizes.at(-1)}</p>
           <p className="product-price">{formatTwd(minimumPrice)}</p>
         </div>
+        {bundleTier && bundleSaving > 0 ? <p className="product-card-bundle">買 {bundleTier.quantity} 件省 {formatTwd(bundleSaving)}・組合價 {formatTwd(bundleTier.bundlePrice)}</p> : null}
       </div>
     </article>
   )

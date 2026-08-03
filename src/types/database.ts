@@ -312,6 +312,41 @@ export type Database = {
           },
         ]
       }
+      customer_photos: {
+        Row: {
+          caption: string
+          created_at: string
+          id: string
+          image_url: string
+          position: number
+          product_id: string | null
+        }
+        Insert: {
+          caption?: string
+          created_at?: string
+          id?: string
+          image_url: string
+          position?: number
+          product_id?: string | null
+        }
+        Update: {
+          caption?: string
+          created_at?: string
+          id?: string
+          image_url?: string
+          position?: number
+          product_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'customer_photos_product_id_fkey'
+            columns: ['product_id']
+            isOneToOne: false
+            referencedRelation: 'products'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       orders: {
         Row: {
           bundle_discount: number
@@ -414,6 +449,7 @@ export type Database = {
           payment_access_token_hash: string | null
           payment_method: string
           provider_reference: string | null
+          reminder_sent_at: string | null
           recipient_name: string
           recipient_phone: string
           review_code: string | null
@@ -443,6 +479,7 @@ export type Database = {
           payment_access_token_hash: string | null
           payment_method?: string
           provider_reference?: string | null
+          reminder_sent_at?: string | null
           recipient_name: string
           recipient_phone: string
           review_code?: string | null
@@ -472,6 +509,7 @@ export type Database = {
           payment_access_token_hash?: string | null
           payment_method?: string
           provider_reference?: string | null
+          reminder_sent_at?: string | null
           recipient_name?: string
           recipient_phone?: string
           review_code?: string | null

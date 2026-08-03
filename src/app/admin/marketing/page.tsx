@@ -2,6 +2,9 @@ import { createPromotionFromForm, deletePromotionFromForm, getMarketingDashboard
 import { countMarketingSubscribers, sendMarketingBroadcastFromForm } from '@/features/admin/marketing-broadcast'
 import { couponUsageLimitLabels } from '@/features/checkout/coupons'
 import { MarketingBroadcastForm } from '@/features/admin/marketing-broadcast-form'
+import { CustomerPhotoManager } from '@/features/admin/customer-photo-manager'
+import { addCustomerPhotoFromForm, deleteCustomerPhotoFromForm, listCustomerPhotos } from '@/features/storefront/customer-photos'
+import { listAdminProducts } from '@/features/admin/product-actions'
 import { formatTaipeiDateTime } from '@/lib/date-time'
 
 export const dynamic = 'force-dynamic'
@@ -13,7 +16,13 @@ const promotionTypeLabels: Record<string, string> = {
 }
 
 export default async function AdminMarketingPage() {
-  const [dashboard, subscriberCount] = await Promise.all([getMarketingDashboard(), countMarketingSubscribers()])
+  const [dashboard, subscriberCount, customerPhotos, adminProducts] = await Promise.all([
+    getMarketingDashboard(),
+    countMarketingSubscribers(),
+    listCustomerPhotos(),
+    listAdminProducts(),
+  ])
+  const productOptions = adminProducts.map((product) => ({ id: product.id, name: product.name }))
 
   return (
     <main className="section admin-management-page">
@@ -69,15 +78,16 @@ export default async function AdminMarketingPage() {
         </section>
 
         <section className="admin-panel abandoned-panel">
-          <header><div><p className="eyebrow">cart recovery</p><h2>未結帳購物車提醒</h2></div><strong>{dashboard.abandonedCarts} 個未完成結帳</strong></header>
+          <header><div><p className="eyebrow">cart recovery</p><h2>未結帳購物車提醒</h2></div><strong>{dashboard.abandonedCarts} 筆待付款訂單（7 天內）</strong></header>
           {dashboard.reminder ? <form action={updateReminderFromForm} className="admin-stack-form">
             <label className="check-label"><input defaultChecked={dashboard.reminder.enabled} name="enabled" type="checkbox" />啟用提醒排程</label>
             <div className="form-split"><label>延遲時數<input defaultValue={dashboard.reminder.delayHours} max="168" min="1" name="delayHours" type="number" /></label><label>信件主旨<input defaultValue={dashboard.reminder.subject} name="subject" required /></label></div>
             <button type="submit">儲存提醒設定</button>
-            <p className="admin-panel-note">訂單確認信已可正常寄送（Resend）；此「未結帳自動提醒」的排程功能仍在規劃中。</p>
-          </form> : <p className="admin-panel-note">訂單確認信已可正常寄送（Resend）。此「未結帳自動提醒」的自動排程功能仍在規劃中，敬請期待。</p>}
+            <p className="admin-panel-note">啟用後，完成結帳但超過延遲時數仍未付款的訂單，系統會自動寄出一封提醒信（每筆訂單只寄一次，附商品明細與匯款資訊）。</p>
+          </form> : <p className="admin-panel-note">提醒設定載入中，請重新整理頁面。</p>}
         </section>
       </div>
+      <CustomerPhotoManager addPhoto={addCustomerPhotoFromForm} deletePhoto={deleteCustomerPhotoFromForm} photos={customerPhotos} products={productOptions} />
       <MarketingBroadcastForm action={sendMarketingBroadcastFromForm} subscriberCount={subscriberCount} />
     </main>
   )

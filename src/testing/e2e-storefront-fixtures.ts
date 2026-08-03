@@ -368,9 +368,15 @@ function toCartSnapshot(
 
 export function listE2EProducts(filters: ProductFilters) {
   const store = getE2EStore()
-  return getMutableE2EProducts().map((product) => attachProductSeries(product, store)).filter((product) => (
-    store.publishedProductIds.has(product.id) && matchesProduct(product, filters)
-  ))
+  return getMutableE2EProducts()
+    .map((product) => attachProductSeries(product, store))
+    .map((product) => {
+      const quantityPrices = store.quantityPrices.get(product.slug)
+      return quantityPrices?.length ? { ...product, quantityPrices } : product
+    })
+    .filter((product) => (
+      store.publishedProductIds.has(product.id) && matchesProduct(product, filters)
+    ))
 }
 
 export function getE2EProduct(slug: string) {

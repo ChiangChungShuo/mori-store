@@ -68,6 +68,8 @@ export type CatalogProduct = {
   imageAlt: string
   images?: readonly CatalogProductImage[]
   variants: readonly CatalogVariant[]
+  /** "buy N for NT$X" tiers, when the product has any. */
+  quantityPrices?: readonly { quantity: number; bundlePrice: number }[]
 }
 
 type SearchParams = Record<string, string | string[] | undefined>
@@ -314,7 +316,13 @@ export async function listProducts(filters: ProductFilters): Promise<CatalogProd
   const { data, error } = await query.order('created_at', { ascending: false })
   if (error) throw error
 
-  return applyCatalogFilters(((data ?? []) as unknown as ProductRecord[]).map(mapProduct), filters)
+  const products = applyCatalogFilters(((data ?? []) as unknown as ProductRecord[]).map(mapProduct), filters)
+  // One extra lightweight query so listing cards can show the bundle badge.
+  const { getQuantityPriceMap } = await import('@/features/catalog/quantity-prices')
+  const tiers = await getQuantityPriceMap()
+  return products.map((product) => (
+    tiers[product.slug]?.length ? { ...product, quantityPrices: tiers[product.slug] } : product
+  ))
 }
 
 export async function getProductBySlug(slug: string): Promise<CatalogProduct | null> {

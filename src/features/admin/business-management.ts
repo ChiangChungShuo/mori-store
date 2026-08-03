@@ -229,16 +229,42 @@ function mapPromotionRow(row: {
   }
 }
 
+export type CartReminderSettings = { enabled: boolean; delayHours: number; subject: string }
+
+export function parseCartReminderSettings(value: unknown): CartReminderSettings {
+  const fallback = { enabled: false, delayHours: 24, subject: '您挑選的商品還在等您完成訂單' }
+  if (!value || typeof value !== 'object') return fallback
+  const raw = value as Record<string, unknown>
+  return {
+    enabled: raw.enabled === true,
+    delayHours: Number.isInteger(raw.delayHours) && (raw.delayHours as number) >= 1 && (raw.delayHours as number) <= 168
+      ? raw.delayHours as number
+      : fallback.delayHours,
+    subject: typeof raw.subject === 'string' && raw.subject.trim() ? raw.subject.trim() : fallback.subject,
+  }
+}
+
 export async function getMarketingDashboard() {
   await requireAdmin()
   if (!isE2EMode()) {
     const { createAdminClient } = await import('@/lib/supabase/admin')
-    const { data, error } = await createAdminClient()
-      .from('promotions')
-      .select('id, name, type, code, condition_value, reward_value, gift_name, active, starts_at, ends_at, usage_limit')
-      .order('created_at', { ascending: false })
-    if (error) throw error
-    return { promotions: (data ?? []).map(mapPromotionRow), reminder: null, abandonedCarts: 0 }
+    const admin = createAdminClient()
+    const [promotions, reminderRow, pendingAttempts] = await Promise.all([
+      admin.from('promotions')
+        .select('id, name, type, code, condition_value, reward_value, gift_name, active, starts_at, ends_at, usage_limit')
+        .order('created_at', { ascending: false }),
+      admin.from('store_settings').select('value').eq('key', 'cart_reminder').maybeSingle(),
+      admin.from('payment_attempts')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending')
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString()),
+    ])
+    if (promotions.error) throw promotions.error
+    return {
+      promotions: (promotions.data ?? []).map(mapPromotionRow),
+      reminder: parseCartReminderSettings(reminderRow.data?.value),
+      abandonedCarts: pendingAttempts.count ?? 0,
+    }
   }
   const { getE2EStore } = await import('@/testing/e2e-store')
   const store = getE2EStore()
@@ -345,9 +371,16 @@ export async function updateReminderFromForm(formData: FormData) {
     delayHours: formData.get('delayHours'),
     subject: formData.get('subject'),
   })
-  if (!isE2EMode()) throw new Error('正式提醒信需先串接郵件服務')
-  const { getE2EStore } = await import('@/testing/e2e-store')
-  getE2EStore().abandonedCartReminder = reminder
+  if (!isE2EMode()) {
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const { error } = await createAdminClient()
+      .from('store_settings')
+      .upsert({ key: 'cart_reminder', value: reminder }, { onConflict: 'key' })
+    if (error) throw error
+  } else {
+    const { getE2EStore } = await import('@/testing/e2e-store')
+    getE2EStore().abandonedCartReminder = reminder
+  }
   revalidatePath('/admin/marketing')
 }
 

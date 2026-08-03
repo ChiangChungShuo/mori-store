@@ -27,6 +27,7 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
       </section>
 
       <section className="admin-metrics admin-traffic-metrics" aria-label="營運數據摘要">
+        <article><p>造訪人數</p><strong>{insights.uniqueVisitors}</strong><small>不重複的瀏覽工作階段</small></article>
         <article><p>加入購物車</p><strong>{insights.purchaseFunnel[1].sessions}</strong><small>有加入商品的購物工作階段</small></article>
         <article><p>開始結帳</p><strong>{insights.purchaseFunnel[2].sessions}</strong><small>已進入填寫資料流程</small></article>
         <article><p>購物車放棄率</p><strong>{insights.cartAbandonmentRate}%</strong><small>加入購物車但未完成購買</small></article>
