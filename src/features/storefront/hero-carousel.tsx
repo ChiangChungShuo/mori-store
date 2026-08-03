@@ -52,7 +52,7 @@ export function HeroCarousel({ slides }: { slides: BannerSlide[] }) {
         <Image alt={slide.imageAlt} fill priority sizes="(max-width: 58rem) 100vw, 66vw" src={slide.imageUrl} />
       </div>
       {slides.length > 1 ? <><button className="hero-carousel-arrow hero-carousel-arrow-previous" type="button" aria-label="上一張輪播圖片" onClick={showPrevious}>←</button><button className="hero-carousel-arrow hero-carousel-arrow-next" type="button" aria-label="下一張輪播圖片" onClick={showNext}>→</button></> : null}
-      {slides.length > 1 ? <div className="hero-carousel-controls" aria-label="選擇輪播圖片">{slides.map((candidate, index) => <button aria-label={`顯示第 ${index + 1} 張：${candidate.title.replaceAll('\n', '')}`} aria-pressed={index === active} key={`${candidate.imageUrl}-${index}`} onClick={() => setActive(index)} type="button">{String(index + 1).padStart(2, '0')}</button>)}</div> : null}
+      {slides.length > 1 ? <div className="hero-carousel-controls" aria-label="選擇輪播圖片">{slides.map((candidate, index) => <button aria-label={`顯示第 ${index + 1} 張：${candidate.title.replaceAll('\n', '')}`} aria-pressed={index === active} key={`${candidate.imageUrl}-${index}`} onClick={() => setActive(index)} type="button"><span aria-hidden="true" /></button>)}</div> : null}
     </section>
   )
 }

@@ -417,3 +417,16 @@ describe('VariantPicker', () => {
     window.removeEventListener('mori:cart-added', onCartAdded)
   })
 })
+
+describe('ProductCard best-seller badge', () => {
+  it('badges a product tagged 熱賣 and leaves untagged products bare', () => {
+    const { unmount } = render(createElement(ProductCard, {
+      product: { ...product, tags: ['熱賣', '有機棉'] },
+    }))
+    expect(screen.getByText('熱賣')).toBeInTheDocument()
+    unmount()
+
+    render(createElement(ProductCard, { product: { ...product, tags: ['有機棉'] } }))
+    expect(screen.queryByText('熱賣')).not.toBeInTheDocument()
+  })
+})

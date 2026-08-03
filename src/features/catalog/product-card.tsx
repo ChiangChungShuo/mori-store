@@ -17,6 +17,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
   const displayName = splitProductDisplayName(product.name)
   const availability = getProductAvailability(product)
   const preorder = isPreorder(product.tags)
+  const bestSeller = product.tags?.includes('熱賣') ?? false
   const soldOut = availability === 'sold_out'
   const bundleTier = [...(product.quantityPrices ?? [])].sort((a, b) => a.quantity - b.quantity)[0]
   const bundleSaving = bundleTier ? Math.max(0, minimumPrice * bundleTier.quantity - bundleTier.bundlePrice) : 0
@@ -35,6 +36,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
     )}
     {soldOut ? <span className="product-availability" data-status="sold_out">售完</span> : null}
     {!soldOut && preorder ? <span className="product-availability" data-status="preorder">預購</span> : null}
+    {!soldOut && bestSeller ? <span className="product-availability" data-status="popular">熱賣</span> : null}
     {availability === 'coming_soon' ? <span className="product-availability" data-status="coming_soon"><small>即將上架</small>預計 {comingSoonDate} 開賣</span> : null}
     <span className="product-card-action">查看商品 <span aria-hidden="true">↗</span></span>
   </>

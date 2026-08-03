@@ -11,7 +11,7 @@ const TREE_TEE: CatalogProduct = {
   name: '有機棉小樹 T 恤',
   description: '柔軟透氣的日常有機棉 T 恤。\n親膚有機棉織法，水洗後越穿越軟，適合每天穿搭與跑跳。',
   summary: '親膚有機棉、越洗越軟，孩子每天想穿的日常百搭上衣。',
-  tags: ['有機棉', '日常', '親膚'],
+  tags: ['熱賣', '有機棉', '日常', '親膚'],
   seoTitle: '有機棉小樹 T 恤 - mori 童裝',
   seoDescription: '100% 有機棉、親膚透氣的兒童日常 T 恤，柔軟耐穿好活動；台灣本島超商取貨、滿額免運。',
   category: '上衣',

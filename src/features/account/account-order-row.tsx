@@ -3,6 +3,7 @@ import { formatTaipeiDateTime } from '@/lib/date-time'
 import { formatTwd } from '@/lib/money'
 import { getOrderJourney } from '@/features/orders/status'
 import type { OrderDetails } from '@/features/orders/queries'
+import { CopyOrderNumber } from '@/features/account/copy-order-number'
 
 export function AccountOrderRow({ order }: { order: OrderDetails }) {
   const journey = getOrderJourney(order.status, order.createdAt)
@@ -12,7 +13,10 @@ export function AccountOrderRow({ order }: { order: OrderDetails }) {
     <article className="account-order-row">
       <div className="account-order-number">
         <span>訂單編號</span>
-        <strong><Link href={`/account/orders/${order.orderNumber}`}>{order.orderNumber}</Link></strong>
+        <strong>
+          <Link href={`/account/orders/${order.orderNumber}`}>{order.orderNumber}</Link>
+          <CopyOrderNumber orderNumber={order.orderNumber} />
+        </strong>
         <small>{formatTaipeiDateTime(order.createdAt)}</small>
       </div>
       <div className="account-order-product">
