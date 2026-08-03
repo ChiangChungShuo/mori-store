@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { useProductColor } from '@/features/catalog/product-color-context'
-import { imagesForColor, type CatalogProductImage } from '@/features/catalog/product-images'
+import { firstImageIndexForColor, type CatalogProductImage } from '@/features/catalog/product-images'
 
 export function ProductGallery({ images, isNew }: {
   images: readonly CatalogProductImage[]
@@ -14,10 +14,12 @@ export function ProductGallery({ images, isNew }: {
   const [selection, setSelection] = useState({ color, index: 0 })
   const [zoomed, setZoomed] = useState(false)
   const touchStart = useRef<number | null>(null)
-  const visibleImages = imagesForColor(images, color)
+  // Every photo stays browsable; choosing a colour only jumps to its first
+  // photo, so shoppers can still swipe through the remaining angles.
+  const visibleImages = images
   const active = selection.color === color && selection.index < visibleImages.length
     ? selection.index
-    : 0
+    : firstImageIndexForColor(visibleImages, color)
   const image = visibleImages[active] ?? visibleImages[0]
 
   function show(offset: number) {

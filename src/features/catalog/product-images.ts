@@ -19,3 +19,16 @@ export function primaryImageForColor(
 ) {
   return imagesForColor(images, color)[0]
 }
+
+/**
+ * Index of the first image tagged with `color`, or 0 when the colour has no
+ * own photo. The gallery keeps showing every image and just jumps here, so a
+ * shopper picking a colour never loses sight of the other angles.
+ */
+export function firstImageIndexForColor(
+  images: readonly CatalogProductImage[],
+  color: string,
+): number {
+  const index = images.findIndex((image) => image.color === color)
+  return index >= 0 ? index : 0
+}

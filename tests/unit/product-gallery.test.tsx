@@ -31,7 +31,7 @@ describe('ProductGallery', () => {
     expect(screen.queryByRole('dialog', { name: '商品圖片放大檢視' })).not.toBeInTheDocument()
   })
 
-  it('點選顏色後切換為該顏色圖片，並保留共用細節圖', () => {
+  it('點選顏色後跳到該顏色圖片，但所有圖片仍可瀏覽', () => {
     function ColorButtons() {
       const { setColor } = useProductColor()
       return createElement('button', { type: 'button', onClick: () => setColor('粉色') }, '選擇粉色')
@@ -47,10 +47,16 @@ describe('ProductGallery', () => {
       createElement(ProductGallery, { images: colorImages, isNew: false }),
     ))
 
+    // All three photos stay reachable regardless of the selected colour.
     expect(screen.getByRole('img', { name: '藍色正面' })).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: /查看第/ })).toHaveLength(2)
+    expect(screen.getAllByRole('button', { name: /查看第/ })).toHaveLength(3)
+
     fireEvent.click(screen.getByRole('button', { name: '選擇粉色' }))
     expect(screen.getByRole('img', { name: '粉色正面' })).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: /查看第/ })).toHaveLength(2)
+    expect(screen.getAllByRole('button', { name: /查看第/ })).toHaveLength(3)
+
+    // The shared detail shot is still browsable after switching colour.
+    fireEvent.click(screen.getByRole('button', { name: '查看第 3 張商品圖片' }))
+    expect(screen.getByRole('img', { name: '共用細節' })).toBeInTheDocument()
   })
 })

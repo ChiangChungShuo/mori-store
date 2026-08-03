@@ -47,6 +47,7 @@ export function SiteHeader({ cart, isSignedIn = false, isAdmin = false, categori
           <BrandLogo />
         </Link>
         <div className="store-mobile-right">
+          {isSignedIn ? <WishlistHeaderLink /> : null}
           <Link
             aria-label={isSignedIn ? '前往會員中心' : '會員登入'}
             className="mobile-header-icon-button mobile-account-link"
