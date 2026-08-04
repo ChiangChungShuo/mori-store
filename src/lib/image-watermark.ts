@@ -4,46 +4,42 @@
 // lets the owner see exactly what will be stored.
 
 export type WatermarkPosition = 'bottom-right' | 'bottom-left' | 'center' | 'bottom-center'
-export type WatermarkKind = 'logo' | 'text'
-export type WatermarkSize = 'small' | 'medium' | 'large'
+export type WatermarkSize = 'tiny' | 'small' | 'medium' | 'large'
+export type WatermarkOpacity = 'faint' | 'soft' | 'clear'
 
 /** The brand badge, served from public/. */
 export const WATERMARK_LOGO_SRC = '/brand/morimur-baby-logo.png'
 
 export type WatermarkOptions = {
-  kind?: WatermarkKind
-  text?: string
   position?: WatermarkPosition
   size?: WatermarkSize
-  opacity?: number
+  opacity?: WatermarkOpacity
 }
 
-// Share of the photo width taken by the mark.
-const logoScales: Record<WatermarkSize, number> = { small: 0.14, medium: 0.2, large: 0.28 }
-const textScales: Record<WatermarkSize, number> = { small: 0.045, medium: 0.062, large: 0.085 }
+// Share of the photo width taken by the badge. Small values keep the mark
+// unobtrusive on a product photo.
+const logoScales: Record<WatermarkSize, number> = { tiny: 0.07, small: 0.1, medium: 0.14, large: 0.2 }
+const opacityLevels: Record<WatermarkOpacity, number> = { faint: 0.3, soft: 0.45, clear: 0.65 }
 const JPEG_QUALITY = 0.9
 const STORAGE_KEY = 'mori-watermark'
 
 export type WatermarkPreference = {
   enabled: boolean
-  kind: WatermarkKind
-  text: string
   position: WatermarkPosition
   size: WatermarkSize
-  opacity: number
+  opacity: WatermarkOpacity
 }
 
 export const defaultWatermarkPreference: WatermarkPreference = {
   enabled: true,
-  kind: 'logo',
-  text: 'Moribebe',
   position: 'bottom-right',
-  size: 'medium',
-  opacity: 0.9,
+  size: 'small',
+  opacity: 'soft',
 }
 
 const positions: WatermarkPosition[] = ['bottom-right', 'bottom-left', 'bottom-center', 'center']
-const sizes: WatermarkSize[] = ['small', 'medium', 'large']
+const sizes: WatermarkSize[] = ['tiny', 'small', 'medium', 'large']
+const opacities: WatermarkOpacity[] = ['faint', 'soft', 'clear']
 
 /** Remembers the owner's watermark choice across uploads and pages. */
 export function readWatermarkPreference(): WatermarkPreference {
@@ -54,13 +50,9 @@ export function readWatermarkPreference(): WatermarkPreference {
     const parsed = JSON.parse(stored) as Partial<WatermarkPreference>
     return {
       enabled: typeof parsed.enabled === 'boolean' ? parsed.enabled : defaultWatermarkPreference.enabled,
-      kind: parsed.kind === 'text' || parsed.kind === 'logo' ? parsed.kind : defaultWatermarkPreference.kind,
-      text: typeof parsed.text === 'string' && parsed.text ? parsed.text : defaultWatermarkPreference.text,
       position: parsed.position && positions.includes(parsed.position) ? parsed.position : defaultWatermarkPreference.position,
       size: parsed.size && sizes.includes(parsed.size) ? parsed.size : defaultWatermarkPreference.size,
-      opacity: typeof parsed.opacity === 'number' && parsed.opacity > 0 && parsed.opacity <= 1
-        ? parsed.opacity
-        : defaultWatermarkPreference.opacity,
+      opacity: parsed.opacity && opacities.includes(parsed.opacity) ? parsed.opacity : defaultWatermarkPreference.opacity,
     }
   } catch {
     return defaultWatermarkPreference
@@ -130,9 +122,6 @@ function anchor(position: WatermarkPosition, width: number, height: number, mark
 export async function applyWatermark(file: File, options: WatermarkOptions = {}): Promise<File> {
   if (typeof document === 'undefined') return file
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return file
-  const kind = options.kind ?? 'logo'
-  const text = (options.text ?? '').trim()
-  if (kind === 'text' && !text) return file
 
   try {
     // Probe the canvas before decoding: environments without 2D canvas (jsdom,
@@ -150,39 +139,21 @@ export async function applyWatermark(file: File, options: WatermarkOptions = {})
     canvas.width = width
     canvas.height = height
     context.drawImage(photo, 0, 0, width, height)
-    context.globalAlpha = options.opacity ?? defaultWatermarkPreference.opacity
 
-    if (kind === 'logo') {
-      const logo = await loadLogo()
-      const markWidth = Math.max(48, Math.round(width * logoScales[options.size ?? 'medium']))
-      const markHeight = Math.round(markWidth * (logo.naturalHeight / logo.naturalWidth || 1))
-      const spot = anchor(options.position ?? 'bottom-right', width, height, markWidth, markHeight)
-      // The badge PNG has an opaque near-white background, so clip it to its
-      // circle — otherwise a pale square would sit on top of the photo.
-      context.save()
-      context.beginPath()
-      context.arc(spot.x + markWidth / 2, spot.y + markHeight / 2, Math.min(markWidth, markHeight) * 0.49, 0, Math.PI * 2)
-      context.closePath()
-      context.clip()
-      context.drawImage(logo, spot.x, spot.y, markWidth, markHeight)
-      context.restore()
-    } else {
-      const fontSize = Math.max(14, Math.round(width * textScales[options.size ?? 'medium']))
-      // Serif matches the storefront's brand type; the shadow keeps white text
-      // legible on pale fabric.
-      context.font = `${fontSize}px Georgia, "Times New Roman", "Noto Serif TC", serif`
-      context.textAlign = options.position === 'bottom-right' ? 'right' : options.position === 'bottom-left' ? 'left' : 'center'
-      context.textBaseline = options.position === 'center' ? 'middle' : 'alphabetic'
-      context.shadowColor = 'rgba(40, 48, 56, 0.35)'
-      context.shadowBlur = Math.round(fontSize * 0.35)
-      context.fillStyle = '#ffffff'
-      const padding = Math.round(width * 0.045)
-      const x = options.position === 'bottom-right' ? width - padding
-        : options.position === 'bottom-left' ? padding
-        : width / 2
-      const y = options.position === 'center' ? height / 2 : height - padding
-      context.fillText(text, x, y)
-    }
+    const logo = await loadLogo()
+    const markWidth = Math.max(40, Math.round(width * logoScales[options.size ?? defaultWatermarkPreference.size]))
+    const markHeight = Math.round(markWidth * (logo.naturalHeight / logo.naturalWidth || 1))
+    const spot = anchor(options.position ?? defaultWatermarkPreference.position, width, height, markWidth, markHeight)
+    context.globalAlpha = opacityLevels[options.opacity ?? defaultWatermarkPreference.opacity]
+    // The badge PNG has an opaque near-white background, so clip it to its
+    // circle — otherwise a pale square would sit on top of the photo.
+    context.save()
+    context.beginPath()
+    context.arc(spot.x + markWidth / 2, spot.y + markHeight / 2, Math.min(markWidth, markHeight) * 0.49, 0, Math.PI * 2)
+    context.closePath()
+    context.clip()
+    context.drawImage(logo, spot.x, spot.y, markWidth, markHeight)
+    context.restore()
 
     const outputType = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
     const blob = await new Promise<Blob | null>((resolve) => {

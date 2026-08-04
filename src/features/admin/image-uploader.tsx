@@ -7,17 +7,12 @@ import {
   applyWatermark,
   readWatermarkPreference,
   writeWatermarkPreference,
-  type WatermarkKind,
+  type WatermarkOpacity,
   type WatermarkPosition,
   type WatermarkSize,
 } from '@/lib/image-watermark'
 
 type UploadResult = { ok: boolean; message?: string }
-
-const kindLabels: Array<{ value: WatermarkKind; label: string }> = [
-  { value: 'logo', label: '品牌圖示' },
-  { value: 'text', label: '文字' },
-]
 
 const positionLabels: Array<{ value: WatermarkPosition; label: string }> = [
   { value: 'bottom-right', label: '右下角' },
@@ -27,9 +22,16 @@ const positionLabels: Array<{ value: WatermarkPosition; label: string }> = [
 ]
 
 const sizeLabels: Array<{ value: WatermarkSize; label: string }> = [
+  { value: 'tiny', label: '極小' },
   { value: 'small', label: '小' },
   { value: 'medium', label: '中' },
   { value: 'large', label: '大' },
+]
+
+const opacityLabels: Array<{ value: WatermarkOpacity; label: string }> = [
+  { value: 'faint', label: '很淡' },
+  { value: 'soft', label: '淡' },
+  { value: 'clear', label: '清楚' },
 ]
 
 export function ImageUploader({
@@ -116,17 +118,16 @@ export function ImageUploader({
           <input checked={watermark.enabled} onChange={(event) => setWatermark({ ...watermark, enabled: event.target.checked })} type="checkbox" />
           上傳時加上浮水印
         </label>
-        <label>樣式<select disabled={!watermark.enabled} onChange={(event) => setWatermark({ ...watermark, kind: event.target.value as WatermarkKind })} value={watermark.kind}>
-          {kindLabels.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-        </select></label>
-        {watermark.kind === 'text' ? <label>文字<input disabled={!watermark.enabled} maxLength={24} onChange={(event) => setWatermark({ ...watermark, text: event.target.value })} value={watermark.text} /></label> : null}
         <label>位置<select disabled={!watermark.enabled} onChange={(event) => setWatermark({ ...watermark, position: event.target.value as WatermarkPosition })} value={watermark.position}>
           {positionLabels.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select></label>
         <label>大小<select disabled={!watermark.enabled} onChange={(event) => setWatermark({ ...watermark, size: event.target.value as WatermarkSize })} value={watermark.size}>
           {sizeLabels.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select></label>
-        <small>浮水印會直接印在存檔的圖片上，上方預覽就是顧客會看到的樣子；設定會記在這台裝置。</small>
+        <label>透明度<select disabled={!watermark.enabled} onChange={(event) => setWatermark({ ...watermark, opacity: event.target.value as WatermarkOpacity })} value={watermark.opacity}>
+          {opacityLabels.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+        </select></label>
+        <small>會把品牌圖示直接印在存檔的圖片上，上方預覽就是顧客會看到的樣子；設定會記在這台裝置。</small>
       </fieldset>
 
       <label className="admin-image-color-field">對應顏色<select aria-label="對應顏色" name="color" defaultValue=""><option value="">共用圖片</option>{colors.map((color) => <option key={color} value={color}>{color}</option>)}</select><small>選擇顧客點擊這個顏色時要顯示的照片；細節照可保留共用。</small></label>

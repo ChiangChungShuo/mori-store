@@ -1272,21 +1272,33 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-metrics-compact { grid-template-columns: 1.25fr repeat(3, minmax(0, 1fr)); }
 .admin-management-page .admin-table-scroll { margin-bottom: 0; }
 .admin-stack-form { display: grid; gap: 1rem; }
-.admin-stack-form > label, .admin-settings-panel label, .member-settings-form label { display: grid; gap: 0.4rem; align-content: start; color: var(--forest); font-size: 0.76rem; font-weight: 800; }
-.admin-stack-form input, .admin-stack-form select, .admin-stack-form textarea, .admin-settings-panel input, .member-settings-form input, .member-settings-form select { width: 100%; min-width: 0; min-height: 2.85rem; border: 1px solid #d5dde2; border-radius: 0.7rem; background: var(--white); padding: 0.6rem 0.9rem; color: var(--ink); font-family: inherit; font-size: 0.85rem; }
-.admin-stack-form input:focus, .admin-stack-form select:focus, .admin-stack-form textarea:focus, .admin-settings-panel input:focus { border-color: var(--forest); outline: 0; box-shadow: 0 0 0 3px rgb(106 127 144 / 16%); }
+.admin-stack-form > label, .member-settings-form label { display: grid; gap: 0.4rem; align-content: start; color: var(--forest); font-size: 0.76rem; font-weight: 800; }
+.admin-stack-form input, .admin-stack-form select, .admin-stack-form textarea, .admin-settings-grid input, .member-settings-form input, .member-settings-form select { width: 100%; min-width: 0; min-height: 2.85rem; border: 1px solid #d5dde2; border-radius: 0.7rem; background: var(--white); padding: 0.6rem 0.9rem; color: var(--ink); font-family: inherit; font-size: 0.85rem; }
+.admin-stack-form input:focus, .admin-stack-form select:focus, .admin-stack-form textarea:focus { border-color: var(--forest); outline: 0; box-shadow: 0 0 0 3px rgb(106 127 144 / 16%); }
 .admin-stack-form label small { color: var(--muted); font-size: 0.7rem; font-weight: 500; line-height: 1.6; }
 .admin-stack-form .button, .admin-stack-form > button { justify-self: start; min-height: 2.85rem; border-radius: 999px; padding: 0.55rem 1.5rem; font-size: 0.8rem; }
 .admin-stack-form .check-label { display: flex; align-items: center; }
 .admin-stack-form .check-label input { width: auto; min-height: auto; }
 .form-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; }
 .form-split label { display: grid; gap: 0.35rem; font-size: 0.72rem; font-weight: 800; }
-.admin-settings-panel { max-width: 48rem; }
-.admin-settings-divider { display: flex; align-items: center; gap: 0.8rem; margin-top: 0.5rem; color: var(--moss); font-size: 0.64rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
-.admin-settings-divider::after { height: 1px; flex: 1; background: var(--line); content: ""; }
-.admin-keyword-fields { margin: 0; border: 1px solid var(--line); padding: 1rem; }
-.admin-keyword-fields legend { padding-inline: 0.4rem; color: var(--forest); font-size: 0.72rem; font-weight: 800; }
-.admin-keyword-fields > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+/* Settings: two grouped panels side by side with one shared save bar, instead
+   of a single 48rem column that ran the full height of the page. */
+.admin-settings-form { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 1rem; align-items: start; }
+.admin-settings-form > .admin-panel { min-width: 0; }
+.admin-settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.85rem 0.9rem; }
+.admin-settings-grid > label, .admin-settings-grid > fieldset { display: grid; gap: 0.4rem; align-content: start; color: var(--forest); font-size: 0.76rem; font-weight: 800; }
+.admin-settings-grid small { color: var(--muted); font-size: 0.7rem; font-weight: 500; line-height: 1.6; }
+.admin-settings-grid textarea { width: 100%; min-height: 5.5rem; border: 1px solid #d5dde2; border-radius: 0.7rem; background: var(--white); padding: 0.6rem 0.9rem; color: var(--ink); font-family: inherit; font-size: 0.85rem; resize: vertical; }
+.admin-settings-grid textarea:focus, .admin-settings-grid input:focus { border-color: var(--forest); outline: 0; box-shadow: 0 0 0 3px rgb(106 127 144 / 16%); }
+.admin-settings-wide { grid-column: 1 / -1; }
+.admin-settings-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 1rem; align-items: center; border: 1px solid #e0e6ea; border-radius: 1.1rem; background: var(--white); padding: 0.85rem 1.2rem; box-shadow: 0 0.5rem 1.4rem rgb(64 77 94 / 5%); }
+.admin-settings-actions p { margin: 0; margin-right: auto; color: var(--muted); font-size: 0.74rem; }
+.admin-settings-actions .button { min-height: 2.85rem; border-radius: 999px; padding: 0.55rem 1.6rem; font-size: 0.8rem; }
+.admin-keyword-fields { margin: 0; border: 1px solid var(--line); border-radius: 0.9rem; padding: 0.9rem 1rem 1rem; }
+.admin-keyword-fields legend { padding-inline: 0.4rem; color: var(--forest); font-size: 0.74rem; font-weight: 800; }
+.admin-keyword-fields > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem 0.75rem; }
+.admin-keyword-fields label { display: grid; gap: 0.3rem; color: var(--forest); font-size: 0.7rem; font-weight: 700; }
+.admin-keyword-fields input { min-height: 2.6rem; border-radius: 0.7rem; padding: 0.45rem 0.7rem; font-size: 0.82rem; }
 .admin-member-list { display: grid; gap: 1rem; }
 .admin-member-card { display: grid; grid-template-columns: minmax(14rem, 1fr) auto minmax(22rem, 1.35fr); gap: 1rem; align-items: center; padding: 1.2rem; border: 1px solid var(--line); background: var(--paper); }
 .member-identity { display: flex; gap: 0.8rem; align-items: center; }
@@ -2320,7 +2332,8 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
   .admin-page-heading { align-items: flex-start; flex-direction: column; }
   .admin-page-heading > p { text-align: left; }
   .admin-nav { grid-template-columns: repeat(2, 1fr); }
-  .admin-keyword-fields > div { grid-template-columns: 1fr; }
+  .admin-keyword-fields > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-settings-grid { grid-template-columns: 1fr; }
   .admin-live-preview-heading { align-items: flex-start; flex-direction: column; }
   .admin-live-preview .hero-carousel { height: 42rem; grid-template-rows: 20rem 22rem; }
   .admin-banner-link-fields { grid-template-columns: 1fr; }
