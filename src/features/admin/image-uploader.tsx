@@ -7,15 +7,29 @@ import {
   applyWatermark,
   readWatermarkPreference,
   writeWatermarkPreference,
+  type WatermarkKind,
   type WatermarkPosition,
+  type WatermarkSize,
 } from '@/lib/image-watermark'
 
 type UploadResult = { ok: boolean; message?: string }
 
+const kindLabels: Array<{ value: WatermarkKind; label: string }> = [
+  { value: 'logo', label: '品牌圖示' },
+  { value: 'text', label: '文字' },
+]
+
 const positionLabels: Array<{ value: WatermarkPosition; label: string }> = [
   { value: 'bottom-right', label: '右下角' },
+  { value: 'bottom-left', label: '左下角' },
   { value: 'bottom-center', label: '下方中央' },
   { value: 'center', label: '正中央' },
+]
+
+const sizeLabels: Array<{ value: WatermarkSize; label: string }> = [
+  { value: 'small', label: '小' },
+  { value: 'medium', label: '中' },
+  { value: 'large', label: '大' },
 ]
 
 export function ImageUploader({
@@ -43,9 +57,7 @@ export function ImageUploader({
     let url = ''
     void (async () => {
       const compressed = await compressImageForUpload(picked)
-      const stamped = watermark.enabled && watermark.text.trim()
-        ? await applyWatermark(compressed, { text: watermark.text, position: watermark.position })
-        : compressed
+      const stamped = watermark.enabled ? await applyWatermark(compressed, watermark) : compressed
       if (cancelled) return
       url = URL.createObjectURL(stamped)
       setPreview(url)
@@ -67,9 +79,7 @@ export function ImageUploader({
           // Shrink oversized photos first so the watermark is drawn at the
           // final size and stays crisp, then keep uploads within the limit.
           const compressed = await compressImageForUpload(file)
-          payload.set('file', watermark.enabled && watermark.text.trim()
-            ? await applyWatermark(compressed, { text: watermark.text, position: watermark.position })
-            : compressed)
+          payload.set('file', watermark.enabled ? await applyWatermark(compressed, watermark) : compressed)
         }
         const nextResult = await upload(payload)
         setResult(nextResult)
@@ -106,9 +116,15 @@ export function ImageUploader({
           <input checked={watermark.enabled} onChange={(event) => setWatermark({ ...watermark, enabled: event.target.checked })} type="checkbox" />
           上傳時加上浮水印
         </label>
-        <label>文字<input disabled={!watermark.enabled} maxLength={24} onChange={(event) => setWatermark({ ...watermark, text: event.target.value })} value={watermark.text} /></label>
+        <label>樣式<select disabled={!watermark.enabled} onChange={(event) => setWatermark({ ...watermark, kind: event.target.value as WatermarkKind })} value={watermark.kind}>
+          {kindLabels.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+        </select></label>
+        {watermark.kind === 'text' ? <label>文字<input disabled={!watermark.enabled} maxLength={24} onChange={(event) => setWatermark({ ...watermark, text: event.target.value })} value={watermark.text} /></label> : null}
         <label>位置<select disabled={!watermark.enabled} onChange={(event) => setWatermark({ ...watermark, position: event.target.value as WatermarkPosition })} value={watermark.position}>
           {positionLabels.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+        </select></label>
+        <label>大小<select disabled={!watermark.enabled} onChange={(event) => setWatermark({ ...watermark, size: event.target.value as WatermarkSize })} value={watermark.size}>
+          {sizeLabels.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select></label>
         <small>浮水印會直接印在存檔的圖片上，上方預覽就是顧客會看到的樣子；設定會記在這台裝置。</small>
       </fieldset>
