@@ -27,7 +27,9 @@ body {
 }
 a { color: inherit; }
 /* Anchor jumps (#new / #ages / #story) must clear the sticky header. */
-#new, #ages, #story { scroll-margin-top: 8.5rem; }
+/* Sticky header + the section's own top padding: subtract the padding so the
+   heading lands just under the header instead of a screen of whitespace. */
+#new, #ages, #story { scroll-margin-top: calc(8.5rem - clamp(2.5rem, 4.5vw, 4.25rem)); }
 /* A <dialog> takes UA color/font, so text inside it would render black in the
    system font instead of the brand palette. */
 dialog { color: inherit; font: inherit; }
@@ -738,21 +740,36 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .account-order-help p { margin: 0; color: var(--muted); font-size: 0.68rem; }
 .account-order-help a { min-width: max-content; font-size: 0.7rem; font-weight: 800; text-decoration: none; }
 .account-order-count { margin: 0; color: var(--muted); font-size: 0.65rem; text-align: right; }
-.wishlist-panel { width: fit-content; max-width: 100%; min-height: 0; border: 0; background: transparent; padding: 0; }
-.wishlist-loading { color: var(--muted); font-size: 0.75rem; }
-.wishlist-grid { display: grid; width: fit-content; max-width: 100%; grid-template-columns: minmax(24rem, 32rem); gap: 0; border: 1px solid var(--line); background: transparent; }
-.wishlist-grid[data-columns="2"] { grid-template-columns: repeat(2, minmax(24rem, 32rem)); }
-.wishlist-grid article { position: relative; display: grid; grid-template-columns: 6.5rem minmax(0, 1fr) auto; gap: 1rem; align-items: center; border-bottom: 1px solid var(--line); background: var(--white); padding: 1rem; }
-.wishlist-grid article:nth-child(odd) { border-right: 1px solid var(--line); }
-.wishlist-image { display: grid; width: 6.5rem; aspect-ratio: 4 / 5; place-items: center; overflow: hidden; background: var(--oat); text-decoration: none; }
-.wishlist-image img { width: 100%; height: 100%; object-fit: cover; }
-.wishlist-image > span { color: var(--sage); font-family: Georgia, serif; font-style: italic; }
-.wishlist-grid article > div { min-width: 0; }
-.wishlist-grid article p { margin: 0; color: var(--muted); font-size: 0.62rem; }
-.wishlist-grid article h2 { margin: 0.25rem 0; overflow-wrap: anywhere; font-family: "Avenir Next", sans-serif; font-size: 0.8rem; font-weight: 800; }
-.wishlist-grid article h2 a { text-decoration: none; }
-.wishlist-grid article strong { color: var(--forest); font-size: 0.72rem; }
-.wishlist-grid .wishlist-button { width: 2.5rem; min-height: 2.5rem; border-radius: 50%; }
+/* Wishlist ---------------------------------------------------------------------- */
+/* Saved items reuse the catalog card so every selling signal (bundle price,
+   熱賣, struck-through price, optimized image) comes along, with a buy action
+   under each card and a summary that pushes toward checkout. */
+.wishlist-loading { color: var(--muted); font-size: 0.8rem; }
+.wishlist-summary { display: flex; flex-wrap: wrap; gap: 1rem 2rem; align-items: center; margin-bottom: 1.5rem; border: 1px solid #e0e7eb; border-radius: 1.2rem; background: var(--white); padding: 1.1rem 1.35rem; box-shadow: 0 0.6rem 1.6rem rgb(64 77 94 / 5%); }
+.wishlist-summary-figures { display: flex; gap: 1.75rem; }
+.wishlist-summary-figures p { display: grid; gap: 0.1rem; margin: 0; }
+.wishlist-summary-figures span { color: var(--muted); font-size: 0.68rem; font-weight: 700; }
+.wishlist-summary-figures strong { color: var(--forest); font-family: Georgia, serif; font-size: 1.35rem; font-weight: 400; }
+.wishlist-shipping { flex: 1 1 12rem; min-width: 0; display: grid; gap: 0.4rem; }
+.wishlist-shipping p { margin: 0; color: var(--forest); font-size: 0.74rem; font-weight: 800; }
+.wishlist-shipping > div { height: 0.4rem; overflow: hidden; border-radius: 999px; background: #edf1f3; }
+.wishlist-shipping i { display: block; height: 100%; border-radius: 999px; background: var(--moss); transition: width 240ms ease; }
+.wishlist-shipping[data-reached="true"] i { background: #6d9973; }
+.wishlist-summary-actions { display: flex; gap: 1rem; align-items: center; margin-left: auto; }
+.wishlist-summary-actions .button { min-height: 2.9rem; border-radius: 999px; padding: 0.6rem 1.5rem; font-size: 0.78rem; }
+.wishlist-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.5rem 1.25rem; }
+.wishlist-item { display: grid; gap: 0.6rem; align-content: start; min-width: 0; }
+.wishlist-item-actions { display: grid; gap: 0.35rem; justify-items: stretch; }
+.wishlist-item-actions .button { width: 100%; min-height: 2.85rem; border-radius: 999px; font-size: 0.78rem; }
+.wishlist-item-actions .button:disabled { border-color: var(--line); background: var(--paper); color: var(--muted); opacity: 1; cursor: not-allowed; }
+.wishlist-item-actions .button:disabled[aria-disabled], .wishlist-item-actions .button:disabled { transform: none; }
+.wishlist-size-row { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.wishlist-size-chip { min-width: 2.6rem; min-height: 2.3rem; border: 1px solid #d5dde2; border-radius: 999px; background: var(--white); color: var(--ink); font-family: inherit; font-size: 0.74rem; font-weight: 700; cursor: pointer; transition: border-color 150ms ease, background 150ms ease, color 150ms ease; }
+.wishlist-size-chip:hover:not(:disabled) { border-color: var(--forest); color: var(--forest); }
+.wishlist-size-chip[aria-pressed="true"] { border-color: var(--forest); background: var(--forest); color: var(--white); }
+.wishlist-size-chip:disabled { color: #b6bcc2; text-decoration: line-through; cursor: not-allowed; }
+.wishlist-low-stock { color: #a15954; font-size: 0.7rem; font-weight: 700; text-align: center; }
+.wishlist-empty-actions { display: flex; gap: 1rem; align-items: center; justify-content: center; }
 
 .admin-shell { min-width: 0; min-height: 100vh; background: #f2f6f9; }
 /* Readability: darker secondary text and slightly larger fine print across the
@@ -1426,7 +1443,10 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .product-filters .filter-actions { align-self: end; }
 /* Second-level nav: plain underline tabs, so it reads as a sub-level of the
    segmented 狀態 switch above instead of a second competing row of pills. */
-.catalog-categories { display: flex; flex-wrap: nowrap; gap: 0.35rem; margin: -0.35rem 0 1.5rem; border-bottom: 1px solid var(--line); padding: 0 0.15rem; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.catalog-categories { display: flex; flex-wrap: nowrap; gap: 0.35rem; margin: -0.35rem 0 1.5rem; border-bottom: 1px solid var(--line); padding: 0 0.15rem; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+/* The row scrolls sideways when the categories overflow, but the scrollbar
+   itself reads as a stray grey bar next to the tabs. */
+.catalog-categories::-webkit-scrollbar, .catalog-view-nav::-webkit-scrollbar { display: none; }
 .catalog-categories a { position: relative; flex: 0 0 auto; padding: 0.6rem 0.85rem 0.7rem; color: var(--muted); font-size: 0.76rem; font-weight: 700; text-align: center; text-decoration: none; transition: color 150ms ease; }
 .catalog-categories a::after { position: absolute; right: 0.85rem; bottom: -1px; left: 0.85rem; height: 2px; border-radius: 2px; background: var(--forest); content: ""; opacity: 0; transition: opacity 150ms ease; }
 .catalog-categories a:hover { color: var(--forest); }
@@ -2140,8 +2160,9 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
   .admin-product-form-aside { position: static; grid-template-columns: repeat(3, 1fr); }
   .product-info-layout { grid-template-columns: 1fr; }
   .product-care-card { position: static; }
-  .wishlist-grid[data-columns] { width: 100%; grid-template-columns: 1fr; }
-  .wishlist-grid article:nth-child(odd) { border-right: 0; }
+  .wishlist-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wishlist-summary-actions { margin-left: 0; width: 100%; }
+  .wishlist-summary-actions .button { flex: 1; }
   .admin-banner-grid { grid-template-columns: 1fr; }
   .admin-live-preview .hero-carousel { height: 44rem; grid-template-rows: 22rem 22rem; }
   .checkout-layout { grid-template-columns: 1fr; }
@@ -2403,8 +2424,9 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
   .admin-product-savebar { align-items: stretch; flex-direction: column; }
   .admin-product-savebar > div { align-items: flex-start; flex-direction: column; gap: 0.25rem; }
   .admin-product-savebar > .admin-savebar-actions { flex-direction: row; align-items: stretch; }
-  .wishlist-grid article { grid-template-columns: 5.5rem minmax(0, 1fr) auto; }
-  .wishlist-image { width: 5.5rem; }
+  .wishlist-summary { gap: 0.85rem 1.25rem; padding: 0.95rem 1.05rem; }
+  .wishlist-summary-figures { gap: 1.25rem; }
+  .wishlist-summary-figures strong { font-size: 1.15rem; }
   .admin-order-journey, .order-journey ol { grid-template-columns: repeat(5, minmax(4rem, 1fr)); overflow-x: auto; padding-block: 0.25rem 0.75rem; }
   .order-card-heading { align-items: flex-start; }
   .order-journey-summary { flex-direction: column; }
@@ -2982,7 +3004,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 @media (max-width: 36rem) {
   /* Clear the sticky header (announcement + nav ≈ 6.8rem) instead of landing on it. */
   .wishlist-toast { top: 6.75rem; }
-  #new, #ages, #story { scroll-margin-top: 7rem; }
+  #new, #ages, #story { scroll-margin-top: calc(7rem - clamp(2.5rem, 4.5vw, 4.25rem)); }
 
   /* A 166px-wide card cannot fit options and price on one row: the options used
      to wrap onto three lines beside a one-line price. Stack them instead. */
