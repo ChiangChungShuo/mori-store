@@ -493,6 +493,7 @@ describe('admin fulfillment pages', () => {
     )
     const dashboardPage = readFileSync(resolve(process.cwd(), 'src/app/admin/page.tsx'), 'utf8')
     const adminLayout = readFileSync(resolve(process.cwd(), 'src/app/admin/layout.tsx'), 'utf8')
+    const adminNav = readFileSync(resolve(process.cwd(), 'src/features/admin/admin-nav.tsx'), 'utf8')
     const reviewDetailPage = readFileSync(
       resolve(process.cwd(), 'src/app/admin/orders/review/[attemptId]/page.tsx'),
       'utf8',
@@ -518,10 +519,13 @@ describe('admin fulfillment pages', () => {
     expect(orderList).toMatch(/reviewCode/)
     expect(reviewDetailPage).toMatch(/reviewReason/)
     expect(reviewDetailPage).toMatch(/payment\.items\.map/)
-    expect(adminLayout).toMatch(/商店總覽/)
-    expect(adminLayout).toMatch(/訂單管理/)
-    expect(adminLayout).toMatch(/商品管理/)
+    expect(adminLayout).toMatch(/<AdminNav \/>/)
     expect(adminLayout).toMatch(/返回商城/)
+    expect(adminNav).toMatch(/商店總覽/)
+    expect(adminNav).toMatch(/訂單管理/)
+    expect(adminNav).toMatch(/商品與庫存/)
+    // The current section has to be visibly marked in the rail.
+    expect(adminNav).toMatch(/aria-current=\{active \? 'page' : undefined\}/)
     expect(orderList).toMatch(/admin-table-scroll/)
     expect(orderList).toMatch(/className="status-badge" data-status=/)
     expect(orderList).toMatch(/data-label="訂單編號"/)

@@ -41,7 +41,7 @@ export function GuestLookup({ action, bankTransferAction }: GuestLookupProps) {
         <header><span>ORDER STATUS</span><h2>輸入訂單資料</h2><p>資料須與下單時完全相同，英文大小寫不影響查詢。</p></header>
         <label>
           訂單編號
-          <input name="orderNumber" autoCapitalize="characters" autoComplete="off" placeholder="例：MORI-DEMO-1001" required />
+          <input name="orderNumber" autoCapitalize="characters" autoComplete="off" placeholder="例：MORI-69D0E0823B" required />
           <small>可在訂單成立 Email 中找到</small>
         </label>
         <label>

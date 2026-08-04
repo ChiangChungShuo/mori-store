@@ -345,9 +345,11 @@ describe('storefront metadata and owner shortcuts', () => {
     const dashboard = readFileSync(resolve(process.cwd(), 'src/app/admin/page.tsx'), 'utf8')
     const settings = readFileSync(resolve(process.cwd(), 'src/app/admin/settings/page.tsx'), 'utf8')
 
-    expect(dashboard).toContain('admin-quick-actions')
+    // The dashboard leads with two real actions instead of a duplicate nav row.
+    expect(dashboard).toContain('admin-page-actions')
     expect(dashboard).toContain('新增商品')
-    expect(dashboard).toContain('回覆訂單留言')
+    expect(dashboard).toContain('處理訂單')
+    expect(dashboard).not.toContain('admin-quick-actions')
     expect(settings).toContain('BannerSettingsEditor')
   })
 })

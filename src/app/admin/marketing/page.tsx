@@ -59,10 +59,12 @@ export default async function AdminMarketingPage() {
         <section className="admin-panel">
           <header><div><p className="eyebrow">new campaign</p><h2>新增活動</h2></div></header>
           <form action={createPromotionFromForm} className="admin-stack-form">
-            <label>活動名稱<input name="name" placeholder="例：開學季滿額贈" required /></label>
-            <label>活動類型<select name="type"><option value="coupon">折扣碼</option><option value="threshold_gift">滿額贈</option></select></label>
-            <div className="form-split"><label>折扣碼<input name="code" placeholder="MORI100" /></label><label>門檻金額<input defaultValue="1000" min="0" name="conditionValue" type="number" /></label></div>
-            <div className="form-split"><label>折抵金額<input defaultValue="100" min="0" name="rewardValue" type="number" /></label><label>贈品名稱<input name="giftName" placeholder="適用滿額贈" /></label></div>
+            {/* Coupon codes are the only promotion the checkout actually applies,
+                so the type picker and the gift field are gone. */}
+            <input name="type" type="hidden" value="coupon" />
+            <label>活動名稱<input name="name" placeholder="例：開學季折扣" required /></label>
+            <div className="form-split"><label>折扣碼<input name="code" placeholder="MORI100" required /></label><label>折抵金額<input defaultValue="100" min="0" name="rewardValue" type="number" /></label></div>
+            <label>門檻金額<input defaultValue="1000" min="0" name="conditionValue" type="number" /><small className="admin-field-hint">訂單金額達到門檻才能使用；填 0 代表不限金額。</small></label>
             <div className="form-split">
               <label>開始時間（選填）<input name="startsAt" type="datetime-local" /></label>
               <label>結束時間（選填）<input name="endsAt" type="datetime-local" /></label>

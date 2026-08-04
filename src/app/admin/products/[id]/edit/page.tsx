@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import {
+  deleteProduct,
   deleteProductImage,
   getAdminProduct,
   reorderProductImages,
@@ -11,7 +12,7 @@ import {
   uploadProductImage,
 } from '@/features/admin/product-actions'
 import { ImageUploader } from '@/features/admin/image-uploader'
-import { DeleteProductImageForm, ProductForm, ProductImageColorForm, ProductImageOrderControls, ProductPublishForm } from '@/features/admin/product-form'
+import { DeleteProductForm, DeleteProductImageForm, ProductForm, ProductImageColorForm, ProductImageOrderControls, ProductPublishForm } from '@/features/admin/product-form'
 import { listProductCategories } from '@/features/catalog/categories'
 import { listContentPresets } from '@/features/catalog/content-presets'
 import { listProductSeries } from '@/features/catalog/product-series'
@@ -87,6 +88,10 @@ export default async function EditAdminProductPage({
           </ul>
         )}
         <ImageUploader colors={colors} upload={upload} />
+      </section>
+      <section className="admin-danger-zone">
+        <div><strong>刪除這個商品</strong><p>刪除後無法復原；若只是暫時不賣，請改用上方的下架切換。</p></div>
+        <DeleteProductForm label="刪除商品" onDelete={deleteProduct.bind(null, productId)} redirectTo="/admin/products" />
       </section>
     </main>
   )

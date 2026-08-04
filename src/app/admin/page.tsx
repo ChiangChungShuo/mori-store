@@ -23,22 +23,17 @@ export default async function AdminPage() {
     <main className="section admin-dashboard">
       <header className="admin-page-heading">
         <div><p className="eyebrow">mori store room</p><h1>今天，從訂單開始。</h1></div>
-        <p>銷售與顧客動態會隨前台操作更新。</p>
+        <div className="admin-page-actions">
+          <Link className="button" href="/admin/products/new">＋ 新增商品</Link>
+          <Link className="admin-inline-action" href="/admin/orders">處理訂單</Link>
+        </div>
       </header>
 
-      <nav className="admin-quick-actions" aria-label="常用功能">
-        <Link href="/admin/products/new"><span>＋</span><strong>新增商品</strong><small>建立價格、規格與圖片</small></Link>
-        <Link href="/admin/orders"><span>訊</span><strong>回覆訂單留言</strong><small>處理顧客問題與出貨</small></Link>
-        <Link href="/admin/members"><span>客</span><strong>會員資料</strong><small>查看消費與訂單紀錄</small></Link>
-        <Link href="/admin/marketing"><span>促</span><strong>建立優惠</strong><small>折扣碼與行銷活動</small></Link>
-        <Link href="/admin/settings"><span>頁</span><strong>編輯首頁</strong><small>輪播、SEO 與流量設定</small></Link>
-      </nav>
-
+      {/* Three numbers for the morning check; the full analytics live in 報表分析. */}
       <section className="admin-metrics" aria-label="銷售摘要">
-        <article className="metric-feature"><p>累計銷售額</p><strong>{formatTwd(insights.salesRevenue)}</strong><small>已付款以上的有效訂單</small></article>
+        <article><p>累計銷售額</p><strong>{formatTwd(insights.salesRevenue)}</strong><small>已付款以上的有效訂單</small></article>
         <article><p>訂單數</p><strong>{insights.orderCount}</strong><small>今日新增 {todayOrders} 筆</small></article>
-        <article><p>平均客單價</p><strong>{formatTwd(insights.averageOrderValue)}</strong><small>每筆有效訂單</small></article>
-        <article><p>購物車放棄率</p><strong>{insights.cartAbandonmentRate}%</strong><small>加購後尚未完成下單</small></article>
+        <article><p>待處理</p><strong>{fulfillmentBacklog}</strong><small>已付款／備貨中等待出貨</small></article>
       </section>
 
       <div className="admin-dashboard-grid">
@@ -54,9 +49,12 @@ export default async function AdminPage() {
 
         <section className="admin-panel admin-attention">
           <header><div><p className="eyebrow">attention</p><h2>需要注意</h2></div></header>
-          <Link href="/admin/orders"><strong>{fulfillmentBacklog}</strong><span>待處理訂單</span><i>→</i></Link>
-          <Link href="/admin/products"><strong>{lowStockVariants}</strong><span>低庫存規格</span><i>→</i></Link>
-          <div><strong>{insights.productViews}</strong><span>商品瀏覽次數</span></div>
+          {fulfillmentBacklog === 0 && lowStockVariants === 0 ? (
+            <p className="admin-attention-clear">目前沒有待處理事項，訂單與庫存都在正常範圍。</p>
+          ) : <>
+            {fulfillmentBacklog > 0 ? <Link href="/admin/orders"><strong>{fulfillmentBacklog}</strong><span>待處理訂單</span><i>→</i></Link> : null}
+            {lowStockVariants > 0 ? <Link href="/admin/products?stock=low_stock"><strong>{lowStockVariants}</strong><span>低庫存規格</span><i>→</i></Link> : null}
+          </>}
         </section>
 
         <section className="admin-panel admin-recent-orders">

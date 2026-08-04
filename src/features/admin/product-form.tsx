@@ -140,7 +140,13 @@ export function ProductPublishForm({
   )
 }
 
-export function DeleteProductForm({ onDelete }: { onDelete: () => Promise<ProductActionResult> }) {
+// Deleting lives on the edit page only, so a mis-tap in the product list can
+// never remove a product; `redirectTo` sends the owner back to the list.
+export function DeleteProductForm({ onDelete, label = '刪除', redirectTo }: {
+  onDelete: () => Promise<ProductActionResult>
+  label?: string
+  redirectTo?: string
+}) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   return <form data-confirm="danger" onSubmit={(event) => {
@@ -148,9 +154,9 @@ export function DeleteProductForm({ onDelete }: { onDelete: () => Promise<Produc
     startTransition(async () => {
       const nextResult = await onDelete()
       showToast(nextResult.message ?? (nextResult.ok ? '商品已刪除' : '刪除失敗'), nextResult.ok)
-      if (nextResult.ok) window.setTimeout(() => router.refresh(), 600)
+      if (nextResult.ok) window.setTimeout(() => redirectTo ? router.push(redirectTo) : router.refresh(), 600)
     })
-  }}><button className="admin-inline-action admin-delete-action" disabled={pending} type="submit">{pending ? '刪除中…' : '刪除'}</button></form>
+  }}><button className="admin-inline-action admin-delete-action" disabled={pending} type="submit">{pending ? '刪除中…' : label}</button></form>
 }
 
 export function DeleteProductImageForm({
