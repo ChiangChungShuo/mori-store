@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { canTransitionOrder, getOrderJourney, orderJourneySteps, orderStatusLabels } from '@/features/orders/status'
 import { getAdminOrder, replyToCustomer, updateOrderStatus } from '@/features/admin/order-actions'
 import { OrderReplyForm } from '@/features/admin/order-reply-form'
+import { CopyTextButton } from '@/features/admin/copy-text-button'
 import { formatTwd } from '@/lib/money'
 import { formatTaipeiDateTime } from '@/lib/date-time'
 import type { OrderStatus } from '@/types/store'
@@ -31,13 +32,28 @@ export default async function AdminOrderPage({
   const order = await getAdminOrder(decodeURIComponent(orderNumber))
   if (!order) notFound()
   const journey = getOrderJourney(order.status, order.createdAt)
+  // One block to paste into 賣貨便 / LINE when arranging the shipment.
+  const shippingBlock = [
+    order.orderNumber,
+    `${order.recipientName}　${order.recipientPhone}`,
+    `${storeChainLabels[order.storeChain] ?? order.storeChain} ${order.storeName}（${order.storeId}）`,
+    ...order.items.map((item) => `${item.productName} ${item.color}／${item.size} ×${item.quantity}`),
+    `合計 ${formatTwd(order.total)}`,
+  ].join('\n')
 
   return (
     <main className="section admin-order-detail">
       <p className="admin-back-link"><Link href="/admin/orders">← 返回訂單列表</Link></p>
       <header className="admin-page-heading">
         <div><p className="eyebrow">order detail</p><h1>{order.orderNumber}</h1></div>
-        <div className="admin-order-heading-meta"><span className="status-badge" data-status={order.status}>{orderStatusLabels[order.status]}</span><small>{formatTaipeiDateTime(order.createdAt)}</small></div>
+        <div className="admin-order-heading-meta">
+          <span className="status-badge" data-status={order.status}>{orderStatusLabels[order.status]}</span>
+          <small>{formatTaipeiDateTime(order.createdAt)}</small>
+          <div className="admin-order-heading-actions">
+            <CopyTextButton label="複製訂單編號" text={order.orderNumber} />
+            <CopyTextButton label="複製寄件資訊" text={shippingBlock} />
+          </div>
+        </div>
       </header>
 
       <section className="admin-panel admin-fulfillment-card">

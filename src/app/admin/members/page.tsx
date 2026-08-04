@@ -16,7 +16,7 @@ export default async function AdminMembersPage() {
       </header>
 
       <section className="admin-metrics admin-metrics-compact">
-        <article className="metric-feature"><p>顧客數</p><strong>{members.length}</strong><small>包含會員與訪客購買者</small></article>
+        <article><p>顧客數</p><strong>{members.length}</strong><small>包含會員與訪客購買者</small></article>
         <article><p>累計貢獻</p><strong>{formatTwd(totalValue)}</strong><small>已付款以上訂單</small></article>
         <article><p>VIP 會員</p><strong>{members.filter((member) => member.tier === 'canopy').length}</strong><small>樹冠等級</small></article>
       </section>

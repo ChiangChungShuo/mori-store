@@ -27,6 +27,7 @@ type ActionResult = {
 export type AdminProductSummary = {
   id: string
   name: string
+  slug: string
   category: string
   isPublished: boolean
   totalStock: number
@@ -71,6 +72,7 @@ export function listFixtureAdminProducts(): AdminProductSummary[] {
   return getMutableE2EProducts().map((product) => ({
     id: product.id,
     name: product.name,
+    slug: product.slug,
     category: product.category,
     isPublished: store.publishedProductIds.has(product.id),
     totalStock: product.variants.reduce((total, variant) => total + variant.stock, 0),
@@ -765,7 +767,7 @@ export async function listAdminProducts(): Promise<AdminProductSummary[]> {
   const { data, error } = await createAdminClient()
     .from('products')
     .select(`
-      id, name, category, is_published, available_at,
+      id, name, slug, category, is_published, available_at,
       product_images(storage_path, alt_text, position),
       product_variants(stock, cost)
     `)
@@ -778,6 +780,7 @@ export async function listAdminProducts(): Promise<AdminProductSummary[]> {
     return {
       id: record.id,
       name: record.name,
+      slug: record.slug,
       category: record.category,
       isPublished: record.is_published,
       totalStock: record.product_variants.reduce((total, variant) => total + variant.stock, 0),

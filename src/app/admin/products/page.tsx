@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { FilterClearLink } from '@/components/filter-clear-link'
 import { filterAdminProductSummaries, listAdminProducts, setProductPublished, type AdminProductFilters } from '@/features/admin/product-actions'
 import { ProductPublishForm } from '@/features/admin/product-form'
+import { CopyTextButton } from '@/features/admin/copy-text-button'
+import { absoluteUrl } from '@/lib/site'
 import { formatTwd } from '@/lib/money'
 import { listProductCategories } from '@/features/catalog/categories'
 import { listProductDrafts, deleteProductDraftFromForm } from '@/features/admin/product-drafts'
@@ -96,7 +98,7 @@ export default async function AdminProductsPage({
                   {product.totalStock <= 5 && <strong> 低庫存</strong>}
                 </td>
                 <td>{formatTwd(product.inventoryCost)}</td>
-                <td><div className="admin-product-actions"><Link className="admin-inline-action" href={`/admin/products/${product.id}/edit`}>編輯</Link><ProductPublishForm compact isPublished={product.isPublished} onToggle={setProductPublished.bind(null, product.id)} /></div></td>
+                <td><div className="admin-product-actions"><Link className="admin-inline-action" href={`/admin/products/${product.id}/edit`}>編輯</Link><ProductPublishForm compact isPublished={product.isPublished} onToggle={setProductPublished.bind(null, product.id)} /><CopyTextButton copiedLabel="已複製連結" label="複製連結" text={absoluteUrl(`/products/${product.slug}`)} /></div></td>
               </tr>
             ))}
           </tbody>

@@ -778,7 +778,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-sidebar-actions a:hover, .admin-sidebar-actions button:hover { background: rgb(255 255 255 / 10%); color: var(--white); }
 .admin-sidebar-actions a { text-decoration: none; }
 .admin-workspace { min-width: 0; min-height: 100vh; margin-left: 15rem; }
-.admin-workspace > .section { width: min(100% - 4rem, 82rem); padding-block: 3rem 5rem; }
+.admin-workspace > .section { width: min(100% - 2.5rem, 96rem); padding-block: 2rem 4rem; }
 .admin-page-heading { display: flex; justify-content: space-between; gap: 2rem; align-items: flex-end; margin-bottom: 2rem; }
 .admin-page-heading h1 { margin: 0; color: var(--forest); font-family: Georgia, "Noto Serif TC", serif; font-size: clamp(1.75rem, 2.9vw, 2.5rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; }
 .admin-page-actions { display: flex; gap: 0.5rem; align-items: center; }
@@ -829,7 +829,12 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-popular-products li strong { font-size: 0.78rem; }
 .admin-popular-products li em { color: var(--muted); font-size: 0.68rem; font-style: normal; }
 .admin-order-heading-meta { display: grid; justify-items: end; gap: 0.5rem; }
-.admin-order-heading-meta small { color: var(--muted); }
+.admin-order-heading-meta small { color: var(--muted); font-size: 0.75rem; }
+.admin-order-heading-actions { display: flex; flex-wrap: wrap; gap: 0.45rem; justify-content: flex-end; }
+.admin-inline-action[data-copied="true"] { border-color: var(--moss); background: color-mix(in srgb, var(--forest) 8%, var(--white)); }
+.admin-inline-action svg { margin-right: 0.3rem; flex: none; }
+/* Status transitions read as choices, not as a wall of dark blocks. */
+.payment-actions .button { min-height: 2.75rem; border-radius: 999px; padding: 0.55rem 1.3rem; font-size: 0.78rem; }
 .admin-fulfillment-card { margin-bottom: 1.25rem; }
 .admin-fulfillment-card > header > strong { color: var(--forest); font-size: 0.78rem; }
 .admin-order-journey { display: grid; grid-template-columns: repeat(5, 1fr); margin: 0 0 1.5rem; padding: 0; list-style: none; }
@@ -844,10 +849,10 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-detail-grid .order-result, .admin-order-items-panel .order-result { max-width: none; }
 .admin-order-items-panel .admin-table-scroll { margin-bottom: 1rem; }
 .admin-table-scroll { width: 100%; overflow-x: auto; margin-block: 1.25rem 2.5rem; }
-.admin-product-table { width: 100%; border-collapse: collapse; background: var(--white); font-size: 0.82rem; }
+.admin-product-table { width: 100%; border-collapse: collapse; background: var(--white); font-size: 0.9rem; }
 .admin-table-scroll .admin-product-table { min-width: 42rem; }
-.admin-product-table th, .admin-product-table td { padding: 0.9rem 1rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
-.admin-product-table thead { background: var(--forest); color: var(--white); font-size: 0.72rem; letter-spacing: 0.05em; }
+.admin-product-table th, .admin-product-table td { padding: 0.95rem 1.05rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+.admin-product-table thead { background: var(--forest); color: var(--white); font-size: 0.78rem; letter-spacing: 0.04em; }
 .admin-product-table tbody th { color: var(--forest); }
 .admin-product-table tbody tr { transition: background 150ms ease; }
 .admin-product-table tbody tr:hover { background: #f4f5f6; }
@@ -897,15 +902,54 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-series-chips button { display: inline-flex; gap: 0.35rem; align-items: center; min-height: 2.4rem; border: 1px dashed var(--sage); border-radius: 999px; background: var(--oat); color: var(--forest); padding: 0.35rem 0.9rem; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: background 150ms ease, color 150ms ease, border-color 150ms ease; }
 .admin-series-chips button:hover { border-color: var(--forest); }
 .admin-series-chips button[data-selected="true"] { border-style: solid; border-color: var(--forest); background: var(--forest); color: var(--white); }
-.admin-product-filters { display: grid; grid-template-columns: 1.4fr repeat(3, minmax(8rem, 1fr)) auto; gap: 0.75rem; align-items: end; margin: 1rem 0 1.5rem; border: 1px solid var(--line); background: var(--white); padding: 1rem; }
-.admin-product-filters label { display: grid; gap: 0.35rem; color: var(--forest); font-size: 0.66rem; font-weight: 800; }
-.admin-product-filters input, .admin-product-filters select { min-height: 2.65rem; border: 1px solid var(--sand); background: var(--paper); padding: 0.55rem 0.65rem; }
-.admin-product-filters .filter-actions { flex-wrap: nowrap; gap: 0.5rem; }
-.admin-product-filters .button, .admin-product-filters .filter-clear-button { min-height: 2.65rem; padding: 0.55rem 0.8rem; white-space: nowrap; }
+/* One filter bar style for every admin list: equal field widths, one control
+   height, pill actions. The two bars used to differ in height, border colour
+   and background, which read as a misalignment. */
+.admin-product-filters, .admin-workspace .product-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 0.75rem 0.9rem;
+  align-items: end;
+  margin: 1rem 0 1.5rem;
+  border: 1px solid #e0e6ea;
+  border-radius: 1.1rem;
+  background: var(--white);
+  padding: 1.1rem 1.2rem;
+  box-shadow: 0 0.5rem 1.4rem rgb(64 77 94 / 5%);
+}
+.admin-workspace .product-filters { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto; }
+.admin-product-filters label, .admin-workspace .product-filters label { display: grid; gap: 0.4rem; color: var(--forest); font-size: 0.74rem; font-weight: 800; }
+.admin-product-filters input, .admin-product-filters select,
+.admin-workspace .product-filters input, .admin-workspace .product-filters select {
+  width: 100%;
+  min-height: 2.85rem;
+  border: 1px solid #d5dde2;
+  border-radius: 0.7rem;
+  background: var(--white);
+  padding: 0.55rem 0.85rem;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+.admin-product-filters input:focus-visible, .admin-product-filters select:focus-visible,
+.admin-workspace .product-filters input:focus-visible, .admin-workspace .product-filters select:focus-visible {
+  border-color: var(--forest);
+  box-shadow: 0 0 0 3px rgb(106 127 144 / 16%);
+  outline: none;
+}
+.admin-product-filters .filter-actions, .admin-workspace .product-filters .filter-actions { display: flex; flex-wrap: nowrap; gap: 0.5rem; align-self: end; }
+.admin-product-filters .button, .admin-product-filters .filter-clear-button,
+.admin-workspace .product-filters .button, .admin-workspace .product-filters .filter-clear-button {
+  min-height: 2.85rem;
+  border-radius: 999px;
+  padding: 0.55rem 1.15rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
 .admin-product-table tbody th > span, .admin-product-table tbody th > small { display: block; }
-.admin-product-table tbody th > small { margin-top: 0.25rem; color: var(--muted); font-size: 0.62rem; font-weight: 500; }
+.admin-product-table tbody th > small { margin-top: 0.25rem; color: var(--muted); font-size: 0.72rem; font-weight: 500; }
 .admin-product-actions { display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; }
-.admin-inline-action { display: inline-flex; min-height: 2rem; align-items: center; justify-content: center; border: 1px solid var(--forest); background: transparent; color: var(--forest); padding: 0.3rem 0.65rem; font-size: 0.65rem; font-weight: 800; text-decoration: none; transition: background 150ms ease, color 150ms ease, transform 150ms ease; }
+.admin-inline-action { display: inline-flex; min-height: 2.3rem; align-items: center; justify-content: center; border: 1px solid var(--forest); border-radius: 999px; background: transparent; color: var(--forest); padding: 0.35rem 0.9rem; font-size: 0.74rem; font-weight: 800; text-decoration: none; transition: background 150ms ease, color 150ms ease, transform 150ms ease; }
 .admin-inline-action:hover { background: var(--forest); color: var(--white); transform: translateY(-1px); }
 .admin-danger-zone { display: flex; justify-content: space-between; gap: 1.5rem; align-items: center; margin-top: 1.25rem; border: 1px solid #e6d9d8; border-radius: 1.1rem; background: #fdf7f6; padding: 1.1rem 1.3rem; }
 .admin-danger-zone strong { color: #8f4c47; font-size: 0.82rem; }
