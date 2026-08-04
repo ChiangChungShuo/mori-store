@@ -9,8 +9,10 @@ import { defaultProductCategories } from '@/features/catalog/category-defaults'
 import { AGE_BANDS } from '@/lib/age-bands'
 import { PREORDER_TAG, PREORDER_STOCK, isPreorder } from '@/lib/preorder'
 import { ConfirmModal } from '@/components/confirm-modal'
+import { UnsavedChangesGuard } from '@/features/admin/unsaved-changes-guard'
 import { showToast } from '@/components/toast'
 import { compressImagesForUpload } from '@/lib/image-compression'
+import { applyStoredWatermark } from '@/lib/image-watermark'
 import type { SaveDraftState } from '@/features/admin/product-drafts'
 import type { ProductSeries } from '@/features/catalog/product-series'
 import { priceProductBundle } from '@/features/cart/bundle-pricing'
@@ -264,6 +266,9 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
   )
   const [minimumAvailableAt] = useState(() => toDateTimeLocalValue(new Date()))
   const imagePreviewsRef = useRef<string[]>([])
+  // Baseline for the leave-without-saving warning; refreshed after each save.
+  const [savedSnapshot, setSavedSnapshot] = useState(() => JSON.stringify({ ...initialProduct, seriesIds: initialProduct.seriesIds ?? [], quantityPrices: initialProduct.quantityPrices ?? [] }))
+  const dirty = JSON.stringify(product) !== savedSnapshot || imageFiles.length > 0
   const availableSeries = series
     .filter((item) => item.categoryName === product.category)
     .sort((first, second) => first.position - second.position)
@@ -380,6 +385,9 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
       }
       if (outcome.ok) {
         setResult(null)
+        // Saved, so leaving the page is safe again.
+        setSavedSnapshot(JSON.stringify(finalProduct))
+        setImageFiles([])
         showToast(outcome.message ?? (requireImage ? '商品已建立，先保留為草稿' : '商品修改已儲存'))
         // The draft has become a real product — clean it (and its images) up.
         if (draftId && discardDraft) { try { await discardDraft(draftId) } catch { /* ignore */ } }
@@ -556,6 +564,7 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
 
   return (
     <form className="admin-product-form" data-no-confirm onSubmit={submit} noValidate>
+      <UnsavedChangesGuard dirty={dirty} />
       {requireImage ? <div className="admin-product-progress"><div className="admin-product-steps" aria-label="商品建立流程"><span data-active={activeStep === 1} data-complete={activeStep > 1}>01 商品內容</span><span data-active={activeStep === 2} data-complete={activeStep > 2}>02 規格庫存</span><span data-active={activeStep === 3} data-complete={activeStep > 3}>03 商品圖片</span><span data-active={activeStep === 4}>04 確認建立</span></div><div aria-label="商品建立進度" aria-valuemax={100} aria-valuemin={0} aria-valuenow={Math.round(progress)} className="admin-product-progress-meter" role="progressbar"><i style={{ width: `${progress}%` }} /></div></div> : null}
       <div className="admin-product-form-layout">
         <div className="admin-product-form-main">
@@ -646,14 +655,16 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
                 setCompressing(true)
                 // Shrink phone/tablet photos before preview or upload: full-size
                 // originals exhaust tablet memory and exceed the upload limit.
-                void compressImagesForUpload(selected).then((files) => {
-                  imagePreviews.forEach((preview) => URL.revokeObjectURL(preview))
-                  setImageFiles(files)
-                  setImagePreviews(files.map((file) => URL.createObjectURL(file)))
-                  setImageColors(files.map(() => null))
-                  setDraftImages([])
-                  setCompressing(false)
-                })
+                void compressImagesForUpload(selected)
+                  .then((files) => Promise.all(files.map(applyStoredWatermark)))
+                  .then((files) => {
+                    imagePreviews.forEach((preview) => URL.revokeObjectURL(preview))
+                    setImageFiles(files)
+                    setImagePreviews(files.map((file) => URL.createObjectURL(file)))
+                    setImageColors(files.map(() => null))
+                    setDraftImages([])
+                    setCompressing(false)
+                  })
               }} />
               {compressing ? <><b>⋯</b><strong>正在處理圖片…</strong><span>大張照片會自動縮小，請稍候</span></> : imagePreviews[0] ? <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -20,18 +20,14 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
         <nav className="report-tabs"><Link aria-current={view === 'day' ? 'page' : undefined} href="/admin/reports?view=day">每日</Link><Link aria-current={view === 'month' ? 'page' : undefined} href="/admin/reports?view=month">每月</Link></nav>
       </header>
 
+      {/* Four headline numbers only. 造訪／加購／開始結帳 are already listed
+          stage by stage in the funnel panel, and 需要補貨 is the stock panel's
+          own count, so a second metric row was pure duplication. */}
       <section className="admin-metrics admin-metrics-compact">
         <article className="metric-feature"><p>有效營收</p><strong>{formatTwd(report.revenue)}</strong><small>排除待付款與取消訂單</small></article>
         <article><p>訂單數</p><strong>{report.orderCount}</strong><small>已付款以上</small></article>
         <article><p>平均客單價</p><strong>{formatTwd(average)}</strong><small>有效營收 ÷ 訂單</small></article>
-      </section>
-
-      <section className="admin-metrics admin-traffic-metrics" aria-label="營運數據摘要">
-        <article><p>造訪人數</p><strong>{insights.uniqueVisitors}</strong><small>不重複的瀏覽工作階段</small></article>
-        <article><p>加入購物車</p><strong>{insights.purchaseFunnel[1].sessions}</strong><small>有加入商品的購物工作階段</small></article>
-        <article><p>開始結帳</p><strong>{insights.purchaseFunnel[2].sessions}</strong><small>已進入填寫資料流程</small></article>
         <article><p>購物車放棄率</p><strong>{insights.cartAbandonmentRate}%</strong><small>加入購物車但未完成購買</small></article>
-        <article><p>需要補貨</p><strong>{replenishment.length}</strong><small>總庫存 5 件以下的商品</small></article>
       </section>
 
       <div className="admin-dashboard-grid report-grid">
