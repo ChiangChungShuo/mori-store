@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { useCart } from '@/features/cart/cart-provider'
+import { splitProductDisplayName } from '@/features/catalog/product-presentation'
 import type { OrderSubmissionResult, PaymentMethod } from '@/features/checkout/types'
 
 type ConfirmItem = { productName: string; color: string; size: string; quantity: number }
@@ -65,23 +66,31 @@ export function OrderSubmitPanel({
 
       {confirmOpen ? (
         <div className="confirm-modal-backdrop" role="presentation" onClick={() => !pending && setConfirmOpen(false)}>
-          <div className="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title" onClick={(event) => event.stopPropagation()}>
-            <p className="confirm-modal-kicker">order confirmation</p>
-            <h2 id="confirm-modal-title">請務必再次確認【付款方式、商品顏色尺寸數量】</h2>
-            <div className="confirm-modal-facts">
-              <p><span>付款方式</span><strong>{paymentMethodLabels[paymentMethod]}</strong></p>
-            </div>
-            <ul className="confirm-modal-items">
-              {items.map((item, index) => (
-                <li key={`${item.productName}-${index}`}>
-                  <span>{item.productName}</span>
-                  <small>{item.color}／尺寸 {item.size}　×{item.quantity}</small>
-                </li>
-              ))}
+          <div className="confirm-modal order-confirm" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title" onClick={(event) => event.stopPropagation()}>
+            <header className="order-confirm-head">
+              <h2 id="confirm-modal-title">送出前再看一眼</h2>
+              <p>訂單成立後就無法修改付款方式與商品內容了。</p>
+            </header>
+            <p className="order-confirm-payment"><span>付款方式</span><strong>{paymentMethodLabels[paymentMethod]}</strong></p>
+            <ul className="order-confirm-items">
+              {items.map((item, index) => {
+                const { series, title } = splitProductDisplayName(item.productName)
+                return (
+                  <li key={`${item.productName}-${index}`}>
+                    <span className="order-confirm-item-name">
+                      {series ? <small>{series}</small> : null}
+                      <strong>{title}</strong>
+                      <small>{item.color}／尺寸 {item.size}</small>
+                    </span>
+                    <span className="order-confirm-qty">×{item.quantity}</span>
+                  </li>
+                )
+              })}
             </ul>
-            <p className="confirm-modal-warning">⚠ 訂單一旦成立後，恕無法為您合併訂單或修改購物金折抵金額。</p>
-            <label className="confirm-modal-ack">
+            <p className="order-confirm-note">訂單成立後恕無法合併訂單或修改購物金折抵金額。</p>
+            <label className="order-confirm-ack" data-checked={acknowledged}>
               <input type="checkbox" checked={acknowledged} onChange={(event) => setAcknowledged(event.target.checked)} />
+              <span aria-hidden="true" className="order-confirm-tick" />
               我已確認付款方式與商品顏色、尺寸、數量無誤
             </label>
             <div className="confirm-modal-actions">

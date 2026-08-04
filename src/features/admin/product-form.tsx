@@ -240,6 +240,9 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
   const [product, setProduct] = useState<ProductInput>({ ...initialProduct, seriesIds: initialProduct.seriesIds ?? [], quantityPrices: initialProduct.quantityPrices ?? [] })
   const [draftId, setDraftId] = useState<string | null>(initialDraftId)
   const [preorder, setPreorder] = useState(isPreorder(initialProduct.tags))
+  // Keep the raw text so typing a separator (、 or ，) is not swallowed by the
+  // parse-then-rejoin round trip. 預購 rides on product.tags, not in this box.
+  const [tagsText, setTagsText] = useState(() => (initialProduct.tags ?? []).filter((tag) => tag !== PREORDER_TAG).join('、'))
   const [pendingSave, setPendingSave] = useState<ProductInput | null>(null)
   const [slugEdited, setSlugEdited] = useState(Boolean(initialProduct.slug))
   const [result, setResult] = useState<ProductActionResult | null>(null)
@@ -407,10 +410,25 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
     })
   }
 
+  function parseTags(value: string) {
+    return value.split(/[,，、\n]/).map((tag) => tag.trim()).filter(Boolean).slice(0, 20)
+  }
+
   function setTags(value: string) {
     setResult(null)
-    const tags = value.split(/[,，、\n]/).map((tag) => tag.trim()).filter(Boolean).slice(0, 20)
-    setProduct((current) => ({ ...current, tags }))
+    setTagsText(value)
+    const tags = parseTags(value)
+    setProduct((current) => ({
+      ...current,
+      tags: preorder ? [...tags.filter((tag) => tag !== PREORDER_TAG), PREORDER_TAG] : tags,
+    }))
+  }
+
+  function toggleTagPreset(tag: string) {
+    const existing = parseTags(tagsText)
+    setTags(existing.includes(tag)
+      ? existing.filter((item) => item !== tag).join('、')
+      : [...existing, tag].join('、'))
   }
 
   function handleSaveDraft() {
@@ -564,7 +582,11 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
               <label className="admin-field-wide">實際平量、模特兒與版型資訊<textarea aria-label="尺寸指南" aria-invalid={attempted && Boolean(result?.fieldErrors?.sizeGuide)} value={product.sizeGuide} onChange={(event) => setText('sizeGuide', event.target.value)} placeholder={'例：\n版型：正常版型；喜歡寬鬆可拿大一號\n模特兒：身高 105 cm／體重 16 kg／穿 110\n90：衣長 38／胸寬 35 cm\n100：衣長 41／胸寬 37 cm'} rows={7} required />{result?.fieldErrors?.sizeGuide && <small>{result.fieldErrors.sizeGuide[0]}</small>}<small className="admin-field-hint">請依品項填衣長、胸寬、腰寬、褲長等實際平量，並補上模特兒身高、體重與穿著尺寸。</small></label>
               <label className="admin-field-wide">洗滌說明<textarea aria-invalid={attempted && Boolean(result?.fieldErrors?.careInstructions)} value={product.careInstructions} onChange={(event) => setText('careInstructions', event.target.value)} placeholder="例：反面裝洗衣袋，冷水柔洗並自然晾乾" rows={3} required />{result?.fieldErrors?.careInstructions && <small>{result.fieldErrors.careInstructions[0]}</small>}</label>
               {carePresets.length ? <div className="admin-preset-chips admin-field-wide"><span>常用洗滌說明：</span>{carePresets.map((preset) => <button type="button" key={preset} onClick={() => applyPreset('careInstructions', preset)}>＋ {preset}</button>)}</div> : null}
-              <label className="admin-field-wide">標籤（選填）<input aria-invalid={attempted && Boolean(result?.fieldErrors?.tags)} value={(product.tags ?? []).join('、')} onChange={(event) => setTags(event.target.value)} placeholder="例：熱賣、休閒、夏日、純棉（用、或逗號分隔）" />{result?.fieldErrors?.tags && <small>{result.fieldErrors.tags[0]}</small>}<small className="admin-field-hint">用頓號或逗號分隔，最多 20 個；加入「熱賣」後，商品會出現在前台的「本週熱賣」，商品卡也會標上熱賣標籤。</small></label>
+              <label className="admin-field-wide">標籤（選填）<input aria-invalid={attempted && Boolean(result?.fieldErrors?.tags)} value={tagsText} onChange={(event) => setTags(event.target.value)} placeholder="例：熱賣、休閒、夏日、純棉（用、或逗號分隔）" />{result?.fieldErrors?.tags && <small>{result.fieldErrors.tags[0]}</small>}<small className="admin-field-hint">用頓號或逗號分隔，最多 20 個；加入「熱賣」後，商品會出現在前台的「本週熱賣」，商品卡也會標上熱賣標籤。</small></label>
+              <div className="admin-preset-chips admin-field-wide"><span>快選標籤：</span>{['熱賣', '新品', '補貨到', '限量'].map((tag) => {
+                const active = parseTags(tagsText).includes(tag)
+                return <button type="button" key={tag} data-active={active} onClick={() => toggleTagPreset(tag)}>{active ? '✓' : '＋'} {tag}</button>
+              })}</div>
             </div>
           </section>
 

@@ -25,7 +25,6 @@ export function ConfirmModal({
   return (
     <div className="confirm-modal-backdrop" role="presentation" onClick={() => { if (!pending) onCancel() }}>
       <div className="confirm-modal confirm-modal-compact" data-tone={tone} role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title" onClick={(event) => event.stopPropagation()}>
-        <span aria-hidden="true" className="confirm-modal-mark">{tone === 'danger' ? '⌫' : '✓'}</span>
         <h2 id="confirm-dialog-title">{title}</h2>
         {message ? <p className="confirm-modal-message">{message}</p> : null}
         <div className="confirm-modal-actions">
