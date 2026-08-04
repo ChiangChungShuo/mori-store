@@ -65,6 +65,32 @@ export function createE2EOrderRepository(store: E2EStoreState):
         .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
         .map(ownerOrder)
     },
+    async listOrderExports(filters) {
+      const term = filters.query.toLocaleLowerCase('zh-TW')
+      return [...store.orders.values()]
+        .filter((order) => !filters.status || order.status === filters.status)
+        .filter((order) => !term || [order.orderNumber, order.recipientName, order.email]
+          .some((value) => value.toLocaleLowerCase('zh-TW').includes(term)))
+        .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+        .map((order) => ({
+          ...ownerOrder(order),
+          recipientPhone: order.recipientPhone,
+          storeChain: order.storeChain,
+          storeId: order.storeId,
+          storeName: order.storeName,
+          customerNote: order.customerNote,
+          merchantReply: order.merchantReply,
+          paymentMethod: order.paymentMethod,
+          bankTransferLastFive: order.bankTransferLastFive ?? null,
+          bankTransferSubmittedAt: order.bankTransferSubmittedAt ?? null,
+          subtotal: order.subtotal,
+          shippingFee: order.shippingFee,
+          items: order.items.map(({ id, productName, sku, color, size, unitPrice, quantity }) => ({
+            id, productName, sku, color, size, unitPrice, quantity,
+          })),
+          payment: null,
+        }))
+    },
     async getOrder(orderNumber) {
       const order = store.orders.get(orderNumber)
       return order ? {

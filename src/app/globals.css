@@ -782,6 +782,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-page-heading { display: flex; justify-content: space-between; gap: 2rem; align-items: flex-end; margin-bottom: 2rem; }
 .admin-page-heading h1 { margin: 0; color: var(--forest); font-family: Georgia, "Noto Serif TC", serif; font-size: clamp(1.75rem, 2.9vw, 2.5rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; }
 .admin-page-actions { display: flex; gap: 0.5rem; align-items: center; }
+.admin-page-lead { margin: -1.25rem 0 1.5rem; color: var(--muted); font-size: 0.8rem; line-height: 1.7; }
 .admin-page-actions .button { min-height: 2.5rem; border-radius: 999px; padding: 0.45rem 1.1rem; font-size: 0.72rem; }
 .admin-page-actions .admin-inline-action { min-height: 2.5rem; border-radius: 999px; padding: 0.45rem 1rem; font-size: 0.7rem; }
 .admin-page-heading > p { max-width: 22rem; margin: 0; color: var(--muted); font-size: 0.78rem; text-align: right; }
@@ -831,6 +832,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-order-heading-meta { display: grid; justify-items: end; gap: 0.5rem; }
 .admin-order-heading-meta small { color: var(--muted); font-size: 0.75rem; }
 .admin-order-heading-actions { display: flex; flex-wrap: wrap; gap: 0.45rem; justify-content: flex-end; }
+.admin-order-row-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .admin-inline-action[data-copied="true"] { border-color: var(--moss); background: color-mix(in srgb, var(--forest) 8%, var(--white)); }
 .admin-inline-action svg { margin-right: 0.3rem; flex: none; }
 /* Status transitions read as choices, not as a wall of dark blocks. */
@@ -1019,12 +1021,21 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-form-card > header h2 { margin: 0; color: var(--forest); font-family: Georgia, "Noto Serif TC", serif; font-size: 1.45rem; font-weight: 400; }
 .admin-form-card > header p { max-width: 25rem; margin: 0; color: var(--muted); font-size: 0.68rem; text-align: right; }
 .admin-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-.admin-form-grid label, .admin-form-field { display: grid; gap: 0.4rem; color: var(--forest); font-size: 0.7rem; font-weight: 800; }
+/* `align-content: start` is the fix for the 分類 select sitting lower than the
+   input beside it: these wrappers stretch to the tallest cell in the row, and
+   auto rows default to stretching that spare height across every row. */
+.admin-form-grid label, .admin-form-field { display: grid; gap: 0.4rem; align-content: start; color: var(--forest); font-size: 0.7rem; font-weight: 800; }
 .admin-form-grid input, .admin-form-grid select, .admin-form-grid textarea { width: 100%; min-width: 0; min-height: 2.9rem; border: 1px solid #d5d7da; border-radius: 0; background: #fbfbfb; padding: 0.65rem 0.75rem; color: var(--ink); resize: vertical; }
 .admin-form-grid input:focus, .admin-form-grid select:focus, .admin-form-grid textarea:focus { border-color: var(--forest); background: var(--white); outline: 0; box-shadow: inset 0 0 0 1px var(--forest); }
 .admin-form-grid input[aria-invalid="true"], .admin-form-grid select[aria-invalid="true"], .admin-form-grid textarea[aria-invalid="true"] { border-color: #ad7075; background: #fdfbfb; box-shadow: inset 0 0 0 1px #ad7075; }
 .admin-form-grid small, .admin-age-fieldset > small { color: #a15954; }
 .admin-form-grid .admin-field-hint { color: var(--muted); font-weight: 500; }
+/* 分類 wraps its own <label>, which is a taller line box than the plain text
+   labels beside it, and a bare <select> grows past the input's min-height —
+   together they pushed the select 8px down and made it 8px taller. Pin both. */
+.admin-form-field > label { display: block; margin: 0; font-size: inherit; font-weight: inherit; line-height: 1.6; }
+.admin-form-grid input:not([type="checkbox"]), .admin-form-grid select { height: 2.9rem; }
+.admin-form-grid textarea { height: auto; }
 .admin-field-link { justify-self: end; color: var(--moss); font-size: 0.62rem; font-weight: 800; text-decoration: none; }
 .admin-field-link:hover { color: var(--forest); text-decoration: underline; text-underline-offset: 0.2rem; }
 .admin-field-wide { grid-column: 1 / -1; }

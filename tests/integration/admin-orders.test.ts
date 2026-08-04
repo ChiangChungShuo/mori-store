@@ -177,6 +177,10 @@ describe('admin order queries', () => {
         events.push(`list:${filters.query}:${filters.status}`)
         return []
       },
+      async listOrderExports(filters) {
+        events.push(`export:${filters.query}:${filters.status}`)
+        return []
+      },
       async getOrder() {
         return null
       },
@@ -203,6 +207,7 @@ describe('admin order queries', () => {
     const events: string[] = []
     const repository: AdminOrderQueryRepository = {
       async listOrders() { return [] },
+      async listOrderExports() { return [] },
       async getOrder() { return null },
       async listPaymentAttemptsRequiringReview() {
         events.push('list-review')

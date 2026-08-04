@@ -98,6 +98,7 @@ export type AdminPaymentReviewDetail = AdminPaymentReviewSummary & {
 
 export interface AdminOrderQueryRepository {
   listOrders(filters: AdminOrderFilters): Promise<AdminOrderSummary[]>
+  listOrderExports(filters: AdminOrderFilters): Promise<AdminOrderDetail[]>
   getOrder(orderNumber: string): Promise<AdminOrderDetail | null>
   listPaymentAttemptsRequiringReview(): Promise<AdminPaymentReviewSummary[]>
   getPaymentAttemptForReview(attemptId: string): Promise<AdminPaymentReviewDetail | null>
@@ -121,6 +122,11 @@ export function createAdminOrderQueries(dependencies: AdminOrderQueryDependencie
     async listAdminOrders(filters: Partial<AdminOrderFilters> = {}) {
       await dependencies.requireAdmin()
       return dependencies.repository.listOrders(normalizeFilters(filters))
+    },
+
+    async listAdminOrderExports(filters: Partial<AdminOrderFilters> = {}) {
+      await dependencies.requireAdmin()
+      return dependencies.repository.listOrderExports(normalizeFilters(filters))
     },
 
     async getAdminOrder(orderNumber: string) {
@@ -367,6 +373,49 @@ function createSupabaseOrderQueryRepository(): AdminOrderQueryRepository {
       return ((data ?? []) as AdminOrderRow[]).map(toOrderSummary)
     },
 
+    async listOrderExports(filters) {
+      let query = (await client())
+        .from('orders')
+        .select(`
+          id, order_number, recipient_name, recipient_phone, email,
+          store_chain, store_id, store_name, customer_note, merchant_reply, payment_method, bank_transfer_last_five, bank_transfer_submitted_at, subtotal, shipping_fee, total, status, created_at,
+          order_items(id, product_name, sku, color, size, unit_price, quantity)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(1000)
+      if (filters.query) {
+        const term = filters.query.replace(/[,()]/g, ' ')
+        query = query.or(`order_number.ilike.%${term}%,recipient_name.ilike.%${term}%,email.ilike.%${term}%`)
+      }
+      if (filters.status) query = query.eq('status', filters.status)
+      const { data, error } = await query
+      if (error) throw error
+      return ((data ?? []) as unknown as AdminOrderRow[]).map((order) => ({
+        ...toOrderSummary(order),
+        recipientPhone: order.recipient_phone,
+        storeChain: order.store_chain,
+        storeId: order.store_id,
+        storeName: order.store_name,
+        customerNote: order.customer_note,
+        merchantReply: order.merchant_reply,
+        paymentMethod: order.payment_method,
+        bankTransferLastFive: order.bank_transfer_last_five,
+        bankTransferSubmittedAt: order.bank_transfer_submitted_at,
+        subtotal: order.subtotal,
+        shippingFee: order.shipping_fee,
+        items: (order.order_items ?? []).map((item) => ({
+          id: item.id,
+          productName: item.product_name,
+          sku: item.sku,
+          color: item.color,
+          size: item.size,
+          unitPrice: item.unit_price,
+          quantity: item.quantity,
+        })),
+        payment: null,
+      }))
+    },
+
     async getOrder(orderNumber) {
       const { data, error } = await (await client())
         .from('orders')
@@ -521,6 +570,10 @@ export async function listAdminOrders(filters: Partial<AdminOrderFilters> = {}) 
 
 export async function getAdminOrder(orderNumber: string) {
   return (await resolvedQueries()).getAdminOrder(orderNumber)
+}
+
+export async function listAdminOrderExports(filters: Partial<AdminOrderFilters> = {}) {
+  return (await resolvedQueries()).listAdminOrderExports(filters)
 }
 
 export async function listAdminPaymentReviews() {

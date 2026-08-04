@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useActionState } from 'react'
+import { useActionState, useRef } from 'react'
 import type { AdminOrderListState } from '@/features/admin/order-actions'
 import type { AdminPaymentReviewSummary } from '@/features/admin/order-actions'
 import { filterAdminOrders } from '@/features/admin/order-server-actions'
+import { OrderAdvanceButtons } from '@/features/admin/order-advance-button'
 import { formatTaipeiDateTime } from '@/lib/date-time'
 import { formatTwd } from '@/lib/money'
 import type { OrderStatus } from '@/types/store'
@@ -26,6 +27,8 @@ export function AdminOrderList({
   reviews: AdminPaymentReviewSummary[]
 }) {
   const [state, formAction, pending] = useActionState(filterAdminOrders, initialState)
+  // Re-running the filter is how the list picks up a status change made inline.
+  const filterFormRef = useRef<HTMLFormElement>(null)
 
   return (
     <>
@@ -60,7 +63,7 @@ export function AdminOrderList({
           </table></div>
         )}
       </section>
-      <form action={formAction} className="product-filters" data-no-confirm key={`${state.query}:${state.status}`}>
+      <form action={formAction} className="product-filters" data-no-confirm key={`${state.query}:${state.status}`} ref={filterFormRef}>
         <label>
           訂單編號、收件人或 Email
           <input defaultValue={state.query} name="query" type="search" />
@@ -91,6 +94,7 @@ export function AdminOrderList({
               <th scope="col">金額</th>
               <th scope="col">狀態</th>
               <th scope="col">成立時間</th>
+              <th scope="col">下一步</th>
             </tr>
           </thead>
           <tbody>
@@ -102,6 +106,7 @@ export function AdminOrderList({
                 <td data-label="金額">{formatTwd(order.total)}</td>
                 <td data-label="狀態"><span className="status-badge" data-status={order.status}>{statusLabels[order.status]}</span></td>
                 <td data-label="成立時間">{formatTaipeiDateTime(order.createdAt)}</td>
+                <td data-label="下一步"><OrderAdvanceButtons onDone={() => filterFormRef.current?.requestSubmit()} orderId={order.id} status={order.status} /></td>
               </tr>
             ))}
           </tbody>
