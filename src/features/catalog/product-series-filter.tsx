@@ -25,7 +25,6 @@ export function ProductSeriesFilter({
 
   return (
     <nav aria-label="商品系列" className="catalog-series">
-      <span className="catalog-series-label">選擇系列</span>
       <Link aria-current={!filters.series ? 'page' : undefined} href={seriesHref(filters)}>
         全部{filters.category}
       </Link>

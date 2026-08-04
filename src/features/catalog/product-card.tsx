@@ -56,7 +56,12 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
           <p className="product-card-options"><span><span className="sr-only">{colors.size} 種顏色</span><span aria-hidden="true">{colors.size} 色</span></span><span aria-hidden="true">・</span><span>尺寸 {sizeLabel}</span></p>
           <p className="product-price-group"><span className="product-price">{formatTwd(minimumPrice)}</span>{compareAtPrice > minimumPrice ? <del>{formatTwd(compareAtPrice)}</del> : null}</p>
         </div>
-        {bundleTier && bundleSaving > 0 ? <p className="product-card-bundle">買 {bundleTier.quantity} 件省 {formatTwd(bundleSaving)}・組合價 {formatTwd(bundleTier.bundlePrice)}</p> : null}
+        {bundleTier && bundleSaving > 0 ? (
+          <p className="product-card-bundle">
+            <strong>任 {bundleTier.quantity} 件 {formatTwd(bundleTier.bundlePrice)}</strong>
+            <span>省 {formatTwd(bundleSaving)}</span>
+          </p>
+        ) : null}
       </div>
     </article>
   )

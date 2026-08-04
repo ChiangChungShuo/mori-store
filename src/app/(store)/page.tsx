@@ -26,7 +26,7 @@ export default async function StoreHomePage() {
         <Link href="/products?view=ready"><span>ready to ship</span><strong>現貨快速出貨</strong><small>不用等預購，先挑現在有貨的尺寸</small></Link>
         <Link href="/products?view=preorder"><span>pre-order</span><strong>預購新品</strong><small>查看本季新款與預計出貨說明</small></Link>
         <Link href="/products?view=popular"><span>most loved</span><strong>本週熱賣</strong><small>大家最近正在看的熱門款式</small></Link>
-        <Link href="/products?view=series#series-browse"><span>mori series</span><strong>依系列挑選</strong><small>從 Flora、Lento 等系列開始逛</small></Link>
+        <Link href="/products#categories"><span>all categories</span><strong>依分類瀏覽</strong><small>上衣、褲裝、洋裝與更多品項</small></Link>
       </nav>
 
       <section id="ages" className="section" aria-labelledby="ages-title">
