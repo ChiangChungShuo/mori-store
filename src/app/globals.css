@@ -634,84 +634,90 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .demo-account strong { color: var(--forest); }
 .demo-account small { margin-top: 0.45rem; color: var(--muted); }
 
-.account-site { min-height: 100vh; background: #f3f7fa; }
-.account-topbar { display: flex; width: min(100% - 4rem, 84rem); min-height: 6.5rem; margin: auto; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e3e4; }
-.account-logo { display: block; width: 9rem; color: var(--forest); text-decoration: none; }
-.account-topbar nav { display: flex; gap: 1.5rem; }
-.account-topbar nav a { color: var(--forest); font-size: 0.72rem; font-weight: 800; text-decoration: none; }
-.account-layout { display: grid; grid-template-columns: 13.5rem minmax(0, 1fr); gap: clamp(2rem, 5vw, 5rem); padding-block: 3rem 6rem; }
-.account-sidebar { align-self: start; position: sticky; top: 1.5rem; padding-right: 1.5rem; border-right: 1px solid #e2e3e4; }
-.account-sidebar > .eyebrow { margin-bottom: 1rem; }
-.account-sidebar-user { display: flex; gap: 0.75rem; align-items: center; padding-bottom: 1.4rem; border-bottom: 1px solid #e2e3e4; }
-.account-sidebar-user > span { display: grid; width: 2.7rem; height: 2.7rem; flex: 0 0 auto; place-items: center; border-radius: 50%; background: var(--forest); color: var(--white); font-family: Georgia, serif; font-size: 1rem; }
+/* Member centre ---------------------------------------------------------------- */
+/* Same visual language as the storefront: rounded cards on a tinted page, soft
+   shadows instead of hard offsets, and one type scale shared with the shop. */
+.account-site { min-height: 100vh; background: #f2f6f8; }
+.account-topbar { display: flex; width: min(100% - 4rem, 84rem); min-height: 4.75rem; margin: auto; justify-content: space-between; align-items: center; }
+.account-logo { display: block; width: 3.4rem; color: var(--forest); text-decoration: none; }
+.account-topbar nav { display: flex; gap: 0.5rem; }
+.account-topbar nav a { border: 1px solid #dbe3e8; border-radius: 999px; background: var(--white); padding: 0.5rem 1rem; color: var(--forest); font-size: 0.72rem; font-weight: 800; text-decoration: none; transition: border-color 150ms ease, background 150ms ease; }
+.account-topbar nav a:hover { border-color: var(--forest); background: #e8f1f5; }
+.account-layout { display: grid; grid-template-columns: 15rem minmax(0, 1fr); gap: clamp(1.5rem, 3vw, 2.5rem); padding-block: 1.75rem 5rem; }
+
+.account-sidebar { align-self: start; position: sticky; top: 1.25rem; display: grid; gap: 0.9rem; border: 1px solid #e3eaee; border-radius: 1.1rem; background: var(--white); padding: 1.05rem 0.9rem; box-shadow: 0 0.6rem 1.6rem rgb(64 77 94 / 6%); }
+.account-sidebar-user { display: flex; gap: 0.7rem; align-items: center; padding: 0 0.25rem 0.9rem; border-bottom: 1px solid var(--line); }
+.account-sidebar-user > span { display: grid; width: 2.5rem; height: 2.5rem; flex: 0 0 auto; place-items: center; border-radius: 50%; background: var(--forest); color: var(--white); font-family: Georgia, serif; font-size: 1rem; }
 .account-sidebar-user div { display: grid; min-width: 0; }
-.account-sidebar-user strong { color: var(--forest); font-size: 0.78rem; }
-.account-sidebar-user small { overflow: hidden; color: var(--muted); font-size: 0.58rem; text-overflow: ellipsis; }
-.account-sidebar nav { display: grid; gap: 0.25rem; padding-block: 1.25rem; }
-.account-sidebar nav a { display: flex; gap: 0.7rem; align-items: center; padding: 0.7rem; color: #71757d; font-size: 0.75rem; font-weight: 700; text-decoration: none; }
-.account-sidebar nav a:hover { background: #eef0f1; color: var(--forest); }
-.account-sidebar nav span { display: grid; width: 1.6rem; height: 1.6rem; place-items: center; border: 1px solid #d0d2d5; border-radius: 50%; color: var(--forest); font-size: 0.58rem; }
-.account-sidebar form { border-top: 1px solid #e2e3e4; padding-top: 1rem; }
-.account-sidebar form button { border: 0; background: transparent; color: var(--muted); padding: 0.4rem 0.7rem; font-size: 0.7rem; text-decoration: underline; cursor: pointer; }
+.account-sidebar-user strong { overflow: hidden; color: var(--forest); font-size: 0.8rem; text-overflow: ellipsis; white-space: nowrap; }
+.account-sidebar-user small { overflow: hidden; color: var(--muted); font-size: 0.6rem; text-overflow: ellipsis; white-space: nowrap; }
+.account-nav { display: grid; gap: 0.15rem; }
+.account-nav a { display: flex; gap: 0.6rem; align-items: center; border-radius: 0.8rem; padding: 0.68rem 0.7rem; color: #6f7c86; font-size: 0.78rem; font-weight: 700; text-decoration: none; transition: background 150ms ease, color 150ms ease; }
+.account-nav a svg { width: 1.1rem; height: 1.1rem; flex: none; stroke: currentcolor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5; }
+.account-nav a:hover { background: var(--paper); color: var(--forest); }
+.account-nav a[aria-current="page"] { background: #e8f1f5; color: var(--forest); font-weight: 800; }
+.account-sidebar form { padding: 0 0.25rem; border-top: 1px solid var(--line); padding-top: 0.85rem; }
+.account-sidebar form button { width: 100%; border: 1px solid var(--line); border-radius: 999px; background: transparent; padding: 0.6rem 0.7rem; color: var(--muted); font-family: inherit; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: border-color 150ms ease, color 150ms ease; }
+.account-sidebar form button:hover { border-color: #d9b3b3; color: #a15954; }
 .account-content { min-width: 0; }
-.account-page { display: grid; gap: 1.25rem; }
-.account-page-heading { display: flex; justify-content: space-between; gap: 2rem; align-items: end; margin-bottom: 0.75rem; }
-.account-page-heading h1 { max-width: 38rem; margin: 0; color: var(--forest); font-family: Georgia, "Noto Serif TC", serif; font-size: clamp(2rem, 4vw, 3.35rem); font-weight: 400; letter-spacing: -0.04em; line-height: 1.08; }
-.account-page-heading > p { max-width: 22rem; margin: 0; color: var(--muted); font-size: 0.76rem; text-align: right; }
-.account-back { margin: 0; font-size: 0.7rem; }
+
+.account-page { display: grid; gap: 1.1rem; }
+.account-page-heading { display: grid; gap: 0.35rem; margin-bottom: 0.35rem; }
+.account-page-heading h1 { max-width: 38rem; margin: 0; color: var(--forest); font-family: Georgia, "Noto Serif TC", serif; font-size: clamp(1.7rem, 2.8vw, 2.35rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.2; }
+.account-page-heading > p { max-width: 34rem; margin: 0; color: var(--muted); font-size: 0.76rem; line-height: 1.7; }
+.account-back { margin: 0; font-size: 0.72rem; }
 .account-back a { text-decoration: none; }
-.member-pass { position: relative; display: grid; grid-template-columns: minmax(13rem, 1.25fr) minmax(20rem, 1.5fr) 7rem; gap: 1.5rem; min-height: 12rem; align-items: center; overflow: hidden; padding: 2rem; background: var(--forest); color: var(--white); box-shadow: 0.75rem 0.75rem 0 var(--sand); }
-.member-pass::after { position: absolute; right: -5rem; bottom: -8rem; width: 19rem; height: 19rem; border: 1px solid rgb(255 255 255 / 12%); border-radius: 50%; content: ""; }
+
+/* Membership card: one rounded panel, progress ring on the right. */
+.member-pass { position: relative; display: grid; grid-template-columns: minmax(9rem, 0.85fr) minmax(17rem, 1.6fr) 5.75rem; gap: 1.2rem; align-items: center; overflow: hidden; border-radius: 1.35rem; background: linear-gradient(135deg, #4f6272 0%, var(--forest) 58%, #3d4f5d 100%); padding: 1.5rem 1.6rem; color: var(--white); box-shadow: 0 0.9rem 2.2rem rgb(64 77 94 / 20%); }
+.member-pass::after { position: absolute; right: -6rem; bottom: -9rem; width: 19rem; height: 19rem; border: 1px solid rgb(255 255 255 / 14%); border-radius: 50%; content: ""; }
 .member-pass-identity { display: grid; gap: 0.2rem; }
-.member-pass-identity p { margin: 0 0 1.2rem; color: #d2d4d7; font-family: Georgia, serif; font-size: 0.75rem; font-style: italic; letter-spacing: 0.08em; }
-.member-pass-identity strong { font-family: Georgia, "Noto Serif TC", serif; font-size: 1.55rem; font-weight: 400; }
-.member-pass-identity span { color: #d2d4d7; font-size: 0.62rem; letter-spacing: 0.12em; }
-.member-pass dl { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0; }
-.member-pass dl div { display: grid; gap: 0.3rem; min-height: 4rem; align-content: center; padding-inline: 1rem; border-left: 1px solid rgb(255 255 255 / 18%); }
-.member-pass dt { color: #d2d4d7; font-size: 0.62rem; }
-.member-pass dd { margin: 0; font-size: 0.82rem; font-weight: 800; }
-.member-pass-ring { --member-progress: 0deg; z-index: 1; display: grid; width: 5.5rem; height: 5.5rem; place-items: center; border-radius: 50%; background: radial-gradient(circle, var(--forest) 57%, transparent 59%), conic-gradient(var(--lime) var(--member-progress), rgb(255 255 255 / 17%) 0); }
-.member-pass-ring span { font-family: Georgia, serif; font-size: 1.15rem; }
-.account-progress-panel, .account-section, .account-orders-panel, .account-order-help { border: 1px solid #e2e3e4; background: var(--white); }
-.account-progress-panel { padding: 1.6rem; }
-.account-progress-panel > header, .account-section > header { display: flex; justify-content: space-between; gap: 1rem; align-items: end; margin-bottom: 1.2rem; }
-.account-progress-panel h2, .account-section h2 { margin: 0; color: var(--forest); font-family: Georgia, "Noto Serif TC", serif; font-size: 1.55rem; font-weight: 400; }
-.account-progress-panel > header > strong { color: var(--forest); font-family: Georgia, serif; font-size: 1.4rem; font-weight: 400; }
-.account-progress-track { height: 0.4rem; overflow: hidden; background: #ecedee; }
-.account-progress-track i { display: block; height: 100%; background: var(--forest); }
-.account-progress-panel > p { margin: 0.65rem 0 1.5rem; color: var(--muted); font-size: 0.7rem; }
-.account-stats { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); }
-.account-stats div { display: grid; gap: 0.2rem; padding: 1rem 1rem 0; border-right: 1px solid var(--line); }
-.account-stats div:first-child { padding-left: 0; }
-.account-stats div:last-child { border-right: 0; }
-.account-stats span { color: var(--muted); font-size: 0.62rem; }
+.member-pass-identity p { margin: 0 0 0.9rem; color: #cfd8de; font-family: Georgia, serif; font-size: 0.72rem; font-style: italic; letter-spacing: 0.08em; }
+.member-pass-identity strong { font-family: Georgia, "Noto Serif TC", serif; font-size: 1.45rem; font-weight: 400; }
+.member-pass-identity span { color: #cfd8de; font-size: 0.62rem; letter-spacing: 0.12em; }
+.member-pass dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin: 0; }
+.member-pass dl div { display: grid; gap: 0.3rem; align-content: center; border-radius: 0.85rem; background: rgb(255 255 255 / 10%); padding: 0.7rem 0.85rem; }
+.member-pass dt { color: #cfd8de; font-size: 0.62rem; }
+.member-pass dd { margin: 0; font-size: 0.85rem; font-weight: 800; }
+.member-pass-ring { --member-progress: 0deg; z-index: 1; display: grid; width: 5.25rem; height: 5.25rem; place-items: center; border-radius: 50%; background: radial-gradient(circle, #47596a 57%, transparent 59%), conic-gradient(var(--lime) var(--member-progress), rgb(255 255 255 / 18%) 0); }
+.member-pass-ring span { font-family: Georgia, serif; font-size: 1.1rem; }
+
+.account-progress-panel, .account-section, .account-orders-panel, .account-order-help { border: 1px solid #e3eaee; border-radius: 1.1rem; background: var(--white); box-shadow: 0 0.6rem 1.6rem rgb(64 77 94 / 5%); }
+.account-progress-panel { padding: 1.4rem 1.5rem; }
+.account-progress-panel > header, .account-section > header { display: flex; justify-content: space-between; gap: 1rem; align-items: end; margin-bottom: 1rem; }
+.account-progress-panel h2, .account-section h2 { margin: 0; color: var(--forest); font-family: Georgia, "Noto Serif TC", serif; font-size: 1.3rem; font-weight: 400; }
+.account-progress-panel > header > strong { color: var(--forest); font-family: Georgia, serif; font-size: 1.3rem; font-weight: 400; }
+.account-progress-track { height: 0.45rem; overflow: hidden; border-radius: 999px; background: #edf1f3; }
+.account-progress-track i { display: block; height: 100%; border-radius: 999px; background: var(--forest); }
+.account-progress-panel > p { margin: 0.65rem 0 1.2rem; color: var(--muted); font-size: 0.72rem; }
+.account-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+.account-stats div { display: grid; gap: 0.25rem; border-radius: 0.9rem; background: var(--paper); padding: 0.8rem 0.95rem; }
+.account-stats span { color: var(--muted); font-size: 0.64rem; }
 .account-stats strong { color: var(--forest); font-size: 1.05rem; }
-.account-section { padding: 1.5rem; scroll-margin-top: 2rem; }
-.account-section > header { padding-bottom: 1rem; border-bottom: 1px solid var(--line); }
-.account-section > header a { font-size: 0.7rem; font-weight: 800; text-decoration: none; }
-.account-empty { display: grid; max-width: 34rem; min-height: 18rem; margin: auto; place-items: center; align-content: center; text-align: center; }
-.account-empty > span { display: grid; width: 3.4rem; height: 3.4rem; place-items: center; border: 1px solid var(--forest); border-radius: 50%; color: var(--forest); font-family: Georgia, serif; }
-.account-empty h2, .account-empty h3 { margin: 1rem 0 0.3rem; color: var(--forest); font-family: Georgia, "Noto Serif TC", serif; font-size: 1.35rem; font-weight: 400; }
+.account-section { padding: 1.4rem 1.5rem; scroll-margin-top: 2rem; }
+.account-section > header { padding-bottom: 0.9rem; border-bottom: 1px solid var(--line); }
+.account-section > header a { min-width: max-content; font-size: 0.72rem; font-weight: 800; text-decoration: none; }
+.account-empty { display: grid; max-width: 34rem; min-height: 14rem; margin: auto; place-items: center; align-content: center; text-align: center; }
+.account-empty > span { display: grid; width: 3.2rem; height: 3.2rem; place-items: center; border: 1px solid var(--sand); border-radius: 50%; background: var(--paper); color: var(--forest); font-family: Georgia, serif; }
+.account-empty h2, .account-empty h3 { margin: 1rem 0 0.3rem; color: var(--forest); font-family: Georgia, "Noto Serif TC", serif; font-size: 1.25rem; font-weight: 400; }
 .account-empty p { max-width: 27rem; margin: 0 0 1.2rem; color: var(--muted); font-size: 0.75rem; }
-.benefit-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
-.benefit-grid article { display: grid; align-content: start; padding: 1.1rem; border-right: 1px solid var(--line); }
-.benefit-grid article:first-child { padding-left: 0; }
-.benefit-grid article:last-child { border-right: 0; }
-.benefit-grid article span { margin-bottom: 1.5rem; color: var(--sage); font-family: Georgia, serif; font-size: 1.35rem; }
+.benefit-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+.benefit-grid article { display: grid; align-content: start; border-radius: 0.95rem; background: var(--paper); padding: 1rem 1.05rem; }
+.benefit-grid article span { margin-bottom: 0.9rem; color: var(--sage); font-family: Georgia, serif; font-size: 1.25rem; }
 .benefit-grid article strong { color: var(--forest); font-size: 0.78rem; }
 .benefit-grid article p { margin-bottom: 0; color: var(--muted); font-size: 0.68rem; line-height: 1.7; }
-.account-profile dl { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0; }
-.account-profile dl div { display: grid; gap: 0.25rem; padding: 0.8rem 1rem; border-right: 1px solid var(--line); }
-.account-profile dl div:first-child { padding-left: 0; }
-.account-profile dl div:last-child { border-right: 0; }
-.account-profile dt { color: var(--muted); font-size: 0.62rem; }
-.account-profile dd { margin: 0; overflow-wrap: anywhere; color: var(--forest); font-size: 0.75rem; font-weight: 800; }
-.account-order-tabs { display: flex; overflow-x: auto; border-bottom: 1px solid #dbdddf; }
-.account-order-tabs a { display: flex; gap: 0.45rem; min-width: max-content; padding: 0.8rem 1.2rem; border-bottom: 2px solid transparent; color: var(--muted); font-size: 0.72rem; font-weight: 800; text-decoration: none; }
-.account-order-tabs a[aria-current="page"] { border-color: var(--forest); color: var(--forest); }
-.account-order-tabs span { display: grid; min-width: 1.2rem; height: 1.2rem; place-items: center; border-radius: 1rem; background: #eeeff0; font-size: 0.58rem; }
+.account-profile dl { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; margin: 0; }
+.account-profile dl div { display: grid; gap: 0.25rem; border-radius: 0.9rem; background: var(--paper); padding: 0.8rem 0.95rem; }
+.account-profile dt { color: var(--muted); font-size: 0.64rem; }
+.account-profile dd { margin: 0; overflow-wrap: anywhere; color: var(--forest); font-size: 0.76rem; font-weight: 800; }
+.account-order-tabs { display: inline-flex; justify-self: start; max-width: 100%; overflow-x: auto; gap: 0.15rem; border-radius: 999px; background: #e6eef3; padding: 0.25rem; scrollbar-width: none; }
+.account-order-tabs::-webkit-scrollbar { display: none; }
+.account-order-tabs a { display: flex; gap: 0.4rem; min-width: max-content; align-items: center; border-radius: 999px; padding: 0.5rem 0.95rem; color: var(--muted); font-size: 0.72rem; font-weight: 750; text-decoration: none; transition: background 150ms ease, color 150ms ease; }
+.account-order-tabs a[aria-current="page"] { background: var(--white); color: var(--forest); font-weight: 800; box-shadow: 0 0.15rem 0.5rem rgb(64 77 94 / 12%); }
+.account-order-tabs span { display: grid; min-width: 1.15rem; height: 1.15rem; place-items: center; border-radius: 999px; background: rgb(255 255 255 / 70%); font-size: 0.58rem; }
+.account-order-tabs a[aria-current="page"] span { background: #e6eef3; }
 .account-orders-labels, .account-order-row { display: grid; grid-template-columns: minmax(12rem, 1.1fr) minmax(12rem, 1.25fr) 7rem 6rem 6rem; gap: 1rem; align-items: center; }
-.account-orders-labels { padding: 0.8rem 1.2rem; background: #f0f0f1; color: var(--muted); font-size: 0.62rem; font-weight: 800; }
+.account-orders-labels { border-radius: 1.05rem 1.05rem 0 0; padding: 0.8rem 1.2rem; background: var(--paper); color: var(--muted); font-size: 0.62rem; font-weight: 800; }
 .account-order-row { padding: 1.15rem 1.2rem; border-bottom: 1px solid var(--line); }
 .account-order-row:last-child { border-bottom: 0; }
 .account-order-number, .account-order-product, .account-order-total { display: grid; gap: 0.15rem; }
@@ -724,7 +730,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .copy-order-number[data-copied="true"] { border-color: color-mix(in srgb, var(--forest) 45%, transparent); background: color-mix(in srgb, var(--forest) 9%, var(--white)); color: var(--forest); }
 .copy-order-number svg { flex: none; }
 .account-order-product strong, .account-order-total strong { font-size: 0.75rem; }
-.account-order-link { padding: 0.55rem 0.65rem; border: 1px solid var(--forest); color: var(--forest); font-size: 0.66rem; font-weight: 800; text-align: center; text-decoration: none; }
+.account-order-link { border: 1px solid var(--forest); border-radius: 999px; padding: 0.55rem 0.75rem; color: var(--forest); font-size: 0.66rem; font-weight: 800; text-align: center; text-decoration: none; }
 .account-order-link:hover { background: var(--forest); color: var(--white); }
 .account-order-help { display: flex; justify-content: space-between; gap: 2rem; align-items: center; padding: 1.2rem 1.4rem; }
 .account-order-help div { display: grid; gap: 0.15rem; }
@@ -1326,10 +1332,14 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .filter-clear-button:hover { border-color: var(--forest); background: #eef0f2; transform: translateY(-1px); }
 .filter-clear-button:disabled { border-color: var(--line); color: var(--muted); transform: none; cursor: not-allowed; }
 .product-filters .filter-actions { align-self: end; }
-.catalog-categories { display: flex; flex-wrap: nowrap; gap: 0.5rem; margin: -0.75rem 0 1.5rem; padding: 0.25rem 0.15rem 0.6rem; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
-.catalog-categories a { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 999px; background: var(--white); padding: 0.55rem 1.2rem; color: var(--muted); font-size: 0.74rem; font-weight: 700; text-align: center; text-decoration: none; transition: border-color 150ms ease, background 150ms ease, color 150ms ease; }
-.catalog-categories a:hover { border-color: var(--forest); color: var(--forest); }
-.catalog-categories a[aria-current="page"] { border-color: var(--forest); background: var(--forest); color: var(--white); }
+/* Second-level nav: plain underline tabs, so it reads as a sub-level of the
+   segmented 狀態 switch above instead of a second competing row of pills. */
+.catalog-categories { display: flex; flex-wrap: nowrap; gap: 0.35rem; margin: -0.35rem 0 1.5rem; border-bottom: 1px solid var(--line); padding: 0 0.15rem; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.catalog-categories a { position: relative; flex: 0 0 auto; padding: 0.6rem 0.85rem 0.7rem; color: var(--muted); font-size: 0.76rem; font-weight: 700; text-align: center; text-decoration: none; transition: color 150ms ease; }
+.catalog-categories a::after { position: absolute; right: 0.85rem; bottom: -1px; left: 0.85rem; height: 2px; border-radius: 2px; background: var(--forest); content: ""; opacity: 0; transition: opacity 150ms ease; }
+.catalog-categories a:hover { color: var(--forest); }
+.catalog-categories a[aria-current="page"] { color: var(--forest); font-weight: 800; }
+.catalog-categories a[aria-current="page"]::after { opacity: 1; }
 .catalog-series { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: -0.75rem 0 1.5rem; border: 1px solid var(--line); background: var(--oat); padding: 0.75rem 1rem; }
 .catalog-series-label { margin-right: 0.25rem; color: var(--muted); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.06em; }
 .catalog-series a { border-bottom: 1px solid transparent; padding: 0.25rem 0.45rem; color: var(--muted); font-size: 0.74rem; font-weight: 700; text-decoration: none; }
@@ -2011,12 +2021,16 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
   .auth-shell { grid-template-columns: 1fr; }
   .auth-card { grid-column: 1; grid-row: auto; }
   .auth-story { grid-column: 1; grid-row: auto; min-height: 26rem; }
+  /* Tablet down: the rail becomes a card with a scrolling row of nav pills. */
   .account-layout { grid-template-columns: 1fr; }
-  .account-sidebar { position: static; padding-right: 0; border-right: 0; }
-  .account-sidebar nav { grid-template-columns: repeat(5, 1fr); }
-  .account-sidebar nav a { justify-content: center; text-align: center; }
-  .account-sidebar nav span { display: none; }
-  .account-sidebar form { text-align: right; }
+  .account-sidebar { position: static; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.75rem 1rem; }
+  .account-sidebar-user { padding-bottom: 0; border-bottom: 0; }
+  .account-nav { grid-column: 1 / -1; grid-row: 2; display: flex; gap: 0.35rem; overflow-x: auto; padding-top: 0.75rem; border-top: 1px solid var(--line); scrollbar-width: none; }
+  .account-nav::-webkit-scrollbar { display: none; }
+  .account-nav a { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 999px; padding: 0.5rem 0.85rem; font-size: 0.74rem; }
+  .account-nav a[aria-current="page"] { border-color: var(--forest); background: var(--forest); color: var(--white); }
+  .account-sidebar form { grid-column: 2; grid-row: 1; padding: 0; border-top: 0; }
+  .account-sidebar form button { min-width: 4.5rem; }
   .member-pass { grid-template-columns: 1fr 1.6fr 5rem; }
   .member-pass-ring { width: 4.5rem; height: 4.5rem; }
   .account-orders-labels { display: none; }
@@ -2160,9 +2174,14 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
   .quantity-stepper { grid-template-columns: repeat(3, 2rem); }
   .cart-sidebar { grid-template-columns: 1fr; }
   .store-mobile-right .cart-drawer { position: static; }
-  .store-mobile-right .cart-drawer > summary { width: 40px; min-height: 40px; justify-content: center; border: 0; padding: 0; font-size: 0; box-shadow: none; }
-  .cart-drawer > summary .cart-icon { width: 1.25rem; height: 1.25rem; }
-  .cart-drawer > summary .cart-count { position: absolute; top: -0.25rem; right: -0.25rem; width: 1.25rem; height: 1.25rem; font-size: 0.58rem; }
+  /* `position: relative` here, not on the drawer, so the count pins to the
+     40px icon button the way the wishlist heart's badge does. */
+  .store-mobile-right .cart-drawer > summary { position: relative; width: 40px; min-height: 40px; justify-content: center; border: 0; padding: 0; font-size: 0; box-shadow: none; }
+  .cart-drawer > summary .cart-icon { width: 1.5rem; height: 1.5rem; }
+  .cart-drawer > summary .cart-count { position: absolute; top: 2px; right: 0; width: auto; min-width: 1.05rem; height: 1.05rem; padding-inline: 0.2rem; border-radius: 999px; font-size: 0.56rem; }
+  /* An empty basket needs no badge — a "0" chip is just noise. */
+  .store-mobile-right .cart-count[data-count="0"] { display: none; }
+  .store-mobile-right .wishlist-header-link[data-has-items="false"] .wishlist-header-count { display: none; }
   .cart-drawer-panel { top: 0; bottom: auto; width: 100vw; padding: 1.2rem; }
   .cart-drawer-actions { grid-template-columns: 1fr; }
   .store-picker { padding: 1rem; }
@@ -2171,19 +2190,22 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
   .auth-shell { width: 100%; margin-top: 0; border-inline: 0; }
   .auth-card { width: min(100% - 2rem, 28rem); margin-block: 2.75rem; }
   .auth-story { padding: 3rem 1.25rem; }
-  .account-topbar { width: min(100% - 2rem, 84rem); min-height: 5rem; }
-  .account-topbar nav { gap: 0.8rem; }
-  .account-layout { width: min(100% - 1.5rem, 76rem); padding-block: 1.5rem 4rem; }
-  .account-sidebar nav { grid-template-columns: repeat(2, 1fr); }
-  .account-page-heading { align-items: start; flex-direction: column; }
-  .account-page-heading > p { text-align: left; }
-  .member-pass { grid-template-columns: 1fr auto; gap: 1rem; padding: 1.3rem; box-shadow: 0.4rem 0.4rem 0 #d9dbde; }
-  .member-pass dl { grid-column: 1 / -1; grid-row: 2; }
-  .member-pass dl div { min-height: auto; padding: 0.7rem; }
-  .member-pass-ring { grid-column: 2; grid-row: 1; }
-  .account-stats, .benefit-grid, .account-profile dl { grid-template-columns: 1fr; }
-  .account-stats div, .benefit-grid article, .account-profile dl div { padding: 0.8rem 0; border-right: 0; border-bottom: 1px solid var(--line); }
-  .account-stats div:last-child, .benefit-grid article:last-child, .account-profile dl div:last-child { border-bottom: 0; }
+  .account-topbar { width: min(100% - 2rem, 84rem); min-height: 4.25rem; }
+  .account-logo { width: 2.75rem; }
+  .account-topbar nav { gap: 0.4rem; }
+  .account-topbar nav a { padding: 0.45rem 0.8rem; font-size: 0.68rem; }
+  .account-layout { width: min(100% - 1.5rem, 76rem); padding-block: 1rem 3.5rem; }
+  .account-page-heading h1 { font-size: 1.65rem; }
+  .member-pass { grid-template-columns: minmax(0, 1fr) auto; gap: 0.9rem; padding: 1.2rem; }
+  .member-pass dl { grid-column: 1 / -1; grid-row: 2; gap: 0.4rem; }
+  .member-pass dl div { padding: 0.6rem 0.5rem; text-align: center; }
+  .member-pass dd { font-size: 0.76rem; }
+  .member-pass-ring { grid-column: 2; grid-row: 1; width: 4rem; height: 4rem; }
+  .member-pass-ring span { font-size: 0.9rem; }
+  .account-progress-panel, .account-section { padding: 1.1rem 1.15rem; }
+  .account-stats { grid-template-columns: repeat(2, 1fr); }
+  .account-stats div:last-child { grid-column: 1 / -1; }
+  .benefit-grid, .account-profile dl { grid-template-columns: 1fr; }
   .benefit-grid article span { margin-bottom: 0.5rem; }
   .account-order-row { grid-template-columns: 1fr auto; gap: 0.75rem; }
   .account-order-number { grid-column: 1; }
@@ -2790,9 +2812,12 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .storefront-shortcuts strong { margin-top: 1rem; font-family: var(--font-serif); font-size: 1.15rem; font-weight: 600; }
 .storefront-shortcuts small { margin-top: 0.4rem; color: var(--muted); font-size: 0.64rem; line-height: 1.65; }
 
-.catalog-view-nav { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: -0.5rem 0 1.6rem; }
-.catalog-view-nav a { border: 1px solid #d7e1e7; border-radius: 999px; background: rgb(255 255 255 / 72%); padding: 0.55rem 1rem; color: var(--muted); font-size: 0.7rem; font-weight: 750; text-decoration: none; }
-.catalog-view-nav a:hover, .catalog-view-nav a[aria-current="page"] { border-color: #728a9a; background: #e8f1f5; color: var(--forest); }
+/* Browsing mode is a segmented switch — one container, no gaps — so it can't be
+   mistaken for the category tabs underneath it. */
+.catalog-view-nav { display: inline-flex; flex-wrap: nowrap; gap: 0.15rem; max-width: 100%; margin: -0.5rem 0 1.1rem; border-radius: 999px; background: #e6eef3; padding: 0.25rem; }
+.catalog-view-nav a { flex: 0 0 auto; border-radius: 999px; padding: 0.5rem 0.95rem; color: var(--muted); font-size: 0.72rem; font-weight: 750; text-decoration: none; transition: background 150ms ease, color 150ms ease, box-shadow 150ms ease; }
+.catalog-view-nav a:hover { color: var(--forest); }
+.catalog-view-nav a[aria-current="page"] { background: var(--white); color: var(--forest); font-weight: 800; box-shadow: 0 0.15rem 0.5rem rgb(64 77 94 / 12%); }
 
 .series-browse { margin-bottom: 2rem; border: 1px solid #d7e1e7; border-radius: 1.2rem; background: rgb(255 255 255 / 72%); padding: clamp(1.2rem, 3vw, 2rem); scroll-margin-top: 7rem; }
 .series-browse > header { margin-bottom: 1.2rem; }
@@ -2839,11 +2864,11 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
   .storefront-shortcuts strong { font-size: 1rem; }
   /* Both chip rows scroll sideways; the scrollbar itself just looked like a
      stray grey bar, and a fade on the right edge says "more this way". */
-  .catalog-view-nav { flex-wrap: nowrap; overflow-x: auto; margin-bottom: 0.75rem; padding-bottom: 0.15rem; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 2rem), transparent 100%); mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 2rem), transparent 100%); }
+  .catalog-view-nav { display: flex; overflow-x: auto; margin-bottom: 0.6rem; scrollbar-width: none; }
   .catalog-view-nav::-webkit-scrollbar, .catalog-categories::-webkit-scrollbar { display: none; }
-  .catalog-view-nav a { flex: 0 0 auto; }
-  .catalog-categories { margin: 0 0 1rem; padding-bottom: 0.15rem; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 2rem), transparent 100%); mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 2rem), transparent 100%); }
-  .catalog-categories a { padding: 0.5rem 1rem; font-size: 0.72rem; }
+  .catalog-categories { margin: 0 0 1rem; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 2rem), transparent 100%); mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 2rem), transparent 100%); }
+  .catalog-categories a { padding: 0.55rem 0.7rem 0.65rem; font-size: 0.74rem; }
+  .catalog-categories a::after { right: 0.7rem; left: 0.7rem; }
   .catalog-count { margin: 1.1rem 0 0.85rem; }
   .series-browse > div { grid-template-columns: 1fr; }
 }

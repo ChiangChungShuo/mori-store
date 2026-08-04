@@ -56,7 +56,7 @@ export function CartDrawer({ settings }: { settings: StorefrontSettings }) {
           <circle cx="10" cy="18.5" r="1" />
           <circle cx="17" cy="18.5" r="1" />
         </svg>
-        購物車<span className="cart-count" aria-label={`${itemCount} 件商品`}>{itemCount}</span>
+        購物車<span className="cart-count" data-count={itemCount} aria-label={`${itemCount} 件商品`}>{itemCount}</span>
       </summary>
       <button aria-label="關閉購物車" className="cart-drawer-backdrop" onClick={() => setOpen(false)} type="button" />
       <div className="cart-drawer-panel">
