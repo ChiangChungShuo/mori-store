@@ -456,18 +456,23 @@ header#top { position: sticky; z-index: 60; top: 0; background: var(--paper); bo
 .catalog-empty-actions .button { min-height: 2.9rem; border-radius: 999px; padding: 0.6rem 1.5rem; font-size: 0.78rem; }
 
 /* Recently viewed ------------------------------------------------------------- */
-.recently-viewed { padding-block: clamp(2rem, 3.5vw, 3rem); }
-.recently-viewed .section-heading { align-items: end; }
-.recently-viewed .text-link { border: 0; background: transparent; color: var(--muted); font-family: inherit; font-size: 0.72rem; cursor: pointer; }
-.recently-viewed .text-link:hover { color: var(--forest); }
-.recently-viewed-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(9.5rem, 1fr); gap: 0.9rem; overflow-x: auto; padding-bottom: 0.35rem; scrollbar-width: none; }
+/* A quiet strip of small thumbnails, not a second product grid: the cards used
+   to stretch to fill the row (396x495px each), which shouted louder than the
+   product being viewed. Fixed-width cards keep it a footnote. */
+.recently-viewed { width: min(100% - 3rem, 76rem); margin-inline: auto; padding-block: 1.6rem 2.4rem; border-top: 1px solid var(--line); }
+.recently-viewed-head { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; margin-bottom: 0.85rem; }
+.recently-viewed-head h2 { margin: 0; color: var(--forest); font-family: inherit; font-size: 0.86rem; font-weight: 800; letter-spacing: 0.02em; }
+.recently-viewed-head button { border: 0; background: transparent; color: var(--muted); font-family: inherit; font-size: 0.72rem; cursor: pointer; }
+.recently-viewed-head button:hover { color: var(--forest); text-decoration: underline; text-underline-offset: 0.2rem; }
+.recently-viewed-row { display: flex; gap: 0.75rem; overflow-x: auto; padding-bottom: 0.3rem; scrollbar-width: none; }
 .recently-viewed-row::-webkit-scrollbar { display: none; }
-.recently-viewed-card { display: grid; gap: 0.4rem; min-width: 0; color: inherit; text-decoration: none; }
-.recently-viewed-image { position: relative; display: grid; aspect-ratio: 4 / 5; place-items: center; overflow: hidden; border-radius: 0.9rem; background: var(--oat); }
-.recently-viewed-image img { object-fit: cover; }
-.recently-viewed-image em { color: var(--sage); font-family: Georgia, serif; font-style: italic; }
-.recently-viewed-card strong { overflow: hidden; color: var(--ink); font-size: 0.78rem; font-weight: 700; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; }
-.recently-viewed-card small { color: var(--forest); font-size: 0.76rem; font-weight: 800; }
+.recently-viewed-card { display: grid; gap: 0.35rem; flex: 0 0 8.5rem; width: 8.5rem; color: inherit; text-decoration: none; }
+.recently-viewed-image { position: relative; display: grid; aspect-ratio: 1 / 1; place-items: center; overflow: hidden; border-radius: 0.85rem; background: var(--oat); }
+.recently-viewed-image img { object-fit: cover; transition: transform 260ms ease; }
+.recently-viewed-card:hover .recently-viewed-image img { transform: scale(1.04); }
+.recently-viewed-image em { color: var(--sage); font-family: Georgia, serif; font-size: 0.75rem; font-style: italic; }
+.recently-viewed-card strong { overflow: hidden; color: var(--ink); font-size: 0.74rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.recently-viewed-card small { color: var(--forest); font-size: 0.74rem; font-weight: 800; }
 .recently-viewed-card:hover strong { color: var(--forest); }
 .section-action { margin-top: 2rem; }
 
@@ -1556,18 +1561,6 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .variant-picker { margin: 1rem 0 0.5rem; }
 .variant-picker fieldset { margin: 0.85rem 0; border: 0; padding: 0; }
 .variant-picker legend { margin-bottom: 0.45rem; color: #4a6071; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.04em; }
-/* Size advisor ---------------------------------------------------------------- */
-.size-advisor { display: grid; gap: 0.5rem; margin: 0.9rem 0 0.2rem; border: 1px solid #dfe6ea; border-radius: 1rem; background: var(--paper); padding: 0.85rem 1rem; }
-.size-advisor > label { display: grid; gap: 0.45rem; color: var(--forest); font-size: 0.78rem; font-weight: 800; }
-.size-advisor label > span { display: inline-flex; gap: 0.4rem; align-items: center; }
-.size-advisor input { width: 5.5rem; min-height: 2.6rem; border: 1px solid #d5dde2; border-radius: 0.7rem; background: var(--white); padding: 0.4rem 0.7rem; color: var(--ink); font-family: inherit; font-size: 0.9rem; }
-.size-advisor input:focus-visible { border-color: var(--forest); box-shadow: 0 0 0 3px rgb(106 127 144 / 16%); outline: none; }
-.size-advisor em { color: var(--muted); font-size: 0.76rem; font-style: normal; }
-.size-advisor small { color: var(--muted); font-size: 0.72rem; line-height: 1.6; }
-.size-advisor-result { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0; color: var(--ink); font-size: 0.8rem; }
-.size-advisor-result strong { color: var(--forest); font-size: 0.9rem; }
-.size-advisor-result button { border: 1px solid var(--forest); border-radius: 999px; background: var(--white); color: var(--forest); padding: 0.35rem 0.9rem; font-family: inherit; font-size: 0.74rem; font-weight: 800; cursor: pointer; transition: background 150ms ease, color 150ms ease; }
-.size-advisor-result button:hover { background: var(--forest); color: var(--white); }
 .restock-alert-button { width: 100%; margin-bottom: 0.65rem; background: #f1f2f4; color: var(--forest); }
 /* Restock notice: a real sign-up, so it needs a field and a confirmation. */
 .restock-form { display: grid; gap: 0.6rem; margin-bottom: 0.75rem; border: 1px solid #dfe6ea; border-radius: 1rem; background: var(--paper); padding: 0.9rem 1rem; }
@@ -3002,6 +2995,8 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
   .catalog-categories a { padding: 0.55rem 0.7rem 0.65rem; font-size: 0.74rem; }
   .catalog-categories a::after { right: 0.7rem; left: 0.7rem; }
   .catalog-count { margin: 1.1rem 0 0.85rem; }
+  .recently-viewed { width: min(100% - 1.5rem, 76rem); padding-block: 1.3rem 2rem; }
+  .recently-viewed-card { flex-basis: 7rem; width: 7rem; }
 }
 
 /* 大家怎麼穿 customer photos ---------------------------------------------------- */

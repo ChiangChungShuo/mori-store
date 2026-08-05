@@ -7,7 +7,6 @@ import { trackStorefrontEvent } from '@/features/analytics/tracker'
 import { getProductAvailability } from '@/features/catalog/availability'
 import { useProductColor } from '@/features/catalog/product-color-context'
 import { primaryImageForColor } from '@/features/catalog/product-images'
-import { SizeAdvisor } from '@/features/catalog/size-advisor'
 import { RestockForm } from '@/features/catalog/restock-form'
 
 export function VariantPicker({ product, memberEmail }: { product: CatalogProduct; memberEmail?: string | null }) {
@@ -72,13 +71,6 @@ export function VariantPicker({ product, memberEmail }: { product: CatalogProduc
           ))}
         </div>
       </fieldset>
-
-      {availability === 'available' ? (
-        <SizeAdvisor
-          availableSizes={variantsForColor.filter((variant) => variant.stock > 0).map((variant) => variant.size)}
-          onPick={setSize}
-        />
-      ) : null}
 
       <p aria-live="polite" role="status">{stockMessage}</p>
       {availability === 'sold_out' ? <RestockForm defaultEmail={memberEmail ?? ''} productId={product.id} /> : null}

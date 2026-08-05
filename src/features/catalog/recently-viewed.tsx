@@ -100,21 +100,17 @@ export function RecentlyViewed({ excludeSlug, title = '最近看過' }: {
   if (items.length === 0) return null
 
   return (
-    <section className="section recently-viewed" aria-labelledby="recently-viewed-title">
-      <header className="section-heading">
-        <div><p className="eyebrow">recently viewed</p><h2 id="recently-viewed-title">{title}</h2></div>
-        <button
-          className="text-link"
-          onClick={() => write([])}
-          type="button"
-        >清除瀏覽紀錄</button>
-      </header>
+    <section aria-labelledby="recently-viewed-title" className="recently-viewed">
+      <div className="recently-viewed-head">
+        <h2 id="recently-viewed-title">{title}</h2>
+        <button onClick={() => write([])} type="button">清除紀錄</button>
+      </div>
       <div className="recently-viewed-row">
         {items.map((item) => (
           <Link className="recently-viewed-card" href={`/products/${item.slug}`} key={item.slug}>
             <span className="recently-viewed-image">
               {item.imageUrl ? (
-                <Image alt={item.imageAlt} fill sizes="(max-width: 40rem) 40vw, 12rem" src={item.imageUrl} />
+                <Image alt={item.imageAlt} fill sizes="9rem" src={item.imageUrl} />
               ) : <em>mori</em>}
             </span>
             <strong>{item.name}</strong>
