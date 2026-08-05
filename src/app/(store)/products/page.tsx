@@ -5,6 +5,8 @@ import { ProductFilters } from '@/features/catalog/product-filters'
 import { ProductSeriesFilter } from '@/features/catalog/product-series-filter'
 import { listAvailableColors, listAvailableSizes, listProducts, parseProductFilters } from '@/features/catalog/queries'
 import { ProductSearchTracker } from '@/features/analytics/product-search-tracker'
+import { listPopularSearchTerms } from '@/features/catalog/popular-searches'
+import { RecentlyViewed } from '@/features/catalog/recently-viewed'
 import { listProductCategories } from '@/features/catalog/categories'
 import { listProductSeries } from '@/features/catalog/product-series'
 import { absoluteUrl } from '@/lib/site'
@@ -31,6 +33,14 @@ export default async function ProductsPage({
     listAvailableColors(),
   ])
 
+  // Only pay for the recovery data when the shopper hit a dead end.
+  const [popularTerms, fallbackProducts] = products.length === 0
+    ? await Promise.all([listPopularSearchTerms(), listProducts({ inStock: true })])
+    : [[], []]
+  const rescueProducts = fallbackProducts
+    .sort((left, right) => Number(right.tags?.includes('熱賣') ?? false) - Number(left.tags?.includes('熱賣') ?? false))
+    .slice(0, 4)
+
   return (
     <main className="section catalog-page">
       <header className="page-heading">
@@ -55,14 +65,43 @@ export default async function ProductsPage({
       <p aria-live="polite" className="catalog-count">共 {products.length} 件商品</p>
       {products.length === 0 ? (
         <div className="catalog-empty">
-          <h2>目前沒有符合條件的商品</h2>
-          <p>{filters.view === 'popular' ? '目前尚未標記熱賣商品，可先看看全部商品。' : filters.series ? '試試切換其他系列，或查看這個分類的全部商品。' : '試試清除部分篩選條件。'}</p>
+          <h2>{filters.q ? `找不到「${filters.q}」的商品` : '目前沒有符合條件的商品'}</h2>
+          <p>{filters.view === 'popular'
+            ? '目前尚未標記熱賣商品，可先看看全部商品。'
+            : filters.series ? '試試切換其他系列，或查看這個分類的全部商品。'
+            : filters.q ? '可能是關鍵字或尺寸寫法不同，換個說法或從下面這些開始逛。'
+            : '試試清除部分篩選條件。'}</p>
+          {popularTerms.length > 0 ? (
+            <div className="catalog-empty-terms">
+              <span>其他人都在搜</span>
+              {popularTerms.map((term) => (
+                <Link href={`/products?q=${encodeURIComponent(term)}`} key={term}>{term}</Link>
+              ))}
+            </div>
+          ) : null}
+          <div className="catalog-empty-terms">
+            <span>熱門分類</span>
+            {categories.slice(0, 5).map((category) => (
+              <Link href={`/products?category=${encodeURIComponent(category)}`} key={category}>{category}</Link>
+            ))}
+          </div>
+          <div className="catalog-empty-actions">
+            <Link className="button" href="/products">看全部商品</Link>
+            <Link className="text-link" href="/products?view=ready">只看現貨 →</Link>
+          </div>
         </div>
       ) : (
         <div className="product-grid">
           {products.map((product) => <ProductCard product={product} key={product.id} />)}
         </div>
       )}
+      {products.length === 0 && rescueProducts.length > 0 ? (
+        <section className="section product-recommendations">
+          <header className="section-heading"><div><p className="eyebrow">most loved</p><h2>大家最近在買</h2></div></header>
+          <div className="product-grid">{rescueProducts.map((product) => <ProductCard key={product.id} product={product} />)}</div>
+        </section>
+      ) : null}
+      <RecentlyViewed />
     </main>
   )
 }

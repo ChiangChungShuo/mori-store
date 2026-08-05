@@ -392,6 +392,38 @@ export type Database = {
           },
         ]
       }
+      restock_requests: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          notified_at: string | null
+          product_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          notified_at?: string | null
+          product_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          notified_at?: string | null
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'restock_requests_product_id_fkey'
+            columns: ['product_id']
+            isOneToOne: false
+            referencedRelation: 'products'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       orders: {
         Row: {
           bundle_discount: number
@@ -891,6 +923,10 @@ export type Database = {
           p_storage_path: string
         }
         Returns: string
+      }
+      request_restock_notice: {
+        Args: { p_email: string; p_product_id: string }
+        Returns: undefined
       }
       admin_reorder_product_images: {
         Args: { p_image_ids: string[]; p_product_id: string }

@@ -19,7 +19,7 @@ export default async function AccountPage() {
         <div className="member-pass-identity"><p>mori family pass</p><strong>{account.displayName}</strong><span>{account.memberNumber}</span></div>
         <dl>
           <div><dt>會員等級</dt><dd>{account.tierLabel}</dd></div>
-          <div><dt>紅利點數</dt><dd>{account.points} PT</dd></div>
+          <div><dt>紅利點數（累積中）</dt><dd>{account.points} PT</dd></div>
           <div><dt>專屬折扣</dt><dd>{account.discountPercent ? `${account.discountPercent}% OFF` : '累積中'}</dd></div>
         </dl>
         <div className="member-pass-ring" aria-label={`會員進度 ${account.progress}%`} style={{ '--member-progress': `${account.progress * 3.6}deg` } as React.CSSProperties}><span>{account.progress}%</span></div>
@@ -39,7 +39,7 @@ export default async function AccountPage() {
 
       <section className="account-section" id="benefits">
         <header><div><p className="eyebrow">member benefits</p><h2>你的會員福利</h2></div></header>
-        <div className="benefit-grid"><article><span>01</span><strong>消費累積紅利</strong><p>每筆有效訂單累積點數，未來可於結帳時折抵。</p></article><article><span>02</span><strong>會員限定優惠</strong><p>依會員等級享有專屬折扣與生日禮遇。</p></article><article><span>03</span><strong>訂單進度追蹤</strong><p>從付款、備貨到到店，隨時查看預計取貨時間。</p></article></div>
+        <div className="benefit-grid"><article><span>01</span><strong>消費累積紅利</strong><p>每筆有效訂單都會累積點數；目前為累積階段，開放折抵的時間會另行公告。</p></article><article><span>02</span><strong>會員限定優惠</strong><p>依會員等級享有專屬折扣與生日禮遇。</p></article><article><span>03</span><strong>訂單進度追蹤</strong><p>從付款、備貨到到店，隨時查看預計取貨時間。</p></article></div>
       </section>
 
       <section className="account-section account-profile" id="profile">

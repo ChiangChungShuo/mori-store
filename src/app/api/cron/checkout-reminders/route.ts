@@ -6,9 +6,11 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 // Daily Vercel cron (09:00 Taipei; Hobby plans allow at most one run per day).
-// Mails shoppers whose bank-transfer checkout has sat in `pending` longer than
-// the configured delay — once per attempt, and only for attempts younger than
-// 7 days so a backlog never spams old carts.
+// Two jobs share the run because of that one-cron limit:
+//   1. mail shoppers whose bank-transfer checkout has sat in `pending` longer
+//      than the configured delay — once per attempt, and only for attempts
+//      younger than 7 days so a backlog never spams old carts;
+//   2. mail everyone waiting on a 到貨通知 whose product is back in stock.
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET
   if (!secret || request.headers.get('authorization') !== `Bearer ${secret}`) {
@@ -21,13 +23,18 @@ export async function GET(request: Request) {
   const { createAdminClient } = await import('@/lib/supabase/admin')
   const admin = createAdminClient()
 
+  // Restock notices run first: they are the shortest job and independent of the
+  // reminder settings below.
+  const { notifyRestockedProducts } = await import('@/features/catalog/restock-notifier')
+  const restock = await notifyRestockedProducts(admin).catch(() => ({ sent: 0, waiting: 0 }))
+
   const { data: settingsRow } = await admin
     .from('store_settings')
     .select('value')
     .eq('key', 'cart_reminder')
     .maybeSingle()
   const settings = parseCartReminderSettings(settingsRow?.value)
-  if (!settings.enabled) return Response.json({ skipped: 'reminders disabled' })
+  if (!settings.enabled) return Response.json({ restock, skipped: 'reminders disabled' })
 
   const cutoff = new Date(Date.now() - settings.delayHours * 3600 * 1000).toISOString()
   const oldest = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString()
@@ -40,7 +47,7 @@ export async function GET(request: Request) {
     .gte('created_at', oldest)
     .order('created_at')
     .limit(20)
-  if (error) return Response.json({ error: error.message }, { status: 500 })
+  if (error) return Response.json({ restock, error: error.message }, { status: 500 })
 
   let sent = 0
   const failures: string[] = []
@@ -82,5 +89,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return Response.json({ sent, failed: failures.length, scanned: attempts?.length ?? 0 })
+  return Response.json({ restock, sent, failed: failures.length, scanned: attempts?.length ?? 0 })
 }

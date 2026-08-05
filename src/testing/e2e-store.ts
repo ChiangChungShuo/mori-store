@@ -112,6 +112,13 @@ export type E2EStoreState = {
     createdAt: string
     updatedAt: string
   }>
+  restockRequests: Array<{
+    id: string
+    productId: string
+    email: string
+    notifiedAt: string | null
+    createdAt: string
+  }>
   products: CatalogProduct[]
   /** Product slug → quantity tiers, mirroring product_quantity_prices. */
   quantityPrices: Map<string, Array<{ quantity: number; bundlePrice: number }>>
@@ -257,6 +264,7 @@ export function createE2EStore(): E2EStoreState {
     productDrafts: [],
     customerPhotos: [],
     productReviews: [],
+    restockRequests: [],
     products: [],
     // One tiered product so fixture/E2E runs exercise bundle pricing. Kept off
     // the tee, whose totals other specs assert.

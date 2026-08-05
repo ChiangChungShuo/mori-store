@@ -7,13 +7,14 @@ import { trackStorefrontEvent } from '@/features/analytics/tracker'
 import { getProductAvailability } from '@/features/catalog/availability'
 import { useProductColor } from '@/features/catalog/product-color-context'
 import { primaryImageForColor } from '@/features/catalog/product-images'
+import { SizeAdvisor } from '@/features/catalog/size-advisor'
+import { RestockForm } from '@/features/catalog/restock-form'
 
-export function VariantPicker({ product }: { product: CatalogProduct }) {
+export function VariantPicker({ product, memberEmail }: { product: CatalogProduct; memberEmail?: string | null }) {
   const { dispatch } = useCart()
   const { color, setColor } = useProductColor()
   const feedbackTimer = useRef<number | null>(null)
   const [added, setAdded] = useState(false)
-  const [restockRequested, setRestockRequested] = useState(false)
   const colors = useMemo(
     () => [...new Set(product.variants.map((variant) => variant.color))],
     [product.variants],
@@ -72,19 +73,15 @@ export function VariantPicker({ product }: { product: CatalogProduct }) {
         </div>
       </fieldset>
 
+      {availability === 'available' ? (
+        <SizeAdvisor
+          availableSizes={variantsForColor.filter((variant) => variant.stock > 0).map((variant) => variant.size)}
+          onPick={setSize}
+        />
+      ) : null}
+
       <p aria-live="polite" role="status">{stockMessage}</p>
-      {availability === 'sold_out' ? <button
-        className="button restock-alert-button"
-        disabled={restockRequested}
-        type="button"
-        onClick={() => {
-          setRestockRequested(true)
-          window.localStorage.setItem(`mori-restock-${product.id}`, '1')
-        }}
-      >
-        <span aria-hidden="true">{restockRequested ? '✓' : '✉'}</span>
-        {restockRequested ? '已登記到貨通知' : '貨到通知我'}
-      </button> : null}
+      {availability === 'sold_out' ? <RestockForm defaultEmail={memberEmail ?? ''} productId={product.id} /> : null}
       {availability !== 'sold_out' ? <button
         className="button add-to-cart-button"
         data-cart-state={added ? 'added' : 'idle'}

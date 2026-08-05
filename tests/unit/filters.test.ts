@@ -375,14 +375,20 @@ describe('VariantPicker', () => {
     expect(screen.getByRole('button', { name: '尚未開放購買' })).toBeDisabled()
   })
 
-  it('lets a shopper request a restock notice for a sold-out product', () => {
+  it('collects an email for a restock notice on a sold-out product', () => {
     const soldOutProduct = { ...product, variants: product.variants.map((variant) => ({ ...variant, stock: 0 })) }
     renderPicker(soldOutProduct)
 
     fireEvent.click(screen.getByRole('button', { name: '貨到通知我' }))
 
-    expect(screen.getByRole('button', { name: '已登記到貨通知' })).toBeDisabled()
-    expect(screen.queryByRole('button', { name: '商品已售完' })).not.toBeInTheDocument()
+    // The request now goes to the server, so the form needs the address and the
+    // product it belongs to.
+    const email = screen.getByLabelText(/補貨時通知我/)
+    expect(email).toBeRequired()
+    expect(email).toHaveAttribute('type', 'email')
+    expect(screen.getByRole('button', { name: '登記通知' })).toBeEnabled()
+    expect(document.querySelector('input[name="productId"]')).toHaveValue(soldOutProduct.id)
+    expect(screen.queryByRole('button', { name: '加入購物車' })).not.toBeInTheDocument()
   })
 
   it('derives sizes from the selected color and disables unavailable variants', () => {

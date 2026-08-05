@@ -2,13 +2,21 @@ import Link from 'next/link'
 import { getSalesReport } from '@/features/admin/business-management'
 import { getCommerceInsights } from '@/features/admin/commerce-insights'
 import { listAdminProducts } from '@/features/admin/product-actions'
+import { listPendingRestockCounts } from '@/features/catalog/restock-requests'
 import { formatTwd } from '@/lib/money'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminReportsPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const view = (await searchParams).view === 'month' ? 'month' : 'day'
-  const [report, insights, products] = await Promise.all([getSalesReport(view), getCommerceInsights(), listAdminProducts()])
+  const [report, insights, products, pendingRestocks] = await Promise.all([
+    getSalesReport(view),
+    getCommerceInsights(),
+    listAdminProducts(),
+    listPendingRestockCounts(),
+  ])
+  const waitingByProduct = new Map(pendingRestocks.map((entry) => [entry.productId, entry.count]))
+  const waitingTotal = pendingRestocks.reduce((total, entry) => total + entry.count, 0)
   const average = report.orderCount ? Math.round(report.revenue / report.orderCount) : 0
   const maxRevenue = Math.max(...report.periods.map((period) => period.revenue), 1)
   const replenishment = products.filter((product) => product.totalStock <= 5).sort((left, right) => left.totalStock - right.totalStock)
@@ -46,8 +54,8 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
         </section>
 
         <section className="admin-panel report-stock-panel">
-          <header><div><p className="eyebrow">stock alert</p><h2>庫存補貨提醒</h2></div><p>優先處理售完與低庫存商品</p></header>
-          {replenishment.length === 0 ? <p className="report-empty">目前所有商品庫存都高於 5 件。</p> : <ol className="stock-alert-list">{replenishment.map((product) => <li key={product.id}><div><strong>{product.name}</strong><small>{product.isPublished ? '前台上架中' : '目前為草稿'}</small></div><span data-empty={product.totalStock === 0}>{product.totalStock === 0 ? '已售完' : `剩 ${product.totalStock} 件`}</span><Link href={`/admin/products/${product.id}/edit`}>調整庫存</Link></li>)}</ol>}
+          <header><div><p className="eyebrow">stock alert</p><h2>庫存補貨提醒</h2></div><p>{waitingTotal > 0 ? `有 ${waitingTotal} 人登記到貨通知，補貨後系統會自動寄信` : '優先處理售完與低庫存商品'}</p></header>
+          {replenishment.length === 0 ? <p className="report-empty">目前所有商品庫存都高於 5 件。</p> : <ol className="stock-alert-list">{replenishment.map((product) => <li key={product.id}><div><strong>{product.name}</strong><small>{waitingByProduct.get(product.id) ? `${waitingByProduct.get(product.id)} 人在等補貨` : product.isPublished ? '前台上架中' : '目前為草稿'}</small></div><span data-empty={product.totalStock === 0}>{product.totalStock === 0 ? '已售完' : `剩 ${product.totalStock} 件`}</span><Link href={`/admin/products/${product.id}/edit`}>調整庫存</Link></li>)}</ol>}
         </section>
 
         <section className="admin-panel report-search-panel">

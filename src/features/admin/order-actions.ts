@@ -155,6 +155,8 @@ type AdminOrderDependencies = {
   requireAdmin: () => Promise<unknown>
   now?: () => Date
   onChanged?: (orderId: string) => void | Promise<void>
+  /** Fires only after a status change actually landed, with the new status. */
+  onTransition?: (orderId: string, nextStatus: OrderStatus) => void | Promise<void>
 }
 
 function errorMessage(error: unknown) {
@@ -202,6 +204,7 @@ export function createAdminOrderActions(dependencies: AdminOrderDependencies) {
         }
         throw error
       }
+      await dependencies.onTransition?.(id.data, next.data)
       await dependencies.onChanged?.(id.data)
     },
   }
@@ -514,6 +517,37 @@ async function createFixtureOrderRepository() {
   return createE2EOrderRepository(getE2EStore())
 }
 
+// Loads just enough of the order to write the shipping mail. Kept next to the
+// transition hook so the admin flow has one obvious place to look.
+async function notifyOrderShipped(orderId: string) {
+  const { isE2EMode } = await import('@/testing/e2e-mode')
+  if (isE2EMode()) return
+
+  // Session client, like every other admin read here: requireAdmin() has already
+  // run, so RLS lets the owner read their own order and the service-role key
+  // never enters this path.
+  const { createClient } = await import('@/lib/supabase/server')
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('orders')
+    .select('order_number, email, recipient_name, store_chain, store_id, store_name, order_items(quantity)')
+    .eq('id', orderId)
+    .maybeSingle()
+  if (error || !data?.email) return
+
+  const items = (data.order_items ?? []) as Array<{ quantity: number }>
+  const { sendOrderShippedEmail } = await import('@/lib/email/order-shipped')
+  await sendOrderShippedEmail({
+    orderNumber: String(data.order_number),
+    email: String(data.email),
+    recipientName: data.recipient_name ? String(data.recipient_name) : undefined,
+    storeChain: data.store_chain ? String(data.store_chain) : undefined,
+    storeName: data.store_name ? String(data.store_name) : undefined,
+    storeId: data.store_id ? String(data.store_id) : undefined,
+    itemCount: items.reduce((total, item) => total + Number(item.quantity ?? 0), 0) || undefined,
+  })
+}
+
 async function resolvedActions() {
   const [{ requireAdmin }, { isE2EMode }] = await Promise.all([
     import('@/lib/auth/require-admin'),
@@ -531,6 +565,16 @@ async function resolvedActions() {
       revalidatePath('/admin')
       revalidatePath('/admin/orders')
       revalidatePath('/admin/orders/[orderNumber]', 'page')
+    },
+    onTransition: async (orderId, nextStatus) => {
+      // Shipping is the one status the customer cannot see coming, and a missed
+      // pickup deadline costs the shop the return shipping.
+      if (nextStatus !== 'shipped') return
+      try {
+        await notifyOrderShipped(orderId)
+      } catch {
+        // A mail failure must never block the status change in the admin.
+      }
     },
   })
 }

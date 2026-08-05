@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import { ProductCard } from '@/features/catalog/product-card'
 import { VariantPicker } from '@/features/catalog/variant-picker'
 import { getProductBySlug, listProducts } from '@/features/catalog/queries'
+import { getCurrentUser } from '@/lib/auth/require-user'
 import { getProductQuantityPrices } from '@/features/catalog/quantity-prices'
 import { listCustomerPhotos } from '@/features/storefront/customer-photos'
 import { splitProductDisplayName } from '@/features/catalog/product-presentation'
@@ -12,6 +13,7 @@ import { getStorefrontSettings } from '@/features/checkout/settings'
 import { describeQuantityTier } from '@/features/cart/bundle-pricing'
 import { formatTwd } from '@/lib/money'
 import { ProductViewTracker } from '@/features/analytics/storefront-tracker'
+import { RecentlyViewed, RecentlyViewedTracker } from '@/features/catalog/recently-viewed'
 import { WishlistButton } from '@/features/wishlist/wishlist-button'
 import { ProductGallery } from '@/features/catalog/product-gallery'
 import { ProductShareButtons } from '@/components/social-share-menu'
@@ -77,9 +79,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     getStorefrontSettings(),
   ])
   if (!product) notFound()
-  const [customerPhotos, reviewData] = await Promise.all([
+  const [customerPhotos, reviewData, viewer] = await Promise.all([
     listCustomerPhotos(product.id),
     getProductReviewData(product.id),
+    // Prefills the restock form for signed-in members.
+    getCurrentUser(),
   ])
 
   const displayName = splitProductDisplayName(product.name)
@@ -139,6 +143,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     <main className="product-detail-page">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <ProductViewTracker name={product.name} />
+      <RecentlyViewedTracker product={{ slug: product.slug, name: product.name, price: minimumPrice, imageUrl: product.imageUrl, imageAlt: product.imageAlt }} />
       <nav className="product-breadcrumb section" aria-label="麵包屑">
         <Link href="/">首頁</Link><span>/</span><Link href="/products">所有商品</Link><span>/</span><span>{product.name}</span>
       </nav>
@@ -164,7 +169,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           {visibleTags.length > 0 ? <ul className="product-tags" aria-label="商品標籤">{visibleTags.map((tag) => <li key={tag}>{tag}</li>)}</ul> : null}
           {/* Picking colour/size/quantity is the page's job — it comes right
               after the price so it is visible without scrolling. */}
-          <VariantPicker product={product} />
+          <VariantPicker memberEmail={viewer?.email ?? null} product={product} />
           <div className="product-wishlist-row"><WishlistButton productId={product.id} productName={product.name} /><small>收藏後可在頁首的「收藏」快速找到這件商品。</small></div>
           <ul className="product-feature-list">
             <li><span>寄送</span><strong>7-ELEVEN 門市取貨</strong></li>
@@ -202,6 +207,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       </section> : null}
 
       {popularProducts.length > 0 && <section className="section product-recommendations"><header className="section-heading"><div><p className="eyebrow">popular right now</p><h2>大家也在看</h2></div><p>每次隨機整理不同熱門款式，看看還有哪些適合孩子的日常選擇。</p></header><div className="product-grid">{popularProducts.map((candidate) => <ProductCard key={candidate.id} product={candidate} />)}</div></section>}
+      <RecentlyViewed excludeSlug={product.slug} />
     </main>
   )
 }
