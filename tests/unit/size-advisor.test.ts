@@ -23,6 +23,7 @@ describe('suggestSize', () => {
     expect(suggestSize(200, sizes)).toBeNull()
     expect(suggestSize(Number.NaN, sizes)).toBeNull()
     expect(suggestSize(104, [])).toBeNull()
+    // Free-size items: the picker hides the advisor, and the mapper agrees.
     expect(suggestSize(104, ['F'])).toBeNull()
   })
 })

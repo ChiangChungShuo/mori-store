@@ -50,7 +50,10 @@ export function SizeAdvisor({ availableSizes, onPick }: {
   const [height, setHeight] = useState('')
   const suggestion = suggestSize(Number.parseInt(height, 10), availableSizes)
 
-  if (availableSizes.length === 0) return null
+  // Free-size items (F, one-size accessories) have nothing to advise on, and
+  // asking for a height there only produces a misleading "no size fits".
+  const hasNumericSizes = availableSizes.some((size) => Number.isFinite(Number.parseInt(size, 10)))
+  if (availableSizes.length === 0 || !hasNumericSizes) return null
 
   return (
     <div className="size-advisor">
