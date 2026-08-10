@@ -110,7 +110,6 @@ describe('store picker', () => {
     expect(screen.getByRole('button', { name: '開啟 7-ELEVEN 門市地圖' })).toBeInTheDocument()
     expect(screen.getByLabelText('取貨門市名稱')).not.toBeRequired()
     expect(screen.getByLabelText('門市店號')).not.toBeRequired()
-    expect(screen.getByLabelText(/我已閱讀並同意/)).not.toBeChecked()
   })
 
   it('shows the picked store as a confirmed choice instead of two text fields', () => {

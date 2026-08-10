@@ -57,12 +57,6 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
   ): Promise<CheckoutActionState> {
     'use server'
 
-    // Checked server-side too: the box is what records that the buyer saw the
-    // no-returns policy before ordering.
-    if (formData.get('termsAccepted') !== 'on') {
-      return { status: 'error', message: '請先勾選「我已閱讀並同意服務條款與隱私權政策」' }
-    }
-
     let cart: CheckoutCartItem[] = []
     try {
       cart = JSON.parse(formData.get('cart')?.toString() ?? '[]') as CheckoutCartItem[]

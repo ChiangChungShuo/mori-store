@@ -66,7 +66,6 @@ export function CheckoutForm({ action, couponAction, pickedStore, initialValues 
     ? pickedStore.storeId
     : initialValues?.chain === 'seven_eleven' ? initialValues.storeId : '')
   const [storeAddress, setStoreAddress] = useState(pickedStore?.address ?? '')
-  const [termsAccepted, setTermsAccepted] = useState(false)
   const [errors, setErrors] = useState<Partial<Record<CheckoutField, string>>>({})
   const [refreshAttempt, setRefreshAttempt] = useState(0)
   const [refreshedKey, setRefreshedKey] = useState('')
@@ -295,11 +294,7 @@ export function CheckoutForm({ action, couponAction, pickedStore, initialValues 
           </div> : null}
           <div className="checkout-payment-note"><strong>下一步：確認並送出訂單</strong><p>下一頁會顯示完整商品、客戶、付款與送貨資料；確認送出後才會成立訂單並保留庫存。</p></div>
           {!checkoutComplete && hydrated && cart.length > 0 ? <p className="checkout-incomplete" aria-live="polite">請填妥顧客資料並選擇取貨門市，即可確認訂單。</p> : null}
-          <label className="checkout-terms">
-            <input checked={termsAccepted} name="termsAccepted" onChange={(event) => setTermsAccepted(event.target.checked)} type="checkbox" value="on" />
-            <span>我已閱讀並同意 <Link href="/terms" target="_blank">服務條款</Link> 與 <Link href="/privacy" target="_blank">隱私權政策</Link>，並了解商品一經售出恕不退換。</span>
-          </label>
-          <button className="button checkout-submit" type="submit" disabled={pending || !hydrated || effectiveRefreshStatus !== 'success' || cart.length === 0 || !checkoutComplete || !termsAccepted || couponPending}>{pending ? '送出資料中…' : !checkoutComplete ? '請先完成訂單資料' : termsAccepted ? '送出資料，確認訂單' : '請先勾選同意條款'}</button>
+          <button className="button checkout-submit" type="submit" disabled={pending || !hydrated || effectiveRefreshStatus !== 'success' || cart.length === 0 || !checkoutComplete || couponPending}>{pending ? '送出資料中…' : checkoutComplete ? '送出資料，確認訂單' : '請先完成訂單資料'}</button>
           <div className="checkout-assurances"><span>SSL 安全連線</span><span>超商取貨通知</span><span>會員可追蹤訂單</span></div>
           {hydrated && cart.length === 0 ? <p role="alert">購物車沒有可結帳的商品。</p> : null}
         </aside>

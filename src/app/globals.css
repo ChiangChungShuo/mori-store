@@ -2101,9 +2101,6 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .checkout-coupon .coupon-error { color: #a15954; }
 .checkout-order-summary .checkout-discount { color: #656e7a; }
 .checkout-incomplete { margin: 0 0 0.65rem; color: var(--muted); font-size: 0.65rem; line-height: 1.5; text-align: center; }
-.checkout-terms { display: flex; gap: 0.55rem; align-items: flex-start; margin-bottom: 0.75rem; color: var(--muted); font-size: 0.72rem; line-height: 1.6; cursor: pointer; }
-.checkout-terms input { flex: 0 0 auto; width: 1.05rem; height: 1.05rem; margin-top: 0.15rem; accent-color: var(--forest); }
-.checkout-terms a { color: var(--forest); text-decoration: underline; }
 .checkout-submit:disabled { cursor: not-allowed; opacity: 0.48; }
 .checkout-payment-note { margin-block: 1rem; padding: 0.9rem; background: var(--oat); }
 .checkout-payment-note strong { color: var(--forest); font-size: 0.72rem; }
