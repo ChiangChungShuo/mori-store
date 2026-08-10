@@ -39,6 +39,7 @@ export default async function AdminProductsPage({
   ])
   const products = filterAdminProductSummaries(allProducts, filters)
   const viewsBySlug = new Map(viewCounts.map((entry) => [entry.slug, entry]))
+  const busiestViews = Math.max(1, ...viewCounts.map((entry) => entry.views))
 
   return (
     <main className="section admin-management-page">
@@ -80,7 +81,7 @@ export default async function AdminProductsPage({
               <th scope="col">商品</th>
               <th scope="col">狀態</th>
               <th scope="col">總庫存</th>
-              <th scope="col">30 天瀏覽</th>
+              <th scope="col">近 30 天瀏覽</th>
               <th scope="col">庫存成本</th>
               <th scope="col">操作</th>
             </tr>
@@ -106,9 +107,19 @@ export default async function AdminProductsPage({
                   {product.totalStock <= 5 && <strong> 低庫存</strong>}
                 </td>
                 <td className="admin-product-views">
-                  {viewsBySlug.get(product.slug)
-                    ? <><strong>{viewsBySlug.get(product.slug)!.views}</strong><small>{viewsBySlug.get(product.slug)!.sessions} 人</small></>
-                    : <span>—</span>}
+                  {(() => {
+                    const seen = viewsBySlug.get(product.slug)
+                    if (!seen) return <span className="admin-product-views-empty">尚無人瀏覽</span>
+                    return (
+                      <div title={`近 30 天有 ${seen.sessions} 位訪客，總共打開這個商品頁 ${seen.views} 次`}>
+                        <p><strong>{seen.views}</strong> 次瀏覽</p>
+                        <p><strong>{seen.sessions}</strong> 位訪客</p>
+                        <div aria-hidden="true" className="admin-product-views-bar">
+                          <i style={{ width: `${Math.max(6, Math.round((seen.views / busiestViews) * 100))}%` }} />
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </td>
                 <td>{formatTwd(product.inventoryCost)}</td>
                 <td><div className="admin-product-actions"><Link className="admin-inline-action" href={`/admin/products/${product.id}/edit`}>編輯</Link><ProductPublishForm compact isPublished={product.isPublished} onToggle={setProductPublished.bind(null, product.id)} /><CopyTextButton copiedLabel="已複製連結" label="複製連結" text={absoluteUrl(`/products/${product.slug}`)} /></div></td>

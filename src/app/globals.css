@@ -1418,10 +1418,16 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .report-empty { margin: 0; border-radius: 0.9rem; padding: 2rem 1rem; background: var(--paper); color: var(--muted); font-size: 0.78rem; text-align: center; }
 .report-funnel-panel, .report-stock-panel { min-width: 0; }
 .report-search-panel, .report-views-panel { grid-column: 1 / -1; }
-.admin-product-views { white-space: nowrap; }
-.admin-product-views strong { color: var(--forest); font-size: 0.9rem; }
-.admin-product-views small { margin-left: 0.35rem; color: var(--muted); font-size: 0.72rem; }
-.admin-product-views span { color: var(--muted); }
+/* A bare "35  19人" gave no clue what either number was, so each line carries
+   its own unit and a bar shows how this product compares with the busiest one. */
+.admin-product-views { min-width: 8rem; white-space: nowrap; }
+.admin-product-views p { display: flex; gap: 0.3rem; align-items: baseline; margin: 0; color: var(--muted); font-size: 0.74rem; }
+.admin-product-views p + p { margin-top: 0.1rem; }
+.admin-product-views strong { color: var(--forest); font-size: 0.95rem; font-weight: 800; }
+.admin-product-views p + p strong { font-size: 0.82rem; font-weight: 700; }
+.admin-product-views-bar { height: 0.3rem; margin-top: 0.45rem; overflow: hidden; border-radius: 999px; background: #eaeef1; }
+.admin-product-views-bar i { display: block; height: 100%; border-radius: 999px; background: var(--moss); }
+.admin-product-views-empty { color: var(--muted); font-size: 0.74rem; }
 .report-views-panel .report-product-list li { grid-template-columns: auto minmax(0, 1fr) auto; }
 .report-funnel-panel > header > p, .report-stock-panel > header > p, .report-search-panel > header > p, .report-views-panel > header > p { max-width: 22rem; margin: 0; color: var(--muted); font-size: 0.74rem; line-height: 1.6; text-align: right; }
 .purchase-funnel { display: grid; gap: 0.85rem; margin: 0; padding: 0; list-style: none; }
