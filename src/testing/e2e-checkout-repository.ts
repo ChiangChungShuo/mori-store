@@ -156,6 +156,7 @@ export function createFixtureCheckoutRepository(
         storeName: attempt.storeName,
         customerNote: attempt.customerNote,
         merchantReply: '',
+        trackingCode: null,
         paymentMethod: attempt.paymentMethod,
         subtotal: attempt.subtotal,
         shippingFee: attempt.shippingFee,

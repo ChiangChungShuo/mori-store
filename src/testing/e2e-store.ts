@@ -55,6 +55,7 @@ export type E2EOrder = {
   storeName: string
   customerNote: string
   merchantReply: string
+  trackingCode?: string | null
   paymentMethod: PaymentMethod
   bankTransferLastFive?: string | null
   bankTransferSubmittedAt?: string | null
@@ -337,6 +338,7 @@ export function getE2EStore() {
   }
   for (const order of fixtureGlobal.__moriE2EStore.orders.values()) {
     order.merchantReply ??= ''
+    order.trackingCode ??= null
     order.bankTransferLastFive ??= null
     order.bankTransferSubmittedAt ??= null
   }

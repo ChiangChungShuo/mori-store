@@ -3,12 +3,16 @@ import { AccountOrderRow } from '@/features/account/account-order-row'
 import { getAccountSummary } from '@/features/account/summary'
 import { RecentlyViewed } from '@/features/catalog/recently-viewed'
 import { MemberCreditCard } from '@/features/account/member-credit-card'
+import { getMemberCredit } from '@/features/account/member-credit'
 import { requireUser } from '@/lib/auth/require-user'
 import { formatTwd } from '@/lib/money'
 
 export default async function AccountPage() {
   const user = await requireUser()
   const account = await getAccountSummary(user)
+  // 紅利點數 cannot be spent yet, so the member centre shows the one balance that
+  // can: 購物金. Points stay in the admin until redemption exists.
+  const credit = await getMemberCredit()
   // The last order's products, so a repeat purchase starts from one tap.
   const reorderItems = [...new Set(account.orders.flatMap((order) => order.items.map((item) => item.productName)))].slice(0, 6)
 
@@ -16,7 +20,7 @@ export default async function AccountPage() {
     <main className="account-page">
       <header className="account-page-heading">
         <div><p className="eyebrow">member garden</p><h1>{account.displayName}，歡迎回來。</h1></div>
-        <p>這裡收好你的訂單、紅利與會員成長紀錄。</p>
+        <p>這裡收好你的訂單、購物金與會員成長紀錄。</p>
       </header>
 
       {/* The member centre used to be a dead end: everything here reported on
@@ -46,7 +50,7 @@ export default async function AccountPage() {
         <div className="member-pass-identity"><p>mori family pass</p><strong>{account.displayName}</strong><span>{account.memberNumber}</span></div>
         <dl>
           <div><dt>會員等級</dt><dd>{account.tierLabel}</dd></div>
-          <div><dt>紅利點數（累積中）</dt><dd>{account.points} PT</dd></div>
+          <div><dt>購物金</dt><dd>{formatTwd(credit.balance)}</dd></div>
           <div><dt>專屬折扣</dt><dd>{account.discountPercent ? `${account.discountPercent}% OFF` : '累積中'}</dd></div>
         </dl>
         <div className="member-pass-ring" aria-label={`會員進度 ${account.progress}%`} style={{ '--member-progress': `${account.progress * 3.6}deg` } as React.CSSProperties}><span>{account.progress}%</span></div>
@@ -56,7 +60,7 @@ export default async function AccountPage() {
         <header><div><p className="eyebrow">membership journey</p><h2>會員成長</h2></div><strong>{formatTwd(account.totalSpent)}</strong></header>
         <div className="account-progress-track"><i style={{ width: `${account.progress}%` }} /></div>
         <p>{account.nextTierLabel ? `再消費 ${formatTwd(account.amountToNextTier)} 即可成為${account.nextTierLabel}。` : '已達成最高會員等級，謝謝你和 mori 一起長大。'}</p>
-        <div className="account-stats"><div><span>累計訂單</span><strong>{account.orderCount}</strong></div><div><span>累計消費</span><strong>{formatTwd(account.totalSpent)}</strong></div><div><span>點數回饋</span><strong>1%</strong></div></div>
+        <div className="account-stats"><div><span>累計訂單</span><strong>{account.orderCount}</strong></div><div><span>累計消費</span><strong>{formatTwd(account.totalSpent)}</strong></div><div><span>可用購物金</span><strong>{formatTwd(credit.balance)}</strong></div></div>
       </section>
 
       <section className="account-section account-recent-orders">
@@ -66,7 +70,7 @@ export default async function AccountPage() {
 
       <section className="account-section" id="benefits">
         <header><div><p className="eyebrow">member benefits</p><h2>你的會員福利</h2></div></header>
-        <div className="benefit-grid"><article><span>01</span><strong>消費累積紅利</strong><p>每筆有效訂單都會累積點數；目前為累積階段，開放折抵的時間會另行公告。</p></article><article><span>02</span><strong>會員限定優惠</strong><p>依會員等級享有專屬折扣與生日禮遇。</p></article><article><span>03</span><strong>訂單進度追蹤</strong><p>從付款、備貨到到店，隨時查看預計取貨時間。</p></article></div>
+        <div className="benefit-grid"><article><span>01</span><strong>購物金自動折抵</strong><p>新會員註冊禮與店家發放的購物金會存在帳戶裡，結帳時自動扣除，不需要輸入優惠碼。</p></article><article><span>02</span><strong>會員限定優惠</strong><p>依會員等級享有專屬折扣與生日禮遇。</p></article><article><span>03</span><strong>訂單進度追蹤</strong><p>從付款、備貨到到店，隨時查看預計取貨時間。</p></article></div>
       </section>
 
       <section className="account-section account-profile" id="profile">

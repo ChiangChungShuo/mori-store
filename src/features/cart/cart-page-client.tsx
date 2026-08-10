@@ -232,10 +232,10 @@ export function CartPageClient({ settings, isSignedIn = false, recommendedProduc
             </section>
 
             <div className="cart-sidebar">
-              {!isSignedIn ? <section className="member-nudge" aria-label="會員登入提示">
+              {!isSignedIn ? <section className="member-nudge" aria-label="結帳方式說明">
                 <span aria-hidden="true">♧</span>
-                <p>已經是會員？登入後可以更方便查看與管理訂單。</p>
-                <Link href="/login" className="button button-secondary">登入</Link>
+                <p><strong>不用註冊也能結帳</strong>已經是會員的話，登入可自動帶入收件資料。</p>
+                <Link href="/login?next=%2Fcart" className="button button-secondary">登入</Link>
               </section> : null}
               <aside className="cart-summary cart-order-summary" aria-label="訂單摘要">
                 <h2>訂單資訊</h2>

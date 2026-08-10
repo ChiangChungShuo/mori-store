@@ -486,6 +486,7 @@ export type Database = {
           store_name: string
           subtotal: number
           total: number
+          tracking_code: string | null
           updated_at: string
           user_id: string | null
         }
@@ -538,6 +539,7 @@ export type Database = {
           store_name?: string
           subtotal?: number
           total?: number
+          tracking_code?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -975,6 +977,10 @@ export type Database = {
       claim_signup_credit: {
         Args: Record<string, never>
         Returns: number
+      }
+      admin_set_order_tracking_code: {
+        Args: { p_order_id: string; p_tracking_code: string | null }
+        Returns: undefined
       }
       admin_reorder_product_images: {
         Args: { p_image_ids: string[]; p_product_id: string }

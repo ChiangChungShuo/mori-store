@@ -18,6 +18,7 @@ const parentOrder: OrderDetails = {
   storeName: '台北門市',
   customerNote: '',
   merchantReply: '',
+  trackingCode: null,
   paymentMethod: 'online_test',
   subtotal: 720,
   shippingFee: 60,

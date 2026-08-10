@@ -18,6 +18,8 @@ export type OrderShippedEmail = {
   storeName?: string
   storeId?: string
   itemCount?: number
+  /** 7-ELEVEN 貨態查詢碼, so the customer can check the parcel themselves. */
+  trackingCode?: string | null
 }
 
 const CHAIN_LABEL: Record<string, string> = {
@@ -61,6 +63,10 @@ export function renderOrderShippedEmail(order: OrderShippedEmail): { subject: st
           <p style="margin:0 0 14px;font-size:18px;font-weight:700;color:#52667a;letter-spacing:0.04em;">${escapeHtml(order.orderNumber)}</p>
           <p style="margin:0 0 4px;color:#8b8b8b;font-size:13px;">取貨門市</p>
           <p style="margin:0;color:#4c4c4c;font-weight:700;">${storeLine}</p>
+          ${order.trackingCode ? `
+          <p style="margin:14px 0 4px;color:#8b8b8b;font-size:13px;">物流追蹤碼</p>
+          <p style="margin:0;color:#4c4c4c;font-weight:700;letter-spacing:0.04em;">${escapeHtml(order.trackingCode)}</p>
+          <p style="margin:6px 0 0;color:#8b8b8b;font-size:12px;line-height:1.6;">可到 7-ELEVEN 交貨便查詢頁輸入這組代碼查看貨態。</p>` : ''}
         </div>
 
         <p style="margin:22px 0 0;padding:14px 16px;background:#fdf6f1;border-radius:8px;color:#8f6449;font-size:14px;line-height:1.7;">

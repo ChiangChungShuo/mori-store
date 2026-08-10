@@ -20,6 +20,8 @@ export type OrderDetails = {
   storeName: string
   customerNote: string
   merchantReply: string
+  /** 7-ELEVEN 貨態查詢碼, filled in by the shop when the parcel ships. */
+  trackingCode: string | null
   paymentMethod: string
   bankTransferLastFive?: string | null
   bankTransferSubmittedAt?: string | null
@@ -71,6 +73,7 @@ type OrderRow = {
   store_name: string
   customer_note: string
   merchant_reply: string
+  tracking_code?: string | null
   payment_method: string
   bank_transfer_last_five: string | null
   bank_transfer_submitted_at: string | null
@@ -91,7 +94,7 @@ type OrderRow = {
 
 const orderSelect = `
   order_number, email, recipient_name, recipient_phone,
-  store_chain, store_id, store_name, customer_note, merchant_reply, payment_method, bank_transfer_last_five, bank_transfer_submitted_at, subtotal, shipping_fee, total, status, created_at,
+  store_chain, store_id, store_name, customer_note, merchant_reply, tracking_code, payment_method, bank_transfer_last_five, bank_transfer_submitted_at, subtotal, shipping_fee, total, status, created_at,
   order_items(product_name, sku, color, size, unit_price, quantity)
 `
 
@@ -106,6 +109,7 @@ function toOrderDetails(order: OrderRow): OrderDetails {
     storeName: order.store_name,
     customerNote: order.customer_note,
     merchantReply: order.merchant_reply,
+    trackingCode: order.tracking_code ?? null,
     paymentMethod: order.payment_method,
     bankTransferLastFive: order.bank_transfer_last_five,
     bankTransferSubmittedAt: order.bank_transfer_submitted_at,

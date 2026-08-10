@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { canTransitionOrder, getOrderJourney, orderJourneySteps, orderStatusLabels } from '@/features/orders/status'
-import { getAdminOrder, replyToCustomer, updateOrderStatus } from '@/features/admin/order-actions'
+import { getAdminOrder, replyToCustomer, saveOrderTrackingCode, updateOrderStatus } from '@/features/admin/order-actions'
 import { OrderReplyForm } from '@/features/admin/order-reply-form'
+import { OrderTrackingForm } from '@/features/admin/order-tracking-form'
 import { CopyTextButton } from '@/features/admin/copy-text-button'
 import { formatTwd } from '@/lib/money'
 import { formatTaipeiDateTime } from '@/lib/date-time'
@@ -103,6 +104,7 @@ export default async function AdminOrderPage({
           <article><small>買家留言</small><p>{order.customerNote || '這筆訂單沒有附加問題。'}</p></article>
           {order.merchantReply ? <article data-owner="true"><small>mori 客服</small><p>{order.merchantReply}</p></article> : null}
         </div>
+        <OrderTrackingForm initialCode={order.trackingCode ?? ''} save={saveOrderTrackingCode.bind(null, order.id)} />
         <OrderReplyForm initialReply={order.merchantReply} reply={replyToCustomer.bind(null, order.id)} />
       </section>
 

@@ -22,6 +22,7 @@ export interface AdminOrderRepository {
     updatedAt: string,
   ): Promise<void>
   saveMerchantReply(orderId: string, reply: string): Promise<void>
+  saveTrackingCode(orderId: string, trackingCode: string): Promise<void>
 }
 
 export type AdminOrderFilters = {
@@ -46,6 +47,7 @@ export type AdminOrderDetail = AdminOrderSummary & {
   storeName: string
   customerNote: string
   merchantReply: string
+  trackingCode: string | null
   paymentMethod: string
   bankTransferLastFive: string | null
   bankTransferSubmittedAt: string | null
@@ -179,6 +181,18 @@ export function createAdminOrderActions(dependencies: AdminOrderDependencies) {
       await dependencies.onChanged?.(id.data)
       return { ok: true, message: '回覆已儲存，顧客可在訂單內容中查看' }
     },
+    // 物流追蹤碼: pasted from 7-ELEVEN 賣貨便 so the customer can check the parcel
+    // themselves instead of asking. Saving an empty value clears it.
+    async saveTrackingCode(orderId: string, trackingCode: string) {
+      await dependencies.requireAdmin()
+      const id = orderIdSchema.safeParse(orderId)
+      const code = z.string().trim().max(60, '追蹤碼最多 60 個字').safeParse(trackingCode)
+      if (!id.success) return { ok: false, message: '訂單不存在' }
+      if (!code.success) return { ok: false, message: code.error.issues[0]?.message ?? '請檢查追蹤碼' }
+      await dependencies.repository.saveTrackingCode(id.data, code.data)
+      await dependencies.onChanged?.(id.data)
+      return { ok: true, message: code.data ? '物流追蹤碼已儲存' : '已清除物流追蹤碼' }
+    },
     async updateOrderStatus(orderId: string, nextStatus: OrderStatus) {
       await dependencies.requireAdmin()
       const id = orderIdSchema.safeParse(orderId)
@@ -246,6 +260,12 @@ function createSupabaseOrderRepository(): AdminOrderRepository {
         .eq('id', orderId)
       if (error) throw error
     },
+
+    async saveTrackingCode(orderId, trackingCode) {
+      const { error } = await (await client())
+        .rpc('admin_set_order_tracking_code', { p_order_id: orderId, p_tracking_code: trackingCode })
+      if (error) throw error
+    },
   }
 }
 
@@ -260,6 +280,7 @@ type AdminOrderRow = {
   store_name: string
   customer_note: string
   merchant_reply: string
+  tracking_code?: string | null
   payment_method: string
   bank_transfer_last_five: string | null
   bank_transfer_submitted_at: string | null
@@ -364,7 +385,7 @@ function createSupabaseOrderQueryRepository(): AdminOrderQueryRepository {
     async listOrders(filters) {
       let query = (await client())
         .from('orders')
-        .select('id, order_number, recipient_name, recipient_phone, email, store_chain, store_id, store_name, customer_note, merchant_reply, payment_method, bank_transfer_last_five, bank_transfer_submitted_at, subtotal, shipping_fee, total, status, created_at')
+        .select('id, order_number, recipient_name, recipient_phone, email, store_chain, store_id, store_name, customer_note, merchant_reply, tracking_code, payment_method, bank_transfer_last_five, bank_transfer_submitted_at, subtotal, shipping_fee, total, status, created_at')
         .order('created_at', { ascending: false })
       if (filters.query) {
         const term = filters.query.replace(/[,()]/g, ' ')
@@ -381,7 +402,7 @@ function createSupabaseOrderQueryRepository(): AdminOrderQueryRepository {
         .from('orders')
         .select(`
           id, order_number, recipient_name, recipient_phone, email,
-          store_chain, store_id, store_name, customer_note, merchant_reply, payment_method, bank_transfer_last_five, bank_transfer_submitted_at, subtotal, shipping_fee, total, status, created_at,
+          store_chain, store_id, store_name, customer_note, merchant_reply, tracking_code, payment_method, bank_transfer_last_five, bank_transfer_submitted_at, subtotal, shipping_fee, total, status, created_at,
           order_items(id, product_name, sku, color, size, unit_price, quantity)
         `)
         .order('created_at', { ascending: false })
@@ -401,6 +422,7 @@ function createSupabaseOrderQueryRepository(): AdminOrderQueryRepository {
         storeName: order.store_name,
         customerNote: order.customer_note,
         merchantReply: order.merchant_reply,
+        trackingCode: order.tracking_code ?? null,
         paymentMethod: order.payment_method,
         bankTransferLastFive: order.bank_transfer_last_five,
         bankTransferSubmittedAt: order.bank_transfer_submitted_at,
@@ -424,7 +446,7 @@ function createSupabaseOrderQueryRepository(): AdminOrderQueryRepository {
         .from('orders')
         .select(`
           id, order_number, recipient_name, recipient_phone, email,
-          store_chain, store_id, store_name, customer_note, merchant_reply, payment_method, bank_transfer_last_five, bank_transfer_submitted_at, subtotal, shipping_fee, total, status, created_at,
+          store_chain, store_id, store_name, customer_note, merchant_reply, tracking_code, payment_method, bank_transfer_last_five, bank_transfer_submitted_at, subtotal, shipping_fee, total, status, created_at,
           order_items(id, product_name, sku, color, size, unit_price, quantity),
           payment_attempts(status, provider_reference, paid_at)
         `)
@@ -444,6 +466,7 @@ function createSupabaseOrderQueryRepository(): AdminOrderQueryRepository {
         storeName: order.store_name,
         customerNote: order.customer_note,
         merchantReply: order.merchant_reply,
+        trackingCode: order.tracking_code ?? null,
         paymentMethod: order.payment_method,
         bankTransferLastFive: order.bank_transfer_last_five,
         bankTransferSubmittedAt: order.bank_transfer_submitted_at,
@@ -530,7 +553,7 @@ async function notifyOrderShipped(orderId: string) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('orders')
-    .select('order_number, email, recipient_name, store_chain, store_id, store_name, order_items(quantity)')
+    .select('order_number, email, recipient_name, store_chain, store_id, store_name, tracking_code, order_items(quantity)')
     .eq('id', orderId)
     .maybeSingle()
   if (error || !data?.email) return
@@ -545,6 +568,7 @@ async function notifyOrderShipped(orderId: string) {
     storeName: data.store_name ? String(data.store_name) : undefined,
     storeId: data.store_id ? String(data.store_id) : undefined,
     itemCount: items.reduce((total, item) => total + Number(item.quantity ?? 0), 0) || undefined,
+    trackingCode: data.tracking_code ? String(data.tracking_code) : null,
   })
 }
 
@@ -591,6 +615,15 @@ export async function replyToCustomer(
 ) {
   'use server'
   return (await resolvedActions()).replyToCustomer(orderId, String(formData.get('reply') ?? ''))
+}
+
+export async function saveOrderTrackingCode(
+  orderId: string,
+  _previousState: { ok: boolean; message: string },
+  formData: FormData,
+) {
+  'use server'
+  return (await resolvedActions()).saveTrackingCode(orderId, String(formData.get('trackingCode') ?? ''))
 }
 
 async function resolvedQueries() {

@@ -808,6 +808,15 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .member-credit-log span { color: var(--ink); font-size: 0.8rem; }
 .member-credit-log strong { color: var(--forest); font-size: 0.8rem; }
 .member-credit-log strong[data-spend="true"] { color: var(--muted); }
+.order-tracking-code { display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem; align-items: baseline; }
+.order-tracking-code strong { letter-spacing: 0.04em; }
+.order-tracking-code a { color: var(--forest); font-size: 0.72rem; font-weight: 800; text-decoration: underline; }
+/* 物流追蹤碼 in the admin sits beside the reply box, same shape. */
+.admin-tracking-form { display: grid; gap: 0.6rem; margin-top: 1.25rem; border-top: 1px solid var(--line); padding-top: 1.1rem; }
+.admin-tracking-form label { display: grid; gap: 0.35rem; color: var(--forest); font-size: 0.74rem; font-weight: 800; }
+.admin-tracking-form input { min-height: 2.85rem; border: 1px solid #d5dde2; border-radius: 0.7rem; background: var(--white); padding: 0.5rem 0.85rem; font-size: 0.85rem; }
+.admin-tracking-form .button { justify-self: start; min-height: 2.7rem; }
+.admin-tracking-form small { color: var(--muted); font-size: 0.68rem; line-height: 1.6; }
 @media (max-width: 60rem) { .account-quick-links { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .account-order-help div { display: grid; gap: 0.15rem; }
 .account-order-help strong { color: var(--forest); font-size: 0.78rem; }
@@ -1967,8 +1976,16 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .cart-remove-button { border: 0; background: transparent; color: var(--muted); padding: 0.2rem 0; font-size: 0.7rem; text-decoration: underline; cursor: pointer; }
 .cart-remove-button:hover { color: #a15954; }
 .cart-sidebar { position: sticky; top: 6.5rem; display: grid; gap: 1rem; }
-.member-nudge { display: grid; grid-template-columns: auto 1fr auto; gap: 0.8rem; align-items: center; padding: 1rem; border: 1px solid var(--line); background: var(--white); }
+.member-nudge { display: grid; grid-template-columns: auto 1fr auto; gap: 0.8rem; align-items: center; border: 1px solid var(--line); border-radius: 1.1rem; padding: 1rem; background: var(--white); }
 .member-nudge > span { color: var(--forest); font-size: 1.25rem; }
+.member-nudge p strong { display: block; color: var(--forest); font-size: 0.82rem; }
+/* Post-purchase membership invitation: shown only to guests, after the order. */
+.guest-member-invite { display: flex; flex-wrap: wrap; gap: 1rem 2rem; justify-content: space-between; align-items: center; width: min(100%, 56rem); margin: 1.75rem auto 0; border: 1px solid var(--sage); border-radius: 1.25rem; background: var(--oat); padding: 1.4rem 1.6rem; }
+.guest-member-invite > div { max-width: 34rem; display: grid; gap: 0.3rem; }
+.guest-member-invite h2 { margin: 0; color: var(--forest); font-family: Georgia, "Noto Serif TC", serif; font-size: 1.25rem; font-weight: 400; }
+.guest-member-invite p { margin: 0; color: var(--muted); font-size: 0.82rem; line-height: 1.75; }
+.guest-member-invite p strong { color: var(--forest); }
+@media (max-width: 40rem) { .guest-member-invite .button { width: 100%; } }
 .member-nudge p { margin: 0; font-size: 0.76rem; line-height: 1.45; }
 .member-nudge .button { min-height: 2.5rem; padding: 0.5rem 0.8rem; white-space: nowrap; }
 .cart-summary { padding: 1.5rem; background: var(--oat); }

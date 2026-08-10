@@ -24,6 +24,7 @@ import {
   type DashboardRepository,
 } from '@/features/admin/dashboard-queries'
 import { createE2EStore, getE2EStore } from '@/testing/e2e-store'
+import { renderOrderShippedEmail } from '@/lib/email/order-shipped'
 
 const adminGate = vi.hoisted(() => ({ requireAdmin: vi.fn(async () => undefined) }))
 const liveSupabase = vi.hoisted(() => ({ createClient: vi.fn() }))
@@ -81,6 +82,13 @@ class MemoryOrderRepository implements AdminOrderRepository {
   async saveMerchantReply(id: string, reply: string) {
     this.events.push(`reply:${id}:${reply}`)
     this.merchantReply = reply
+  }
+
+  trackingCode: string | null = null
+
+  async saveTrackingCode(id: string, trackingCode: string) {
+    this.events.push(`tracking:${id}:${trackingCode}`)
+    this.trackingCode = trackingCode || null
   }
 }
 
@@ -555,6 +563,40 @@ describe('admin fulfillment pages', () => {
 
     expect(reads).not.toMatch(/createAdminClient/)
     expect(reads).toMatch(/@\/lib\/supabase\/server/)
+  })
+
+  it('saves and clears a 物流追蹤碼 for the customer to check', async () => {
+    const repository = new MemoryOrderRepository()
+    const actions = createAdminOrderActions({
+      repository,
+      requireAdmin: async () => undefined,
+    })
+
+    const saved = await actions.saveTrackingCode(orderId, '  F123456789  ')
+    expect(saved).toMatchObject({ ok: true })
+    expect(repository.trackingCode).toBe('F123456789')
+
+    const cleared = await actions.saveTrackingCode(orderId, '   ')
+    expect(cleared).toMatchObject({ ok: true })
+    expect(repository.trackingCode).toBeNull()
+
+    const tooLong = await actions.saveTrackingCode(orderId, 'F'.repeat(61))
+    expect(tooLong).toMatchObject({ ok: false })
+  })
+
+  it('puts the tracking code in the shipped email when there is one', () => {
+    const withCode = renderOrderShippedEmail({
+      orderNumber: 'MORI-TEST',
+      email: 'parent@example.com',
+      storeChain: 'seven_eleven',
+      storeName: '忠孝門市',
+      trackingCode: 'F123456789',
+    })
+    expect(withCode.html).toContain('物流追蹤碼')
+    expect(withCode.html).toContain('F123456789')
+
+    const without = renderOrderShippedEmail({ orderNumber: 'MORI-TEST', email: 'parent@example.com' })
+    expect(without.html).not.toContain('物流追蹤碼')
   })
 
   it('authorizes POST form actions before reading form values', () => {

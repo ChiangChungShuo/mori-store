@@ -6,6 +6,8 @@ import { getBankTransferInfo } from '@/features/checkout/bank-transfer'
 import { formatTwd } from '@/lib/money'
 import { BankTransferForm } from '@/features/orders/bank-transfer-form'
 import { submitGuestBankTransferLastFive } from '@/features/orders/bank-transfer-actions'
+import { getCurrentUser } from '@/lib/auth/require-user'
+import { getActiveWelcomeGift } from '@/features/marketing/welcome-gift'
 
 type OrderCompletePageProps = {
   params: Promise<{ orderNumber: string }>
@@ -25,6 +27,9 @@ export default async function OrderCompletePage({ params, searchParams }: OrderC
   }
   if (!order) notFound()
   const bank = order.paymentMethod === 'bank_transfer' ? getBankTransferInfo() : null
+  // Nobody has to register to buy. The invitation to become a member comes
+  // after the money is in, where it costs the shopper nothing to say yes.
+  const [viewer, welcomeGift] = await Promise.all([getCurrentUser(), getActiveWelcomeGift()])
 
   return (
     <main className="section order-complete-page">
@@ -73,8 +78,24 @@ export default async function OrderCompletePage({ params, searchParams }: OrderC
           />
         ) : null}
       </section> : null}
+      {!viewer ? (
+        <section className="guest-member-invite" aria-labelledby="guest-member-invite-title">
+          <div>
+            <p className="eyebrow">become a member</p>
+            <h2 id="guest-member-invite-title">用同一個 Email 建立會員</h2>
+            <p>
+              這筆訂單已經成立，不需要註冊也能查詢。若用 <strong>{order.email}</strong> 建立會員，
+              下次結帳資料會自動帶入，訂單進度也能直接在會員中心看到
+              {welcomeGift ? `，還會拿到 ${formatTwd(welcomeGift.amount)} 購物金（下次結帳自動折抵）` : ''}。
+            </p>
+          </div>
+          <Link className="button" href={`/signup?next=${encodeURIComponent('/account/orders')}`}>建立會員</Link>
+        </section>
+      ) : null}
       <nav className="order-complete-actions" aria-label="訂單完成後續操作">
-        <Link className="button" href="/account/orders">前往我的訂單</Link>
+        {viewer
+          ? <Link className="button" href="/account/orders">前往我的訂單</Link>
+          : <Link className="button" href="/order-lookup">查詢訂單進度</Link>}
         <Link className="button button-secondary" href="/products">繼續選購</Link>
       </nav>
     </main>

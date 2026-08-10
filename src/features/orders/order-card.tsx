@@ -38,6 +38,7 @@ export function OrderCard({ order }: OrderCardProps) {
         <div><dt>成立時間</dt><dd>{formatTaipeiDateTime(order.createdAt)}</dd></div>
         <div><dt>收件人</dt><dd>{order.recipientName}（{order.recipientPhone}）</dd></div>
         <div><dt>取貨門市</dt><dd>{order.storeName}（{order.storeId}）</dd></div>
+        {order.trackingCode ? <div><dt>物流追蹤碼</dt><dd className="order-tracking-code"><strong>{order.trackingCode}</strong><a href="https://eservice.7-11.com.tw/e-tracking/search.aspx" rel="noreferrer noopener" target="_blank">查貨態 ↗</a></dd></div> : null}
         <div><dt>付款方式</dt><dd>{order.paymentMethod === 'bank_transfer' ? '銀行匯款' : '超商取貨付款'}</dd></div>
         {order.paymentMethod === 'bank_transfer' ? <div><dt>匯款末 5 碼</dt><dd>{order.bankTransferLastFive ? `${order.bankTransferLastFive}（等待店家核對）` : '尚未填寫'}</dd></div> : null}
         <div><dt>商品小計</dt><dd>{formatTwd(order.subtotal)}</dd></div>

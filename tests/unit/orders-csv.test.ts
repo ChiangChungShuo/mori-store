@@ -16,6 +16,7 @@ const order: AdminOrderDetail = {
   storeName: '駕勝門市',
   customerNote: '請包好，謝謝：)',
   merchantReply: '',
+  trackingCode: null,
   paymentMethod: 'bank_transfer',
   bankTransferLastFive: '54321',
   bankTransferSubmittedAt: null,

@@ -13,6 +13,7 @@ function memberOrder(order: E2EOrder): OrderDetails {
     storeName: order.storeName,
     customerNote: order.customerNote,
     merchantReply: order.merchantReply,
+    trackingCode: order.trackingCode ?? null,
     paymentMethod: order.paymentMethod,
     bankTransferLastFive: order.bankTransferLastFive,
     bankTransferSubmittedAt: order.bankTransferSubmittedAt,
@@ -80,6 +81,7 @@ export function createE2EOrderRepository(store: E2EStoreState):
           storeName: order.storeName,
           customerNote: order.customerNote,
           merchantReply: order.merchantReply,
+          trackingCode: order.trackingCode ?? null,
           paymentMethod: order.paymentMethod,
           bankTransferLastFive: order.bankTransferLastFive ?? null,
           bankTransferSubmittedAt: order.bankTransferSubmittedAt ?? null,
@@ -101,6 +103,7 @@ export function createE2EOrderRepository(store: E2EStoreState):
         storeName: order.storeName,
         customerNote: order.customerNote,
         merchantReply: order.merchantReply,
+        trackingCode: order.trackingCode ?? null,
         paymentMethod: order.paymentMethod,
         bankTransferLastFive: order.bankTransferLastFive ?? null,
         bankTransferSubmittedAt: order.bankTransferSubmittedAt ?? null,
@@ -125,6 +128,11 @@ export function createE2EOrderRepository(store: E2EStoreState):
       const order = [...store.orders.values()].find((candidate) => candidate.id === orderId)
       if (!order || order.status !== expectedStatus) throw new Error('order_status_changed')
       order.status = nextStatus
+    },
+    async saveTrackingCode(orderId, trackingCode) {
+      const order = [...store.orders.values()].find((candidate) => candidate.id === orderId)
+      if (!order) throw new Error('order_not_found')
+      order.trackingCode = trackingCode || null
     },
     async saveMerchantReply(orderId, reply) {
       const order = [...store.orders.values()].find((candidate) => candidate.id === orderId)
