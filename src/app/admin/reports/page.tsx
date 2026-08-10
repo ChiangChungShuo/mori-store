@@ -3,18 +3,34 @@ import { getSalesReport } from '@/features/admin/business-management'
 import { getCommerceInsights } from '@/features/admin/commerce-insights'
 import { listAdminProducts } from '@/features/admin/product-actions'
 import { listPendingRestockCounts } from '@/features/catalog/restock-requests'
+import { listProductViewCounts } from '@/features/admin/product-views'
 import { formatTwd } from '@/lib/money'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminReportsPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const view = (await searchParams).view === 'month' ? 'month' : 'day'
-  const [report, insights, products, pendingRestocks] = await Promise.all([
+  const [report, insights, products, pendingRestocks, viewCounts] = await Promise.all([
     getSalesReport(view),
     getCommerceInsights(),
     listAdminProducts(),
     listPendingRestockCounts(),
+    listProductViewCounts(30),
   ])
+  // Views live on the slug; sales come back by product name, so the join is by
+  // name and simply reads 0 for a product renamed since its last order.
+  const soldByName = new Map(report.products.map((product) => [product.name, product.quantity]))
+  const productsBySlug = new Map(products.map((product) => [product.slug, product]))
+  const viewRanking = viewCounts
+    .map((entry) => {
+      const product = productsBySlug.get(entry.slug)
+      return product
+        ? { ...entry, name: product.name, id: product.id, sold: soldByName.get(product.name) ?? 0 }
+        : null
+    })
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
+    .slice(0, 8)
+  const totalViews = viewCounts.reduce((total, entry) => total + entry.views, 0)
   const waitingByProduct = new Map(pendingRestocks.map((entry) => [entry.productId, entry.count]))
   const waitingTotal = pendingRestocks.reduce((total, entry) => total + entry.count, 0)
   const average = report.orderCount ? Math.round(report.revenue / report.orderCount) : 0
@@ -56,6 +72,24 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
         <section className="admin-panel report-stock-panel">
           <header><div><p className="eyebrow">stock alert</p><h2>庫存補貨提醒</h2></div><p>{waitingTotal > 0 ? `有 ${waitingTotal} 人登記到貨通知，補貨後系統會自動寄信` : '優先處理售完與低庫存商品'}</p></header>
           {replenishment.length === 0 ? <p className="report-empty">目前所有商品庫存都高於 5 件。</p> : <ol className="stock-alert-list">{replenishment.map((product) => <li key={product.id}><div><strong>{product.name}</strong><small>{waitingByProduct.get(product.id) ? `${waitingByProduct.get(product.id)} 人在等補貨` : product.isPublished ? '前台上架中' : '目前為草稿'}</small></div><span data-empty={product.totalStock === 0}>{product.totalStock === 0 ? '已售完' : `剩 ${product.totalStock} 件`}</span><Link href={`/admin/products/${product.id}/edit`}>調整庫存</Link></li>)}</ol>}
+        </section>
+
+        <section className="admin-panel report-views-panel">
+          <header><div><p className="eyebrow">product views</p><h2>商品瀏覽排行</h2></div><p>近 30 天，共 {totalViews} 次瀏覽；看得多卻沒賣出的商品，通常是價格、照片或說明需要調整</p></header>
+          {viewRanking.length === 0 ? <p className="report-empty">還沒有商品瀏覽紀錄，前台有人逛之後就會出現。</p> : (
+            <ol className="report-product-list">
+              {viewRanking.map((entry, index) => (
+                <li key={entry.slug}>
+                  <span>{String(index + 1).padStart(2, '0')}</span>
+                  <div>
+                    <strong>{entry.name}</strong>
+                    <small>{entry.views} 次瀏覽・{entry.sessions} 人{entry.sold > 0 ? `・售出 ${entry.sold} 件` : '・尚未售出'}</small>
+                  </div>
+                  <Link className="admin-inline-action" href={`/admin/products/${entry.id}/edit`}>編輯</Link>
+                </li>
+              ))}
+            </ol>
+          )}
         </section>
 
         <section className="admin-panel report-search-panel">

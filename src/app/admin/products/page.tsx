@@ -4,6 +4,7 @@ import { FilterClearLink } from '@/components/filter-clear-link'
 import { filterAdminProductSummaries, listAdminProducts, setProductPublished, type AdminProductFilters } from '@/features/admin/product-actions'
 import { ProductPublishForm } from '@/features/admin/product-form'
 import { CopyTextButton } from '@/features/admin/copy-text-button'
+import { listProductViewCounts } from '@/features/admin/product-views'
 import { absoluteUrl } from '@/lib/site'
 import { formatTwd } from '@/lib/money'
 import { listProductCategories } from '@/features/catalog/categories'
@@ -30,8 +31,14 @@ export default async function AdminProductsPage({
     status: status === 'published' || status === 'draft' ? status : '',
     stock: stock === 'in_stock' || stock === 'low_stock' || stock === 'sold_out' ? stock : '',
   }
-  const [allProducts, categories, drafts] = await Promise.all([listAdminProducts(), listProductCategories(), listProductDrafts()])
+  const [allProducts, categories, drafts, viewCounts] = await Promise.all([
+    listAdminProducts(),
+    listProductCategories(),
+    listProductDrafts(),
+    listProductViewCounts(30),
+  ])
   const products = filterAdminProductSummaries(allProducts, filters)
+  const viewsBySlug = new Map(viewCounts.map((entry) => [entry.slug, entry]))
 
   return (
     <main className="section admin-management-page">
@@ -73,6 +80,7 @@ export default async function AdminProductsPage({
               <th scope="col">商品</th>
               <th scope="col">狀態</th>
               <th scope="col">總庫存</th>
+              <th scope="col">30 天瀏覽</th>
               <th scope="col">庫存成本</th>
               <th scope="col">操作</th>
             </tr>
@@ -96,6 +104,11 @@ export default async function AdminProductsPage({
                 <td>
                   {product.totalStock}
                   {product.totalStock <= 5 && <strong> 低庫存</strong>}
+                </td>
+                <td className="admin-product-views">
+                  {viewsBySlug.get(product.slug)
+                    ? <><strong>{viewsBySlug.get(product.slug)!.views}</strong><small>{viewsBySlug.get(product.slug)!.sessions} 人</small></>
+                    : <span>—</span>}
                 </td>
                 <td>{formatTwd(product.inventoryCost)}</td>
                 <td><div className="admin-product-actions"><Link className="admin-inline-action" href={`/admin/products/${product.id}/edit`}>編輯</Link><ProductPublishForm compact isPublished={product.isPublished} onToggle={setProductPublished.bind(null, product.id)} /><CopyTextButton copiedLabel="已複製連結" label="複製連結" text={absoluteUrl(`/products/${product.slug}`)} /></div></td>

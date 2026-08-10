@@ -1417,8 +1417,13 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .report-bar-row small { color: var(--muted); }
 .report-empty { margin: 0; border-radius: 0.9rem; padding: 2rem 1rem; background: var(--paper); color: var(--muted); font-size: 0.78rem; text-align: center; }
 .report-funnel-panel, .report-stock-panel { min-width: 0; }
-.report-search-panel { grid-column: 1 / -1; }
-.report-funnel-panel > header > p, .report-stock-panel > header > p, .report-search-panel > header > p { max-width: 22rem; margin: 0; color: var(--muted); font-size: 0.74rem; line-height: 1.6; text-align: right; }
+.report-search-panel, .report-views-panel { grid-column: 1 / -1; }
+.admin-product-views { white-space: nowrap; }
+.admin-product-views strong { color: var(--forest); font-size: 0.9rem; }
+.admin-product-views small { margin-left: 0.35rem; color: var(--muted); font-size: 0.72rem; }
+.admin-product-views span { color: var(--muted); }
+.report-views-panel .report-product-list li { grid-template-columns: auto minmax(0, 1fr) auto; }
+.report-funnel-panel > header > p, .report-stock-panel > header > p, .report-search-panel > header > p, .report-views-panel > header > p { max-width: 22rem; margin: 0; color: var(--muted); font-size: 0.74rem; line-height: 1.6; text-align: right; }
 .purchase-funnel { display: grid; gap: 0.85rem; margin: 0; padding: 0; list-style: none; }
 .purchase-funnel li { display: grid; grid-template-columns: 9rem minmax(5rem, 1fr) 3rem; gap: 0.8rem; align-items: center; }
 .purchase-funnel li > div:first-child { display: grid; grid-template-columns: auto 1fr; gap: 0.1rem 0.5rem; }
