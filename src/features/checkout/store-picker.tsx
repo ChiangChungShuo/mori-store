@@ -57,7 +57,9 @@ export function StorePicker({
   onStoreIdChange,
 }: StorePickerProps) {
   const [localPickerOpen, setLocalPickerOpen] = useState(false)
+  const [manualOpen, setManualOpen] = useState(false)
   const localStore = { name: '7-ELEVEN 測試門市', id: '000001' }
+  const picked = Boolean(storeName.trim() && storeId.trim())
 
   function handleOpenStorePicker() {
     if (usesLocalNetworkPicker()) {
@@ -95,50 +97,62 @@ export function StorePicker({
         </div>
       </fieldset>
       {errors.chain ? <span id="checkout-chain-error" role="alert">{errors.chain}</span> : null}
-      <div className="store-map-picker">
-        <button type="button" className="button button-secondary store-map-button" onClick={handleOpenStorePicker}>
-          {storeName ? '重新選擇門市' : '開啟 7-ELEVEN 門市地圖'}
-        </button>
-        {storeName && storeId ? (
-          <p className="store-map-selected" aria-live="polite">
-            <strong>已選門市：{storeName}</strong>
+
+      {picked ? (
+        // Chosen on the 7-ELEVEN map: show what came back instead of asking the
+        // shopper to copy the name and store number by hand.
+        <div className="store-chosen" aria-live="polite">
+          <div>
+            <p className="store-chosen-label">已選取貨門市</p>
+            <strong>{storeName}</strong>
             <span>店號 {storeId}{storeAddress ? `・${storeAddress}` : ''}</span>
-          </p>
-        ) : (
-          <p className="store-map-note">用地圖選店會自動帶回門市名稱與店號；或於下方手動填寫。</p>
-        )}
-      </div>
-      <label>
-        取貨門市名稱
-        <input
-          aria-describedby={errors.storeName ? 'checkout-store-name-error' : undefined}
-          aria-invalid={Boolean(errors.storeName)}
-          name="storeName"
-          required
-          maxLength={60}
-          value={storeName}
-          placeholder="例：忠孝門市"
-          onChange={(event) => onStoreNameChange(event.target.value)}
-        />
-      </label>
-      {errors.storeName ? <span id="checkout-store-name-error" role="alert">{errors.storeName}</span> : null}
-      <label>
-        門市店號
-        <input
-          aria-describedby={errors.storeId ? 'checkout-store-error' : undefined}
-          aria-invalid={Boolean(errors.storeId)}
-          name="storeId"
-          required
-          maxLength={20}
-          value={storeId}
-          placeholder="例：123456"
-          onChange={(event) => onStoreIdChange(event.target.value)}
-        />
-      </label>
-      {errors.storeId ? <span id="checkout-store-error" role="alert">{errors.storeId}</span> : null}
-      <p className="store-picker-hint">
-        請填寫方便取貨的 7-ELEVEN 門市名稱與店號（可在超商 App 或門市櫃台查詢），我們會依此為你寄件。
-      </p>
+          </div>
+          <button className="store-chosen-change" onClick={handleOpenStorePicker} type="button">重新選擇</button>
+          <input name="storeName" type="hidden" value={storeName} />
+          <input name="storeId" type="hidden" value={storeId} />
+        </div>
+      ) : (
+        <div className="store-map-picker">
+          <button type="button" className="button store-map-button" onClick={handleOpenStorePicker}>
+            開啟 7-ELEVEN 門市地圖
+          </button>
+          <p className="store-map-note">在地圖上選好門市，名稱與店號會自動帶回來，不用自己輸入。</p>
+        </div>
+      )}
+
+      {/* Fallback for the rare case the map cannot open (pop-up blockers, an
+          in-app browser); hidden behind a summary so it is not a second form
+          everyone feels obliged to fill in. */}
+      <details className="store-manual" open={manualOpen || Boolean(errors.storeName || errors.storeId)} onToggle={(event) => setManualOpen(event.currentTarget.open)}>
+        <summary>地圖打不開？手動填寫門市</summary>
+        <label>
+          取貨門市名稱
+          <input
+            aria-describedby={errors.storeName ? 'checkout-store-name-error' : undefined}
+            aria-invalid={Boolean(errors.storeName)}
+            maxLength={60}
+            name={picked ? undefined : 'storeName'}
+            onChange={(event) => onStoreNameChange(event.target.value)}
+            placeholder="例：忠孝門市"
+            value={storeName}
+          />
+        </label>
+        {errors.storeName ? <span id="checkout-store-name-error" role="alert">{errors.storeName}</span> : null}
+        <label>
+          門市店號
+          <input
+            aria-describedby={errors.storeId ? 'checkout-store-error' : undefined}
+            aria-invalid={Boolean(errors.storeId)}
+            maxLength={20}
+            name={picked ? undefined : 'storeId'}
+            onChange={(event) => onStoreIdChange(event.target.value)}
+            placeholder="例：123456"
+            value={storeId}
+          />
+        </label>
+        {errors.storeId ? <span id="checkout-store-error" role="alert">{errors.storeId}</span> : null}
+        <small>門市名稱與店號可在 7-ELEVEN App 或門市櫃台查詢。</small>
+      </details>
       {localPickerOpen ? (
         <div className="local-store-dialog-backdrop">
           <section aria-labelledby="local-store-dialog-title" aria-modal="true" className="local-store-dialog" role="dialog">

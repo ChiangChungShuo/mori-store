@@ -93,7 +93,7 @@ describe('store picker', () => {
     expect(onStoreIdChange).toHaveBeenCalledWith('123456')
   })
 
-  it('requires customer and pickup store fields', () => {
+  it('requires customer fields and offers the store map instead of typing', () => {
     render(createElement(
       CartProvider,
       null,
@@ -105,8 +105,29 @@ describe('store picker', () => {
     expect(screen.getByLabelText('手機號碼')).toBeRequired()
     expect(screen.getByRole('radio', { name: '7-ELEVEN' })).toBeRequired()
     expect(screen.queryByRole('radio', { name: '全家' })).not.toBeInTheDocument()
-    expect(screen.getByLabelText('取貨門市名稱')).toBeRequired()
-    expect(screen.getByLabelText('門市店號')).toBeRequired()
+    // The store comes back from the 7-ELEVEN map; the text fields are only the
+    // fallback for when the map cannot open, so they must not block the form.
+    expect(screen.getByRole('button', { name: '開啟 7-ELEVEN 門市地圖' })).toBeInTheDocument()
+    expect(screen.getByLabelText('取貨門市名稱')).not.toBeRequired()
+    expect(screen.getByLabelText('門市店號')).not.toBeRequired()
+    expect(screen.getByLabelText(/我已閱讀並同意/)).not.toBeChecked()
+  })
+
+  it('shows the picked store as a confirmed choice instead of two text fields', () => {
+    const CheckoutWithDefaults = CheckoutForm as ComponentType<Record<string, unknown>>
+    render(createElement(
+      CartProvider,
+      null,
+      createElement(CheckoutWithDefaults, {
+        action: vi.fn(),
+        pickedStore: { chain: 'seven_eleven', storeName: '忠孝門市', storeId: '123456', address: '台北市大安區' },
+      }),
+    ))
+
+    expect(screen.getByText('已選取貨門市')).toBeInTheDocument()
+    expect(screen.getByText('忠孝門市')).toBeInTheDocument()
+    expect(screen.getByText(/店號 123456/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '重新選擇' })).toBeInTheDocument()
   })
 
   it('keeps member contact details but clears a previous FamilyMart store', async () => {

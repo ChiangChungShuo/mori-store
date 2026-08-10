@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { availableAtError, getProductValidationErrors, productSchema, slugifyProductName, type ProductInput, type ProductVariantErrors, type QuantityPriceErrors } from '@/lib/validation/product'
 import { VariantGrid } from './variant-grid'
+import { suggestSkuPrefix, variantSkuCode } from '@/features/admin/variant-matrix'
 import { defaultProductCategories } from '@/features/catalog/category-defaults'
 import { AGE_BANDS } from '@/lib/age-bands'
 import { PREORDER_TAG, PREORDER_STOCK, isPreorder } from '@/lib/preorder'
@@ -96,11 +97,13 @@ function describeFieldErrors(
 }
 
 function variantsAreComplete(variants: ProductInput['variants']) {
-  const skus = variants.map((variant) => variant.sku.trim().toUpperCase())
+  // Blank SKUs are generated at save time, so they do not hold the step back;
+  // duplicates among the ones that were typed still do.
+  const skus = variants.map((variant) => variant.sku.trim().toUpperCase()).filter(Boolean)
   const combinations = variants.map((variant) => `${variant.color.trim()}::${variant.size.trim()}`)
   return variants.length > 0
     && variants.every((variant) => (
-      Boolean(variant.sku.trim() && variant.color.trim() && variant.size.trim())
+      Boolean(variant.color.trim() && variant.size.trim())
       && Number.isInteger(variant.price) && variant.price >= 0
       && (variant.cost === undefined || (Number.isInteger(variant.cost) && variant.cost >= 0))
       && Number.isInteger(variant.stock) && variant.stock >= 0
@@ -266,6 +269,7 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
   )
   const [minimumAvailableAt] = useState(() => toDateTimeLocalValue(new Date()))
   const imagePreviewsRef = useRef<string[]>([])
+  const dragImageIndex = useRef<number | null>(null)
   // Baseline for the leave-without-saving warning; refreshed after each save.
   const [savedSnapshot, setSavedSnapshot] = useState(() => JSON.stringify({ ...initialProduct, seriesIds: initialProduct.seriesIds ?? [], quantityPrices: initialProduct.quantityPrices ?? [] }))
   const dirty = JSON.stringify(product) !== savedSnapshot || imageFiles.length > 0
@@ -274,22 +278,45 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
     .sort((first, second) => first.position - second.position)
   const productColors = [...new Set(product.variants.map((variant) => variant.color.trim()).filter(Boolean))]
 
+  // Reordering staged photos has to move the file, its preview URL and its
+  // colour together, or image 2's colour would end up on image 1.
+  function moveStagedImage(from: number, to: number) {
+    if (from === to || to < 0) return
+    const reorder = <T,>(items: T[]) => {
+      if (to >= items.length) return items
+      const next = [...items]
+      const [moved] = next.splice(from, 1)
+      next.splice(to, 0, moved)
+      return next
+    }
+    setImageFiles(reorder)
+    setImagePreviews(reorder)
+    setDraftImages(reorder)
+    setImageColors(reorder)
+    setResult(null)
+  }
+
   useEffect(() => { imagePreviewsRef.current = imagePreviews }, [imagePreviews])
   useEffect(() => () => { imagePreviewsRef.current.forEach((preview) => URL.revokeObjectURL(preview)) }, [])
 
 
+  // Only what a listing genuinely cannot go live without. 說明／材質／尺寸／洗滌
+  // make a better page, but blocking the save on them turned adding a product
+  // into a 13-field form; they are prompted as 建議補上 instead.
   const contentComplete = Boolean(
     product.name.trim()
     && product.category.trim()
     && product.ageBands.length
-    && product.description.trim()
-    && product.material.trim()
-    && product.sizeGuide.trim()
-    && product.careInstructions.trim()
   )
+  const recommendedMissing = [
+    product.description.trim() ? null : '商品說明',
+    product.material.trim() ? null : '材質',
+    product.sizeGuide.trim() ? null : '尺寸指南',
+    product.careInstructions.trim() ? null : '洗滌說明',
+  ].filter((field): field is string => field !== null)
   const variantsComplete = variantsAreComplete(product.variants)
   const hasImages = imageFiles.length > 0 || draftImages.length > 0
-  const imageComplete = Boolean(hasImages && imageAlt.trim())
+  const imageComplete = hasImages
   const activeStep = !contentComplete ? 1 : !variantsComplete ? 2 : !imageComplete ? 3 : 4
   const progress = [contentComplete, variantsComplete, imageComplete].filter(Boolean).length / 3 * 100
 
@@ -297,26 +324,28 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
     event.preventDefault()
     const form = event.currentTarget
     setAttempted(true)
-    const contentErrors: Record<string, string[]> = {}
-    if (!product.description.trim()) contentErrors.description = ['請填寫商品說明']
-    if (!product.material.trim()) contentErrors.material = ['請填寫商品材質']
-    if (!product.sizeGuide.trim()) contentErrors.sizeGuide = ['請填寫尺寸指南']
-    if (!product.careInstructions.trim()) contentErrors.careInstructions = ['請填寫洗滌說明']
-    if (Object.keys(contentErrors).length > 0) {
-      setResult({ ok: false, message: describeFieldErrors(contentErrors), fieldErrors: contentErrors })
-      window.requestAnimationFrame(() => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus())
-      return
-    }
-    if (requireImage && (!hasImages || !imageAlt.trim())) {
+    if (requireImage && !hasImages) {
       setResult({
         ok: false,
-        message: !hasImages ? '請選擇至少一張商品圖片。' : '請填寫圖片說明。',
-        fieldErrors: hasImages ? { imageAlt: ['請填寫圖片說明'] } : { images: ['請選擇至少一張商品圖片'] },
+        message: '請選擇至少一張商品圖片。',
+        fieldErrors: { images: ['請選擇至少一張商品圖片'] },
       })
-      window.requestAnimationFrame(() => form.querySelector<HTMLElement>(!hasImages ? '[name="file"]' : '[name="alt"]')?.focus())
+      window.requestAnimationFrame(() => form.querySelector<HTMLElement>('[name="file"]')?.focus())
       return
     }
-    const parsed = productSchema.safeParse(product)
+    // A blank SKU is filled in rather than rejected: shoppers never see it, and
+    // a per-product token keeps the generated codes unique across the store.
+    const token = Math.random().toString(36).slice(2, 6).toUpperCase()
+    const skuPrefix = suggestSkuPrefix(product.variants, `MORI-${token}`)
+    const withSkus = {
+      ...product,
+      variants: product.variants.map((variant, index) => (
+        variant.sku.trim()
+          ? variant
+          : { ...variant, sku: [skuPrefix, variantSkuCode(variant.color, index), variant.size].filter(Boolean).join('-') }
+      )),
+    }
+    const parsed = productSchema.safeParse(withSkus)
     if (!parsed.success) {
       const validationErrors = getProductValidationErrors(parsed.error)
       setResult({
@@ -353,7 +382,7 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
         outcome = await onSave(finalProduct)
       } else {
         const imageData = new FormData()
-        imageData.set('alt', imageAlt)
+        imageData.set('alt', imageAlt.trim() || finalProduct.name)
         imageData.set('imageColors', JSON.stringify(imageColors))
         if (imageFiles.length) {
           imageFiles.forEach((file) => imageData.append('file', file))
@@ -591,11 +620,11 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
             <header><div><span>02</span><h2>商品內容</h2></div><p>說清楚穿著感、材質與照顧方式。</p></header>
             <div className="admin-form-grid">
               <label className="admin-field-wide">簡短描述（選填）<textarea aria-invalid={attempted && Boolean(result?.fieldErrors?.summary)} value={product.summary ?? ''} onChange={(event) => setText('summary', event.target.value)} placeholder="一句話突出主要賣點，會顯示在商品列表卡片上" rows={2} maxLength={200} />{result?.fieldErrors?.summary && <small>{result.fieldErrors.summary[0]}</small>}<small className="admin-field-hint">最多 200 字；留白時列表會改用完整說明開頭。</small></label>
-              <label className="admin-field-wide">商品說明<textarea aria-invalid={attempted && Boolean(result?.fieldErrors?.description)} value={product.description} onChange={(event) => setText('description', event.target.value)} placeholder="描述版型、觸感與適合的穿著情境（可換行分段）" rows={5} required />{result?.fieldErrors?.description && <small>{result.fieldErrors.description[0]}</small>}</label>
-              <label>材質<input aria-invalid={attempted && Boolean(result?.fieldErrors?.material)} value={product.material} onChange={(event) => setText('material', event.target.value)} placeholder="例：100% 有機棉" required />{result?.fieldErrors?.material && <small>{result.fieldErrors.material[0]}</small>}</label>
+              <label className="admin-field-wide">商品說明（建議填寫）<textarea aria-invalid={attempted && Boolean(result?.fieldErrors?.description)} value={product.description} onChange={(event) => setText('description', event.target.value)} placeholder="描述版型、觸感與適合的穿著情境（可換行分段）" rows={5} />{result?.fieldErrors?.description && <small>{result.fieldErrors.description[0]}</small>}</label>
+              <label>材質（建議填寫）<input aria-invalid={attempted && Boolean(result?.fieldErrors?.material)} value={product.material} onChange={(event) => setText('material', event.target.value)} placeholder="例：100% 有機棉" />{result?.fieldErrors?.material && <small>{result.fieldErrors.material[0]}</small>}</label>
               {materialPresets.length ? <div className="admin-preset-chips admin-field-wide"><span>常用材質：</span>{materialPresets.map((preset) => <button type="button" key={preset} onClick={() => applyPreset('material', preset)}>＋ {preset}</button>)}</div> : null}
-              <label className="admin-field-wide">實際平量、模特兒與版型資訊<textarea aria-label="尺寸指南" aria-invalid={attempted && Boolean(result?.fieldErrors?.sizeGuide)} value={product.sizeGuide} onChange={(event) => setText('sizeGuide', event.target.value)} placeholder={'例：\n版型：正常版型；喜歡寬鬆可拿大一號\n模特兒：身高 105 cm／體重 16 kg／穿 110\n90：衣長 38／胸寬 35 cm\n100：衣長 41／胸寬 37 cm'} rows={7} required />{result?.fieldErrors?.sizeGuide && <small>{result.fieldErrors.sizeGuide[0]}</small>}<small className="admin-field-hint">請依品項填衣長、胸寬、腰寬、褲長等實際平量，並補上模特兒身高、體重與穿著尺寸。</small></label>
-              <label className="admin-field-wide">洗滌說明<textarea aria-invalid={attempted && Boolean(result?.fieldErrors?.careInstructions)} value={product.careInstructions} onChange={(event) => setText('careInstructions', event.target.value)} placeholder="例：反面裝洗衣袋，冷水柔洗並自然晾乾" rows={3} required />{result?.fieldErrors?.careInstructions && <small>{result.fieldErrors.careInstructions[0]}</small>}</label>
+              <label className="admin-field-wide">實際平量、模特兒與版型資訊（建議填寫）<textarea aria-label="尺寸指南" aria-invalid={attempted && Boolean(result?.fieldErrors?.sizeGuide)} value={product.sizeGuide} onChange={(event) => setText('sizeGuide', event.target.value)} placeholder={'例：\n版型：正常版型；喜歡寬鬆可拿大一號\n模特兒：身高 105 cm／體重 16 kg／穿 110\n90：衣長 38／胸寬 35 cm\n100：衣長 41／胸寬 37 cm'} rows={7} />{result?.fieldErrors?.sizeGuide && <small>{result.fieldErrors.sizeGuide[0]}</small>}<small className="admin-field-hint">請依品項填衣長、胸寬、腰寬、褲長等實際平量，並補上模特兒身高、體重與穿著尺寸。</small></label>
+              <label className="admin-field-wide">洗滌說明（建議填寫）<textarea aria-invalid={attempted && Boolean(result?.fieldErrors?.careInstructions)} value={product.careInstructions} onChange={(event) => setText('careInstructions', event.target.value)} placeholder="例：反面裝洗衣袋，冷水柔洗並自然晾乾" rows={3} />{result?.fieldErrors?.careInstructions && <small>{result.fieldErrors.careInstructions[0]}</small>}</label>
               {carePresets.length ? <div className="admin-preset-chips admin-field-wide"><span>常用洗滌說明：</span>{carePresets.map((preset) => <button type="button" key={preset} onClick={() => applyPreset('careInstructions', preset)}>＋ {preset}</button>)}</div> : null}
               <label className="admin-field-wide">標籤（選填）<input aria-invalid={attempted && Boolean(result?.fieldErrors?.tags)} value={tagsText} onChange={(event) => setTags(event.target.value)} placeholder="例：熱賣、休閒、夏日、純棉（用、或逗號分隔）" />{result?.fieldErrors?.tags && <small>{result.fieldErrors.tags[0]}</small>}<small className="admin-field-hint">用頓號或逗號分隔，最多 20 個；加入「熱賣」後，商品會出現在前台的「本週熱賣」，商品卡也會標上熱賣標籤。</small></label>
               <div className="admin-preset-chips admin-field-wide"><span>快選標籤：</span>{['熱賣', '新品', '補貨到', '限量'].map((tag) => {
@@ -682,9 +711,25 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
                 setResult(null)
               }}>×</button>
             </figure>)}</div> : null}
-            {imagePreviews.length ? <div className="admin-create-image-previews" aria-label="已選擇的商品圖片">{imagePreviews.map((preview, index) => <figure key={preview}>
+            {imagePreviews.length > 1 ? <p className="admin-image-drag-hint">拖曳圖片可調整順序，第一張會是商品列表的主圖。</p> : null}
+            {imagePreviews.length ? <div className="admin-create-image-previews" aria-label="已選擇的商品圖片">{imagePreviews.map((preview, index) => <figure
+              draggable={imagePreviews.length > 1}
+              key={preview}
+              onDragStart={() => { dragImageIndex.current = index }}
+              onDragOver={(event) => { if (dragImageIndex.current !== null) event.preventDefault() }}
+              onDrop={(event) => {
+                event.preventDefault()
+                if (dragImageIndex.current !== null) moveStagedImage(dragImageIndex.current, index)
+                dragImageIndex.current = null
+              }}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img alt={`商品圖片預覽 ${index + 1}`} src={preview} /><figcaption>{index === 0 ? '主圖' : `${index + 1}`}</figcaption><label className="admin-image-color-field">圖片 {index + 1} 對應顏色<select aria-label={`圖片 ${index + 1} 對應顏色`} value={imageColors[index] ?? ''} onChange={(event) => updateImageColor(index, event.target.value || null)}><option value="">共用圖片</option>{productColors.map((color) => <option key={color} value={color}>{color}</option>)}</select></label><button aria-label={`移除待上傳圖片 ${index + 1}`} type="button" onClick={() => {
+              <img alt={`商品圖片預覽 ${index + 1}`} draggable={false} src={preview} /><figcaption>{index === 0 ? '主圖' : `${index + 1}`}</figcaption>
+              {imagePreviews.length > 1 ? <div className="admin-image-move">
+                <button aria-label={`把圖片 ${index + 1} 往前移`} disabled={index === 0} onClick={() => moveStagedImage(index, index - 1)} type="button">←</button>
+                <button aria-label={`把圖片 ${index + 1} 往後移`} disabled={index === imagePreviews.length - 1} onClick={() => moveStagedImage(index, index + 1)} type="button">→</button>
+              </div> : null}
+              <label className="admin-image-color-field">圖片 {index + 1} 對應顏色<select aria-label={`圖片 ${index + 1} 對應顏色`} value={imageColors[index] ?? ''} onChange={(event) => updateImageColor(index, event.target.value || null)}><option value="">共用圖片</option>{productColors.map((color) => <option key={color} value={color}>{color}</option>)}</select></label><button aria-label={`移除待上傳圖片 ${index + 1}`} type="button" onClick={() => {
                 URL.revokeObjectURL(preview)
                 setImageFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))
                 setImagePreviews((current) => current.filter((_, previewIndex) => previewIndex !== index))
@@ -692,12 +737,12 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
                 setResult(null)
               }}>×</button>
             </figure>)}</div> : null}
-            <label className="admin-image-alt">圖片說明<input aria-invalid={attempted && Boolean(result?.fieldErrors?.imageAlt)} aria-label="圖片說明" name="alt" value={imageAlt} onChange={(event) => { setImageAlt(event.target.value); setResult(null) }} placeholder="例：孩子穿著鼠尾草綠 T 恤的正面照" required />{result?.fieldErrors?.imageAlt && <small className="admin-field-error">{result.fieldErrors.imageAlt[0]}</small>}<small>提供給看不到圖片的使用者，也有助於搜尋。</small></label>
+            <label className="admin-image-alt">圖片說明（選填）<input aria-invalid={attempted && Boolean(result?.fieldErrors?.imageAlt)} aria-label="圖片說明" name="alt" value={imageAlt} onChange={(event) => { setImageAlt(event.target.value); setResult(null) }} placeholder={product.name ? `留空會自動使用「${product.name}」` : "例：孩子穿著鼠尾草綠 T 恤的正面照"} />{result?.fieldErrors?.imageAlt && <small className="admin-field-error">{result.fieldErrors.imageAlt[0]}</small>}<small>提供給看不到圖片的使用者，也有助於搜尋；留空會自動使用商品名稱。</small></label>
           </section> : null}
         </div>
 
         <aside className="admin-product-form-aside">
-          <section><p className="eyebrow">publish check</p><h2>儲存前檢查</h2><ul><li data-complete={contentComplete}>商品內容</li><li data-complete={variantsComplete}>規格與庫存</li>{requireImage ? <li data-complete={imageComplete}>商品圖片與說明</li> : null}{requireImage ? <li data-complete={activeStep === 4}>可以建立商品</li> : null}</ul></section>
+          <section><p className="eyebrow">publish check</p><h2>儲存前檢查</h2><ul><li data-complete={contentComplete}>商品名稱、分類與年齡</li><li data-complete={variantsComplete}>規格與庫存</li>{requireImage ? <li data-complete={imageComplete}>至少一張商品圖片</li> : null}{requireImage ? <li data-complete={activeStep === 4}>可以建立商品</li> : null}</ul>{recommendedMissing.length > 0 ? <p className="admin-recommended-missing">建議補上：{recommendedMissing.join('、')}。沒填也能先儲存，之後再回來補。</p> : null}</section>
           <label className="admin-new-toggle"><input type="checkbox" checked={product.isNew} onChange={(event) => setProduct((current) => ({ ...current, isNew: event.target.checked }))} /><span><strong>標記為新品</strong><small>在前台商品卡顯示 NEW ARRIVAL</small></span></label>
           <label className="admin-new-toggle"><input type="checkbox" checked={preorder} onChange={(event) => {
             const next = event.target.checked

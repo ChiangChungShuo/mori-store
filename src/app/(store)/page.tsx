@@ -2,6 +2,7 @@ import { listProductRatings } from '@/features/reviews/product-review-data'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { ProductCard } from '@/features/catalog/product-card'
+import { getProductAvailability } from '@/features/catalog/availability'
 import { listProducts } from '@/features/catalog/queries'
 import { getBannerSlides } from '@/features/storefront/banner-settings'
 import { HeroCarousel } from '@/features/storefront/hero-carousel'
@@ -22,6 +23,16 @@ export default async function StoreHomePage() {
     listProductRatings(),
   ])
   const newProducts = products.filter((product) => product.isNew).slice(0, 8)
+  // A first-time visitor wants to know what other people buy before they want to
+  // know what is new. Falls back to in-stock picks so the row is never empty —
+  // with a heading that matches whichever list it ends up showing.
+  const bestSellers = products.filter((product) => product.tags?.includes('熱賣')).slice(0, 4)
+  const readyToShip = products.filter((product) => getProductAvailability(product) === 'available').slice(0, 4)
+  const loved = bestSellers.length >= 2 ? bestSellers : readyToShip
+  const lovedIsRanked = bestSellers.length >= 2
+  // Second buying moment, placed in the long brand stretch further down.
+  const alreadyShown = new Set([...loved, ...newProducts].map((product) => product.id))
+  const keepBrowsing = products.filter((product) => !alreadyShown.has(product.id)).slice(0, 4)
 
   return (
     <main>
@@ -47,6 +58,24 @@ export default async function StoreHomePage() {
           ))}
         </div>
       </section>
+
+      {loved.length > 0 ? (
+        <section id="popular" className="section" aria-labelledby="popular-title">
+          <header className="section-heading">
+            <div>
+              <p className="eyebrow">{lovedIsRanked ? 'most loved' : 'ready to ship'}</p>
+              <h2 id="popular-title">{lovedIsRanked ? '大家都在買' : '現貨，今天就能訂'}</h2>
+            </div>
+            <Link href={lovedIsRanked ? '/products?view=popular' : '/products?view=ready'} className="text-link">
+              {lovedIsRanked ? '看全部熱賣 →' : '看全部現貨 →'}
+            </Link>
+          </header>
+          <p className="section-lede">{lovedIsRanked ? '這幾件最近最多爸媽回購，尺寸偏好與版型都在商品頁寫清楚了。' : '有庫存、下單後就能安排出貨的日常款式。'}</p>
+          <div className="product-grid">
+            {loved.map((product) => <ProductCard product={product} key={product.id} rating={ratings.get(product.id)} />)}
+          </div>
+        </section>
+      ) : null}
 
       <section id="new" className="section" aria-labelledby="new-title">
         <header className="section-heading">
@@ -84,6 +113,22 @@ export default async function StoreHomePage() {
           <li><span>05</span><strong>超商取貨</strong><small>寄往指定 7-ELEVEN，依簡訊期限領取</small></li>
         </ol>
       </section>
+
+      {keepBrowsing.length > 0 ? (
+        <section className="section home-keep-browsing" aria-labelledby="keep-browsing-title">
+          <header className="section-heading">
+            <div><p className="eyebrow">keep looking</p><h2 id="keep-browsing-title">再看看這幾件</h2></div>
+            <Link href="/products" className="text-link">瀏覽全部商品 →</Link>
+          </header>
+          <div className="product-grid">
+            {keepBrowsing.map((product) => <ProductCard product={product} key={product.id} rating={ratings.get(product.id)} />)}
+          </div>
+          <p className="home-keep-browsing-cta">
+            <Link className="button" href="/products">挑選日常衣櫥</Link>
+            <small>滿 NT$1,500 免運・7-ELEVEN 取貨</small>
+          </p>
+        </section>
+      ) : null}
 
       <section id="story" className="section brand-story" aria-labelledby="story-title">
         <p className="eyebrow">our point of view</p>

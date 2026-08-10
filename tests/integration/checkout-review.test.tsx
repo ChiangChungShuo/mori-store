@@ -79,6 +79,10 @@ describe('checkout review UX', () => {
     fireEvent.change(screen.getByLabelText('取貨門市名稱'), { target: { value: '忠孝門市' } })
     fireEvent.change(screen.getByLabelText('門市店號'), { target: { value: '123456' } })
 
+    // Complete data is not enough: the terms box has to be ticked as well.
+    await waitFor(() => expect(screen.getByRole('button', { name: '請先勾選同意條款' })).toBeDisabled())
+    fireEvent.click(screen.getByLabelText(/我已閱讀並同意/))
+
     await waitFor(() => expect(screen.getByRole('button', { name: '送出資料，確認訂單' })).toBeEnabled())
   })
 

@@ -72,17 +72,20 @@ export function ProductFilters({ filters, sizeOptions = [], colorOptions = [] }:
     filters.inStock ? { key: 'inStock' as const, label: '只看有庫存' } : null,
   ].filter((chip): chip is { key: 'q' | 'age' | 'size' | 'color' | 'inStock' | 'price'; label: string } => chip !== null)
 
-  // A sheet that scrolls the page behind it feels broken on iOS.
   useEffect(() => {
     if (!sheetOpen) return
+    // A bottom sheet that scrolls the page behind it feels broken on iOS; the
+    // desktop dropdown is anchored to the bar, so there the lock would only
+    // make the page jump.
+    const isSheet = window.matchMedia('(max-width: 58rem)').matches
     const previous = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    if (isSheet) document.body.style.overflow = 'hidden'
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key === 'Escape') setSheetOpen(false)
     }
     document.addEventListener('keydown', closeOnEscape)
     return () => {
-      document.body.style.overflow = previous
+      if (isSheet) document.body.style.overflow = previous
       document.removeEventListener('keydown', closeOnEscape)
     }
   }, [sheetOpen])

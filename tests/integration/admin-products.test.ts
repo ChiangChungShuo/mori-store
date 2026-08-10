@@ -817,11 +817,13 @@ describe('admin product form', () => {
     fireEvent.change(form.getByLabelText(/網址代稱/), { target: { value: 'color-pocket-tee' } })
     fireEvent.change(form.getByLabelText('分類'), { target: { value: '上衣' } })
     fireEvent.click(form.getByRole('checkbox', { name: /Kids/ }))
-    fireEvent.change(form.getByLabelText('商品說明'), { target: { value: '柔軟日常上衣' } })
-    fireEvent.change(form.getByLabelText('材質'), { target: { value: '100% 棉' } })
-    fireEvent.change(form.getByLabelText('尺寸指南'), { target: { value: '正常版型' } })
-    fireEvent.change(form.getByLabelText('洗滌說明'), { target: { value: '冷水洗滌' } })
+    // Name, category and age are all step 01 needs; the descriptive copy is
+    // recommended rather than required.
     expect(form.getByText('02 規格庫存')).toHaveAttribute('data-active', 'true')
+    fireEvent.change(form.getByLabelText(/商品說明/), { target: { value: '柔軟日常上衣' } })
+    fireEvent.change(form.getByLabelText(/材質/), { target: { value: '100% 棉' } })
+    fireEvent.change(form.getByLabelText('尺寸指南'), { target: { value: '正常版型' } })
+    fireEvent.change(form.getByLabelText(/洗滌說明/), { target: { value: '冷水洗滌' } })
 
     fireEvent.change(form.getByLabelText('SKU'), { target: { value: 'TEE-Y-100' } })
     fireEvent.change(form.getByLabelText('顏色'), { target: { value: '黃色' } })
@@ -839,7 +841,7 @@ describe('admin product form', () => {
     view.unmount()
   })
 
-  it('points out unfinished product content before saving', () => {
+  it('saves without the descriptive copy but says what is still worth adding', async () => {
     const onSave = vi.fn().mockResolvedValue({ ok: true, productId })
     const view = render(createElement(ProductForm, {
       initialProduct: {
@@ -853,15 +855,30 @@ describe('admin product form', () => {
     }))
 
     const form = within(view.container)
-    fireEvent.click(form.getByRole('button', { name: '儲存商品' }))
+    // Nudged, not blocked: these fields make a better page but are not required.
+    expect(form.getByText(/建議補上：商品說明、材質、尺寸指南、洗滌說明/)).toBeInTheDocument()
 
-    // The save bar now names the exact fields that still need attention.
-    expect(form.getByRole('alert')).toHaveTextContent('請修正：商品說明、材質、尺寸指南、洗滌說明')
-    expect(form.getByText('請填寫商品說明')).toBeInTheDocument()
-    expect(form.getByText('請填寫商品材質')).toBeInTheDocument()
-    expect(form.getByText('請填寫尺寸指南')).toBeInTheDocument()
-    expect(form.getByText('請填寫洗滌說明')).toBeInTheDocument()
-    expect(onSave).not.toHaveBeenCalled()
+    fireEvent.click(form.getByRole('button', { name: '儲存商品' }))
+    fireEvent.click(await form.findByRole('button', { name: '確定儲存' }))
+
+    await vi.waitFor(() => expect(onSave).toHaveBeenCalled())
+    view.unmount()
+  })
+
+  it('numbers a blank SKU instead of refusing to save', async () => {
+    const onSave = vi.fn().mockResolvedValue({ ok: true, productId })
+    const view = render(createElement(ProductForm, {
+      initialProduct: { ...newProduct, variants: [{ ...newProduct.variants[0], sku: '' }] },
+      onSave,
+    }))
+    const form = within(view.container)
+
+    fireEvent.click(form.getByRole('button', { name: '儲存商品' }))
+    fireEvent.click(await form.findByRole('button', { name: '確定儲存' }))
+
+    await vi.waitFor(() => expect(onSave).toHaveBeenCalled())
+    const saved = onSave.mock.calls[0][0] as ProductInput
+    expect(saved.variants[0].sku).toMatch(/^MORI-[A-Z0-9]{1,4}-01-100$/)
     view.unmount()
   })
 

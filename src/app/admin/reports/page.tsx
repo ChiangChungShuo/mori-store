@@ -42,9 +42,12 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
     <main className="section admin-management-page">
       <header className="admin-page-heading">
         <div><p className="eyebrow">sales intelligence</p><h1>報表分析</h1></div>
-        <nav aria-label="統計期間" className="report-tabs">{reportRanges.map((option) => (
-          <Link aria-current={option.key === range.key ? 'page' : undefined} href={`/admin/reports?range=${option.key}`} key={option.key}>{option.label}</Link>
-        ))}</nav>
+        <div className="report-heading-actions">
+          <nav aria-label="統計期間" className="report-tabs">{reportRanges.map((option) => (
+            <Link aria-current={option.key === range.key ? 'page' : undefined} href={`/admin/reports?range=${option.key}`} key={option.key}>{option.label}</Link>
+          ))}</nav>
+          <a className="admin-inline-action" download href={`/admin/reports/export?range=${range.key}`}>匯出 CSV</a>
+        </div>
       </header>
 
       {/* Four headline numbers only. 造訪／加購／開始結帳 are already listed

@@ -100,7 +100,7 @@ export function VariantGrid({ variants, onChange, errors = [], sizeOptions }: Va
   return (
     <fieldset className="admin-variant-fieldset">
       <legend className="sr-only">商品規格</legend>
-      <p className="admin-sku-help"><strong>SKU 是什麼？</strong>它是每個「顏色＋尺寸」專用的內部庫存編號，顧客不會看到。例：<code>MORI-TEE-GREEN-110</code>。填好一個後可按「複製此規格」快速新增同色不同尺寸。</p>
+      <p className="admin-sku-help"><strong>SKU 是什麼？</strong>它是每個「顏色＋尺寸」專用的內部庫存編號，顧客不會看到。例：<code>MORI-TEE-GREEN-110</code>。<strong>留空就好</strong>：儲存時會自動編號，需要自訂再填。填好一個後可按「複製此規格」快速新增同色不同尺寸。</p>
 
       <div className="admin-variant-generator" data-open={generatorOpen}>
         <button
@@ -183,9 +183,9 @@ export function VariantGrid({ variants, onChange, errors = [], sizeOptions }: Va
             <input
               aria-label="SKU"
               aria-invalid={Boolean(errors[index]?.sku)}
-              value={variant.sku}
               onChange={(event) => update(index, 'sku', event.target.value)}
-              required
+              placeholder="留空自動編號"
+              value={variant.sku}
             />
             {errors[index]?.sku ? <small>{errors[index].sku?.[0]}</small> : null}
           </label>

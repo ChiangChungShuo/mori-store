@@ -192,6 +192,41 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         </div>
       </section>
 
+      {/* The questions that decide a purchase, answered without leaving the
+          page; the full policies stay one link away. */}
+      <section className="section product-faq-section" aria-labelledby="product-faq-title">
+        <header className="section-heading"><div><p className="eyebrow">before you buy</p><h2 id="product-faq-title">下單前，常被問到的問題</h2></div><Link className="text-link" href="/faq">看完整常見問題 →</Link></header>
+        <div className="faq-list product-faq-list">
+          {[
+            {
+              q: '多久會出貨？',
+              a: isPreorder(product.tags)
+                ? '這件是預購商品，付款確認後約 14–21 個工作天出貨（不含週末與國定假日），出貨會以 Email 通知。'
+                : '現貨商品在付款確認後 1–3 個工作天出貨（不含週末與國定假日），出貨會以 Email 通知取貨門市與代碼。',
+            },
+            {
+              q: '運費怎麼算？',
+              a: storeSettings.freeShippingThreshold
+                ? `7-ELEVEN 超商取貨，配送範圍為台灣本島；單筆訂單滿 ${formatTwd(storeSettings.freeShippingThreshold)} 免運。`
+                : '7-ELEVEN 超商取貨，配送範圍為台灣本島；運費會在結帳頁一併顯示。',
+            },
+            {
+              q: '尺寸怎麼挑？',
+              a: product.sizeGuide
+                ? '上方「尺寸表」有這件的實際平量與模特兒穿著尺寸；介於兩個尺寸之間時建議選大一號，孩子長得快。'
+                : '參考上方尺寸表的身高與年齡對照；介於兩個尺寸之間時建議選大一號，不確定也可以先訊息問我們。',
+            },
+            { q: '可以怎麼付款？', a: '目前採用銀行匯款（ATM／網路銀行轉帳）。送出訂單後會顯示收款帳號，完成匯款請回報帳號末 5 碼，核帳後即安排出貨。' },
+            { q: '可以退換貨嗎？', a: '依法提供收貨次日起七日鑑賞期（非試用期）；除此之外，商品有瑕疵、寄錯或缺件時我們一定負責處理，其餘情況售出後不做退換。' },
+          ].map((item) => (
+            <details className="faq-item" key={item.q}>
+              <summary>{item.q}<span className="faq-item-icon" aria-hidden="true" /></summary>
+              <div className="faq-answer"><p>{item.a}</p></div>
+            </details>
+          ))}
+        </div>
+      </section>
+
       <ProductReviewSection productId={product.id} productSlug={product.slug} data={reviewData} />
 
       {customerPhotos.length > 0 ? <section className="section customer-photo-section">
