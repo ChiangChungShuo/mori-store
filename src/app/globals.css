@@ -3145,11 +3145,46 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 /* Phones get the same three controls, stacked, and the panel becomes a bottom
    sheet — a dropdown that tall would run off the screen. */
 @media (max-width: 58rem) {
-  .product-filterbar { display: block; margin-bottom: 1.4rem; }
-  .product-filterbar-sort { display: flex; margin-top: 0.6rem; }
-  .product-filterbar-sort select { flex: 1; min-width: 0; }
-  .product-filterbar-toggle { border-color: var(--forest); background: var(--forest); color: var(--white); padding-inline: 1.05rem; font-size: 0.75rem; }
-  .product-filterbar-toggle > span { background: rgb(255 255 255 / 88%); color: var(--forest); }
+  /* Phones get one row of two matched controls. The catalogue search box is
+     dropped here because the header already has a search overlay — two search
+     fields on one screen is what made this bar look cluttered. */
+  .product-filterbar { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1.4rem; }
+  .product-filterbar-lead { display: contents; }
+  .product-filterbar-search { display: none; }
+  .product-filterbar-toggle {
+    width: 100%;
+    justify-content: center;
+    min-height: 3rem;
+    border-color: var(--sand);
+    background: var(--white);
+    color: var(--forest);
+    padding-inline: 0.9rem;
+    font-size: 0.82rem;
+  }
+  .product-filterbar-toggle[aria-expanded="true"] { border-color: var(--forest); background: var(--forest); color: var(--white); }
+  .product-filterbar-sort {
+    display: flex;
+    gap: 0;
+    align-items: center;
+    min-height: 3rem;
+    margin: 0;
+    border: 1px solid var(--sand);
+    border-radius: 999px;
+    background: var(--white);
+    padding-left: 0.9rem;
+  }
+  .product-filterbar-sort > span { flex: 0 0 auto; color: var(--muted); font-size: 0.72rem; }
+  .product-filterbar .product-filterbar-sort select {
+    flex: 1;
+    min-width: 0;
+    min-height: 2.8rem;
+    border: 0;
+    background-position: right 0.75rem center;
+    padding-inline: 0.4rem 1.9rem;
+    font-size: 0.82rem;
+  }
+  .product-filterbar .product-filterbar-sort select:focus-visible { box-shadow: none; }
+  .product-filterbar-sort:focus-within { border-color: var(--forest); box-shadow: 0 0 0 3px rgb(106 127 144 / 16%); }
   .product-filterbar-scrim { background: rgb(64 76 91 / 40%); animation: modal-fade-in 160ms ease-out both; }
   .product-filterbar-sheet {
     position: fixed;
