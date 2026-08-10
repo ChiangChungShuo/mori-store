@@ -26,7 +26,9 @@ function openStoreMap(chain: StoreChain) {
     LogisticsType: 'CVS',
     LogisticsSubType: cvsSubType(chain),
     IsCollection: 'N',
-    ServerReplyURL: `${window.location.origin}/api/cvs/callback`,
+    // Not /api/cvs/…: deployment tooling strips folders named `cvs` as legacy
+    // version-control metadata, so that route never reached production.
+    ServerReplyURL: `${window.location.origin}/api/store-pickup/callback`,
     Device: /Mobi|Android|iPhone/i.test(navigator.userAgent) ? '1' : '0',
   }
   for (const [name, value] of Object.entries(fields)) {
