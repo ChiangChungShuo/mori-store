@@ -63,6 +63,8 @@ export type PaymentAttemptInsert = {
   total: number
   /** Savings from product quantity tiers, snapshotted for the order. */
   bundleDiscount: number
+  /** 購物金 spent by this checkout; the ledger row is written with the order. */
+  creditApplied: number
   discount: number
   couponCode: string | null
   items: PaymentAttemptItem[]
@@ -93,6 +95,7 @@ type StoredPaymentAttemptSummary = {
   couponCode?: string | null
   bundleDiscount?: number
   discount?: number
+  creditApplied?: number
 }
 
 export type PaymentCompletion = {
@@ -122,6 +125,8 @@ export interface CheckoutRepository {
   getPaymentAttemptSummary(attemptId: string): Promise<StoredPaymentAttemptSummary | null>
   getVariants(variantIds: string[]): Promise<CheckoutVariant[]>
   getStoreSettings(): Promise<{ shippingFee: number; freeShippingThreshold: number | null }>
+  /** 購物金 balance for the signed-in member, 0 for guests. */
+  getMemberCreditBalance(userId: string): Promise<number>
   insertPaymentAttempt(attempt: PaymentAttemptInsert): Promise<{ id: string }>
   updatePaymentAttemptStatus(
     attemptId: string,
@@ -237,6 +242,11 @@ export function createCheckoutService(
     if (coupon && !coupon.ok) throw new CheckoutAttemptError('coupon_invalid')
     const userId = await repository.getCurrentUserId()
     const guestToken = userId ? null : randomBytes(32).toString('base64url')
+    // 購物金 comes off the payable total automatically — members never type a
+    // code. Guests have no balance, so nothing is applied for them.
+    const payableAfterCoupon = Math.max(0, totals.total - (coupon?.discount ?? 0))
+    const creditBalance = userId ? await repository.getMemberCreditBalance(userId) : 0
+    const creditApplied = Math.max(0, Math.min(creditBalance, payableAfterCoupon))
     const attempt = await repository.insertPaymentAttempt({
       userId,
       email: customer.email,
@@ -249,8 +259,9 @@ export function createCheckoutService(
       paymentMethod: customer.paymentMethod ?? 'bank_transfer',
       subtotal: totals.subtotal,
       shippingFee: totals.shipping,
-      total: Math.max(0, totals.total - (coupon?.discount ?? 0)),
+      total: payableAfterCoupon - creditApplied,
       bundleDiscount: totals.bundleDiscount,
+      creditApplied,
       discount: coupon?.ok ? coupon.discount : 0,
       couponCode: coupon?.ok ? coupon.code : null,
       items: pricedItems.map(({ variant, quantity }) => ({
@@ -441,7 +452,7 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
     },
 
     async getPaymentAttemptSummary(attemptId) {
-      const baseColumns = 'items, subtotal, shipping_fee, total, status, email, recipient_name, recipient_phone, store_chain, store_id, store_name, customer_note, payment_method, coupon_code, discount'
+      const baseColumns = 'items, subtotal, shipping_fee, total, status, email, recipient_name, recipient_phone, store_chain, store_id, store_name, customer_note, payment_method, coupon_code, discount, credit_applied'
       let { data, error } = await admin
         .from('payment_attempts')
         .select(`${baseColumns}, bundle_discount`)
@@ -491,6 +502,7 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
         couponCode: data.coupon_code,
         bundleDiscount: 'bundle_discount' in data ? data.bundle_discount ?? 0 : 0,
         discount: data.discount ?? 0,
+        creditApplied: 'credit_applied' in data ? data.credit_applied ?? 0 : 0,
       }
     },
 
@@ -560,6 +572,11 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
       return parseStorefrontSettings(data ?? [])
     },
 
+    async getMemberCreditBalance(userId) {
+      const { getMemberCreditBalance } = await import('@/features/account/member-credit')
+      return getMemberCreditBalance(userId)
+    },
+
     async insertPaymentAttempt(attempt) {
       const row: TablesInsert<'payment_attempts'> = {
         user_id: attempt.userId,
@@ -579,6 +596,7 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
         // Only sent when non-zero, which can only happen once the
         // quantity-pricing migration has added the column.
         ...(attempt.bundleDiscount > 0 ? { bundle_discount: attempt.bundleDiscount } : {}),
+        ...(attempt.creditApplied > 0 ? { credit_applied: attempt.creditApplied } : {}),
         items: attempt.items as unknown as Json,
         payment_access_expires_at: attempt.paymentAccessExpiresAt,
         payment_access_token_hash: attempt.paymentAccessTokenHash,

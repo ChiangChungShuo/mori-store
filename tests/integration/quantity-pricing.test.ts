@@ -74,6 +74,7 @@ class MemoryRepository implements CheckoutRepository {
   readonly attempts: Array<PaymentAttemptInsert & { id: string }> = []
 
   async getCurrentUserId() { return null }
+  async getMemberCreditBalance() { return 0 }
   async getGuestAccessToken() { return null }
   async setGuestAccessToken() {}
   async getPaymentAttemptAccess() { return null }

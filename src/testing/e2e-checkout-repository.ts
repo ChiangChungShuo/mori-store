@@ -72,6 +72,12 @@ export function createFixtureCheckoutRepository(
       return E2E_STOREFRONT_SETTINGS
     },
 
+    async getMemberCreditBalance(userId) {
+      return store.memberCredits
+        .filter((entry) => entry.userId === userId)
+        .reduce((total, entry) => total + entry.amount, 0)
+    },
+
     async insertPaymentAttempt(attempt) {
       const id = randomUUID()
       store.attempts.set(id, { ...attempt, id, status: 'pending', orderNumber: null })
@@ -118,10 +124,28 @@ export function createFixtureCheckoutRepository(
 
       const orderNumber = `MORI-DEMO-${attempt.id.slice(0, 8).toUpperCase()}`
       const createdAt = new Date().toISOString()
+      const orderId = randomUUID()
+      // Mirrors the database function: the spend is recorded with the order, and
+      // the balance is re-checked so it can never go negative.
+      if (attempt.creditApplied > 0) {
+        const balance = store.memberCredits
+          .filter((entry) => entry.userId === attempt.userId)
+          .reduce((total, entry) => total + entry.amount, 0)
+        if (!attempt.userId || balance < attempt.creditApplied) {
+          throw new Error('insufficient_member_credit')
+        }
+        store.memberCredits.push({
+          userId: attempt.userId,
+          amount: -attempt.creditApplied,
+          reason: 'order',
+          orderId,
+          createdAt,
+        })
+      }
       attempt.status = 'paid'
       attempt.orderNumber = orderNumber
       store.orders.set(orderNumber, {
-        id: randomUUID(),
+        id: orderId,
         orderNumber,
         userId: attempt.userId,
         email: attempt.email,

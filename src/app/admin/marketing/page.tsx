@@ -84,14 +84,12 @@ export default async function AdminMarketingPage() {
         <section className="admin-panel">
           <header><div><p className="eyebrow">welcome gift</p><h2>新會員禮</h2></div><strong>{welcomeGift.enabled ? '啟用中' : '未啟用'}</strong></header>
           <form action={saveWelcomeGiftFromForm} className="admin-stack-form">
-            <label className="check-label"><input defaultChecked={welcomeGift.enabled} name="enabled" type="checkbox" />在註冊頁與會員中心顯示新會員禮</label>
-            <div className="form-split">
-              <label>優惠碼<input defaultValue={welcomeGift.code} name="code" placeholder="WELCOME50" /></label>
-              <label>金額<input defaultValue={welcomeGift.amount} min="0" name="amount" type="number" /></label>
-            </div>
-            <label>使用門檻<input defaultValue={welcomeGift.minimumSpend} min="0" name="minimumSpend" type="number" /><small className="admin-field-hint">填 0 代表不限金額。</small></label>
+            <label className="check-label"><input defaultChecked={welcomeGift.enabled} name="enabled" type="checkbox" />啟用新會員註冊禮</label>
+            <label>贈送金額<input defaultValue={welcomeGift.amount} min="0" name="amount" type="number" /><small className="admin-field-hint">新會員第一次進到會員中心時自動入帳，每個帳號只發一次。</small></label>
+            <input name="code" type="hidden" value={welcomeGift.code} />
+            <input name="minimumSpend" type="hidden" value={welcomeGift.minimumSpend} />
             <button className="button" type="submit">儲存新會員禮</button>
-            <p className="admin-panel-note">這裡只設定「前台怎麼說」。請先在上方「新增活動」用同一組優惠碼建立折扣，使用限制選「每個帳號限用一次」，金額與門檻填一樣的數字，新會員禮才會真的能折抵。</p>
+            <p className="admin-panel-note">這是購物金，不是優惠碼：會員結帳時自動折抵，不需要輸入任何代碼。金額會從應付總額扣除，扣完就沒有了；訂單取消不會退回購物金。</p>
           </form>
         </section>
 

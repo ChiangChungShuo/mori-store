@@ -335,7 +335,7 @@ export function SignupForm({
           <aside className="welcome-gift" data-variant="invite">
             <p className="welcome-gift-label">新會員禮</p>
             <strong>註冊就送 NT${welcomeGift.amount.toLocaleString('zh-TW')} 購物金</strong>
-            <p>完成註冊後，會員中心就會顯示你的專屬優惠碼，結帳輸入即可折抵{welcomeGift.minimumSpend > 0 ? `（單筆滿 NT$${welcomeGift.minimumSpend.toLocaleString('zh-TW')} 可用）` : ''}。</p>
+            <p>註冊完成後直接存進你的會員帳戶，下次結帳自動折抵，不用輸入優惠碼。</p>
           </aside>
         ) : null}
         <p className="eyebrow">mori members</p>

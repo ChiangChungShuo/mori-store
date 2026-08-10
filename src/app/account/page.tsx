@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { AccountOrderRow } from '@/features/account/account-order-row'
 import { getAccountSummary } from '@/features/account/summary'
 import { RecentlyViewed } from '@/features/catalog/recently-viewed'
-import { WelcomeGiftCard } from '@/features/marketing/welcome-gift-card'
+import { MemberCreditCard } from '@/features/account/member-credit-card'
 import { requireUser } from '@/lib/auth/require-user'
 import { formatTwd } from '@/lib/money'
 
@@ -28,7 +28,7 @@ export default async function AccountPage() {
         <Link href="/faq"><span aria-hidden="true">?</span><strong>常見問題</strong><small>出貨、尺寸與退換說明</small></Link>
       </nav>
 
-      <WelcomeGiftCard variant="member" />
+      <MemberCreditCard />
 
       {reorderItems.length > 0 ? (
         <section className="account-section account-reorder">

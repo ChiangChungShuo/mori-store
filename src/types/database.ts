@@ -392,6 +392,44 @@ export type Database = {
           },
         ]
       }
+      member_credits: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          note: string | null
+          order_id: string | null
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          order_id?: string | null
+          reason: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          order_id?: string | null
+          reason?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'member_credits_order_id_fkey'
+            columns: ['order_id']
+            isOneToOne: false
+            referencedRelation: 'orders'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       restock_requests: {
         Row: {
           created_at: string
@@ -428,6 +466,7 @@ export type Database = {
         Row: {
           bundle_discount: number
           coupon_code: string | null
+          credit_applied: number
           coupon_discount: number
           created_at: string
           customer_note: string
@@ -453,6 +492,7 @@ export type Database = {
         Insert: {
           bundle_discount?: number
           coupon_code?: string | null
+          credit_applied?: number
           coupon_discount?: number
           created_at?: string
           customer_note?: string
@@ -478,6 +518,7 @@ export type Database = {
         Update: {
           bundle_discount?: number
           coupon_code?: string | null
+          credit_applied?: number
           coupon_discount?: number
           created_at?: string
           customer_note?: string
@@ -513,6 +554,7 @@ export type Database = {
       payment_attempts: {
         Row: {
           coupon_code: string | null
+          credit_applied: number
           created_at: string
           customer_note: string
           bundle_discount: number
@@ -543,6 +585,7 @@ export type Database = {
         }
         Insert: {
           coupon_code?: string | null
+          credit_applied?: number
           created_at?: string
           customer_note?: string
           bundle_discount?: number
@@ -573,6 +616,7 @@ export type Database = {
         }
         Update: {
           coupon_code?: string | null
+          credit_applied?: number
           created_at?: string
           customer_note?: string
           bundle_discount?: number
@@ -927,6 +971,10 @@ export type Database = {
       request_restock_notice: {
         Args: { p_email: string; p_product_id: string }
         Returns: undefined
+      }
+      claim_signup_credit: {
+        Args: Record<string, never>
+        Returns: number
       }
       admin_reorder_product_images: {
         Args: { p_image_ids: string[]; p_product_id: string }

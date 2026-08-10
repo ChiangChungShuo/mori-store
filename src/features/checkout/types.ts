@@ -79,6 +79,8 @@ export type PaymentAttemptSummary = {
   subtotal: number
   shippingFee: number
   total: number
+  /** 購物金 spent on this order, shown as its own line. */
+  creditApplied?: number
   status: PaymentAttemptStatus
   email: string
   recipientName: string

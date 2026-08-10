@@ -796,6 +796,14 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .welcome-gift-code code { border: 1px dashed var(--forest); border-radius: 0.5rem; background: var(--white); padding: 0.5rem 1rem; color: var(--forest); font-size: 0.95rem; font-weight: 800; letter-spacing: 0.08em; }
 .account-page > .welcome-gift { margin-bottom: 1.25rem; }
 .auth-story > .welcome-gift { margin-bottom: 1.5rem; background: rgb(255 255 255 / 88%); }
+.member-credit-card > header > strong { color: var(--forest); font-family: Georgia, "Noto Serif TC", serif; font-size: 1.5rem; font-weight: 400; }
+.member-credit-note { margin: 0 0 0.85rem; color: var(--muted); font-size: 0.8rem; }
+.member-credit-log { display: grid; gap: 0.1rem; margin: 0; padding: 0; list-style: none; }
+.member-credit-log li { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; border-top: 1px solid var(--line); padding: 0.55rem 0; }
+.member-credit-log li:first-child { border-top: 0; }
+.member-credit-log span { color: var(--ink); font-size: 0.8rem; }
+.member-credit-log strong { color: var(--forest); font-size: 0.8rem; }
+.member-credit-log strong[data-spend="true"] { color: var(--muted); }
 @media (max-width: 60rem) { .account-quick-links { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .account-order-help div { display: grid; gap: 0.15rem; }
 .account-order-help strong { color: var(--forest); font-size: 0.78rem; }

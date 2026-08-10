@@ -70,8 +70,14 @@ class MemoryCheckoutRepository implements CheckoutRepository {
     this.currentUserId = currentUserId
   }
 
+  creditBalance = 0
+
   async getCurrentUserId() {
     return this.currentUserId
+  }
+
+  async getMemberCreditBalance(userId: string) {
+    return userId === this.currentUserId ? this.creditBalance : 0
   }
 
   async getGuestAccessToken(attemptId: string) {
