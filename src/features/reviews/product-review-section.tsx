@@ -25,6 +25,11 @@ export function ProductReviewSection({
   const [state, action, pending] = useActionState(submitProductReview, initialState)
   const [rating, setRating] = useState(data.currentUserReview?.rating ?? 5)
 
+  // With no reviews yet, this block only told visitors that nobody had bought
+  // the product. It stays hidden until there is something to read, unless the
+  // viewer is the one person who can write the first one.
+  if (data.reviews.length === 0 && !data.canReview) return null
+
   return <section className="section product-review-section" id="reviews">
     <header className="product-review-heading">
       <div><p className="eyebrow">verified voices</p><h2>商品評論</h2></div>

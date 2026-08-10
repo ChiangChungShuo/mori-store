@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { getSalesReport } from '@/features/admin/business-management'
+import { getSalesReport, parseReportRange, reportRanges, reportRangeStart } from '@/features/admin/business-management'
 import { getCommerceInsights } from '@/features/admin/commerce-insights'
 import { listAdminProducts } from '@/features/admin/product-actions'
 import { listPendingRestockCounts } from '@/features/catalog/restock-requests'
@@ -8,14 +8,15 @@ import { formatTwd } from '@/lib/money'
 
 export const dynamic = 'force-dynamic'
 
-export default async function AdminReportsPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
-  const view = (await searchParams).view === 'month' ? 'month' : 'day'
+export default async function AdminReportsPage({ searchParams }: { searchParams: Promise<{ range?: string }> }) {
+  const range = parseReportRange((await searchParams).range)
+  const since = reportRangeStart(range)
   const [report, insights, products, pendingRestocks, viewCounts] = await Promise.all([
-    getSalesReport(view),
-    getCommerceInsights(),
+    getSalesReport(range.period, { since }),
+    getCommerceInsights({ since }),
     listAdminProducts(),
     listPendingRestockCounts(),
-    listProductViewCounts(30),
+    listProductViewCounts(range.days ?? 365),
   ])
   // Views live on the slug; sales come back by product name, so the join is by
   // name and simply reads 0 for a product renamed since its last order.
@@ -41,27 +42,36 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
     <main className="section admin-management-page">
       <header className="admin-page-heading">
         <div><p className="eyebrow">sales intelligence</p><h1>報表分析</h1></div>
-        <nav className="report-tabs"><Link aria-current={view === 'day' ? 'page' : undefined} href="/admin/reports?view=day">每日</Link><Link aria-current={view === 'month' ? 'page' : undefined} href="/admin/reports?view=month">每月</Link></nav>
+        <nav aria-label="統計期間" className="report-tabs">{reportRanges.map((option) => (
+          <Link aria-current={option.key === range.key ? 'page' : undefined} href={`/admin/reports?range=${option.key}`} key={option.key}>{option.label}</Link>
+        ))}</nav>
       </header>
 
       {/* Four headline numbers only. 造訪／加購／開始結帳 are already listed
           stage by stage in the funnel panel, and 需要補貨 is the stock panel's
           own count, so a second metric row was pure duplication. */}
-      <section className="admin-metrics admin-metrics-compact">
-        <article className="metric-feature"><p>有效營收</p><strong>{formatTwd(report.revenue)}</strong><small>排除待付款與取消訂單</small></article>
+      <section className="admin-metrics admin-metrics-wide">
+        <article className="metric-feature"><p>有效營收</p><strong>{formatTwd(report.revenue)}</strong><small>{range.label}・排除待付款與取消訂單</small></article>
         <article><p>訂單數</p><strong>{report.orderCount}</strong><small>已付款以上</small></article>
         <article><p>平均客單價</p><strong>{formatTwd(average)}</strong><small>有效營收 ÷ 訂單</small></article>
+        <article>
+          <p>商品毛利（估算）</p>
+          <strong>{report.costedRevenue > 0 ? formatTwd(report.grossProfit) : '—'}</strong>
+          <small>{report.costedRevenue > 0
+            ? `毛利率 ${report.marginRate}%${report.costCoverage < 100 ? `・僅含有成本的 ${report.costCoverage}% 商品` : '・以目前成本計算'}`
+            : '在商品規格填成本後開始計算'}</small>
+        </article>
         <article><p>購物車放棄率</p><strong>{insights.cartAbandonmentRate}%</strong><small>加入購物車但未完成購買</small></article>
       </section>
 
       <div className="admin-dashboard-grid report-grid">
         <section className="admin-panel">
-          <header><div><p className="eyebrow">revenue trend</p><h2>{view === 'day' ? '每日' : '每月'}銷售</h2></div></header>
-          {report.periods.length === 0 ? <p className="report-empty">有有效訂單後會顯示銷售趨勢。</p> : <div className="report-bars">{report.periods.map((period) => <div className="report-bar-row" key={period.label}><span>{period.label}</span><div><i style={{ width: `${Math.max((period.revenue / maxRevenue) * 100, 2)}%` }} /></div><strong>{formatTwd(period.revenue)}</strong><small>{period.orders} 筆</small></div>)}</div>}
+          <header><div><p className="eyebrow">revenue trend</p><h2>{range.period === 'day' ? '每日' : '每月'}銷售</h2></div><p>{range.label}</p></header>
+          {report.periods.length === 0 ? <p className="report-empty">這段期間還沒有有效訂單，換個期間或等第一筆訂單進來。</p> : <div className="report-bars">{report.periods.map((period) => <div className="report-bar-row" key={period.label}><span>{period.label}</span><div><i style={{ width: `${Math.max((period.revenue / maxRevenue) * 100, 2)}%` }} /></div><strong>{formatTwd(period.revenue)}</strong><small>{period.orders} 筆</small></div>)}</div>}
         </section>
         <section className="admin-panel">
-          <header><div><p className="eyebrow">best sellers</p><h2>熱銷商品</h2></div></header>
-          <ol className="report-product-list">{report.products.map((product, index) => <li key={product.name}><span>{String(index + 1).padStart(2, '0')}</span><div><strong>{product.name}</strong><small>銷售 {product.quantity} 件</small></div><em>{formatTwd(product.revenue)}</em></li>)}</ol>
+          <header><div><p className="eyebrow">best sellers</p><h2>熱銷商品</h2></div><p>{report.costedRevenue > 0 ? '毛利以商品目前的成本估算' : '在商品規格填成本後會顯示毛利'}</p></header>
+          {report.products.length === 0 ? <p className="report-empty">這段期間還沒有售出商品。</p> : <ol className="report-product-list">{report.products.map((product, index) => <li key={product.name}><span>{String(index + 1).padStart(2, '0')}</span><div><strong>{product.name}</strong><small>銷售 {product.quantity} 件{product.profit === null ? '' : `・毛利 ${formatTwd(product.profit)}`}</small></div><em>{formatTwd(product.revenue)}</em></li>)}</ol>}
         </section>
 
         <section className="admin-panel report-funnel-panel">
@@ -75,7 +85,7 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
         </section>
 
         <section className="admin-panel report-views-panel">
-          <header><div><p className="eyebrow">product views</p><h2>商品瀏覽排行</h2></div><p>近 30 天，共 {totalViews} 次瀏覽；看得多卻沒賣出的商品，通常是價格、照片或說明需要調整</p></header>
+          <header><div><p className="eyebrow">product views</p><h2>商品瀏覽排行</h2></div><p>{range.label}共 {totalViews} 次瀏覽；看得多卻沒賣出的商品，通常是價格、照片或說明需要調整</p></header>
           {viewRanking.length === 0 ? <p className="report-empty">還沒有商品瀏覽紀錄，前台有人逛之後就會出現。</p> : (
             <ol className="report-product-list">
               {viewRanking.map((entry, index) => (

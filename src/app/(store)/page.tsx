@@ -1,3 +1,4 @@
+import { listProductRatings } from '@/features/reviews/product-review-data'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { ProductCard } from '@/features/catalog/product-card'
@@ -15,7 +16,11 @@ export const metadata: Metadata = {
 }
 
 export default async function StoreHomePage() {
-  const [products, bannerSlides] = await Promise.all([listProducts({}), getBannerSlides()])
+  const [products, bannerSlides, ratings] = await Promise.all([
+    listProducts({}),
+    getBannerSlides(),
+    listProductRatings(),
+  ])
   const newProducts = products.filter((product) => product.isNew).slice(0, 8)
 
   return (
@@ -52,7 +57,7 @@ export default async function StoreHomePage() {
           <p>商品準備中，第一批新品很快見面。</p>
         ) : (
           <div className="product-grid">
-            {newProducts.map((product) => <ProductCard product={product} key={product.id} />)}
+            {newProducts.map((product) => <ProductCard product={product} key={product.id} rating={ratings.get(product.id)} />)}
           </div>
         )}
       </section>

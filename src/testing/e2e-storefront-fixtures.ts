@@ -1,5 +1,7 @@
 import type { CartVariantSnapshot } from '@/features/cart/refresh'
 import type { CatalogProduct, ProductFilters } from '@/features/catalog/queries'
+import { lowestPrice, priceBands } from '@/features/catalog/catalog-sort'
+import { sortCatalogProducts } from '@/features/catalog/queries'
 import type { CheckoutVariant } from '@/features/checkout/service'
 import { getE2EStore, type E2EStoreState } from '@/testing/e2e-store'
 import { colorFamily } from '@/features/catalog/product-presentation'
@@ -350,6 +352,11 @@ function matchesProduct(product: CatalogProduct, filters: ProductFilters) {
       series.categoryName === filters.category && series.name === filters.series
     )))
     && (!filters.inStock || product.variants.some((variant) => variant.stock > 0))
+    && (!filters.price || (() => {
+      const band = priceBands[filters.price!]
+      const price = lowestPrice(product)
+      return price >= band.min && price <= band.max
+    })())
     && (!filters.view || filters.view === 'series'
       || (filters.view === 'ready' && !isPreorder(product.tags) && product.variants.some((variant) => variant.stock > 0))
       || (filters.view === 'preorder' && isPreorder(product.tags))
@@ -374,7 +381,7 @@ function toCartSnapshot(
 
 export function listE2EProducts(filters: ProductFilters) {
   const store = getE2EStore()
-  return getMutableE2EProducts()
+  const matching = getMutableE2EProducts()
     .map((product) => attachProductSeries(product, store))
     .map((product) => {
       const quantityPrices = store.quantityPrices.get(product.slug)
@@ -383,6 +390,7 @@ export function listE2EProducts(filters: ProductFilters) {
     .filter((product) => (
       store.publishedProductIds.has(product.id) && matchesProduct(product, filters)
     ))
+  return sortCatalogProducts(matching, filters.sort)
 }
 
 export function getE2EProduct(slug: string) {

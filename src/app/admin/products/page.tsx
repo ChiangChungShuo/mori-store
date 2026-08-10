@@ -1,8 +1,9 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { FilterClearLink } from '@/components/filter-clear-link'
-import { filterAdminProductSummaries, listAdminProducts, setProductPublished, type AdminProductFilters } from '@/features/admin/product-actions'
+import { duplicateProduct, filterAdminProductSummaries, listAdminProducts, setProductPublished, type AdminProductFilters } from '@/features/admin/product-actions'
 import { ProductPublishForm } from '@/features/admin/product-form'
+import { DuplicateProductButton } from '@/features/admin/duplicate-product-button'
 import { CopyTextButton } from '@/features/admin/copy-text-button'
 import { listProductViewCounts } from '@/features/admin/product-views'
 import { absoluteUrl } from '@/lib/site'
@@ -122,7 +123,7 @@ export default async function AdminProductsPage({
                   })()}
                 </td>
                 <td>{formatTwd(product.inventoryCost)}</td>
-                <td><div className="admin-product-actions"><Link className="admin-inline-action" href={`/admin/products/${product.id}/edit`}>編輯</Link><ProductPublishForm compact isPublished={product.isPublished} onToggle={setProductPublished.bind(null, product.id)} /><CopyTextButton copiedLabel="已複製連結" label="複製連結" text={absoluteUrl(`/products/${product.slug}`)} /></div></td>
+                <td><div className="admin-product-actions"><Link className="admin-inline-action" href={`/admin/products/${product.id}/edit`}>編輯</Link><ProductPublishForm compact isPublished={product.isPublished} onToggle={setProductPublished.bind(null, product.id)} /><DuplicateProductButton duplicate={duplicateProduct.bind(null, product.id)} productName={product.name} /><CopyTextButton copiedLabel="已複製連結" label="複製連結" text={absoluteUrl(`/products/${product.slug}`)} /></div></td>
               </tr>
             ))}
           </tbody>

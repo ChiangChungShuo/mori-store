@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import {
   deleteProduct,
   deleteProductImage,
+  duplicateProduct,
   getAdminProduct,
   reorderProductImages,
   setProductPublished,
@@ -12,6 +13,8 @@ import {
   uploadProductImage,
 } from '@/features/admin/product-actions'
 import { ImageUploader } from '@/features/admin/image-uploader'
+import { ImageOrderDragArea } from '@/features/admin/image-order-drag-area'
+import { DuplicateProductButton } from '@/features/admin/duplicate-product-button'
 import { DeleteProductForm, DeleteProductImageForm, ProductForm, ProductImageColorForm, ProductImageOrderControls, ProductPublishForm } from '@/features/admin/product-form'
 import { listProductCategories } from '@/features/catalog/categories'
 import { listContentPresets } from '@/features/catalog/content-presets'
@@ -58,16 +61,16 @@ export default async function EditAdminProductPage({
         <div><p className="eyebrow">admin / products / edit</p><h1>編輯 {product.product.name}</h1></div>
         <p>完成商品資料、圖片與庫存後，再切換前台上架狀態。</p>
       </header>
-      <div className="admin-edit-status"><div><span>目前狀態</span><strong>{product.isPublished ? '已上架，顧客可以購買' : '草稿，前台不會顯示'}</strong></div><ProductPublishForm isPublished={product.isPublished} onToggle={togglePublished} /></div>
+      <div className="admin-edit-status"><div><span>目前狀態</span><strong>{product.isPublished ? '已上架，顧客可以購買' : '草稿，前台不會顯示'}</strong></div><div className="admin-edit-status-actions"><DuplicateProductButton duplicate={duplicateProduct.bind(null, productId)} productName={product.product.name} /><ProductPublishForm isPublished={product.isPublished} onToggle={togglePublished} /></div></div>
       <ProductForm key={variantSignature} carePresets={carePresets} categories={categories} initialProduct={product.product} materialPresets={materialPresets} onSave={save} series={series} sizeOptions={sizeOptions} />
       <section className="admin-product-images-section">
         <header><div><p className="eyebrow">product gallery</p><h2>商品圖片</h2></div><p>第一張圖片會作為商品列表主圖，其餘圖片會出現在商品頁輪播。</p></header>
         {product.images.length === 0 ? (
           <div className="admin-image-empty"><strong>尚未上傳圖片</strong><span>商品至少需要一張圖片才能上架。</span></div>
         ) : (
-          <ul className="admin-product-image-grid">
+          <ImageOrderDragArea reorder={reorderProductImages.bind(null, productId)}>
             {product.images.map((image, index) => (
-              <li key={image.id} data-primary={index === 0}>
+              <li data-image-id={image.id} data-primary={index === 0} draggable key={image.id}>
                 {index === 0 ? <span>主圖</span> : <span>{String(index + 1).padStart(2, '0')}</span>}
                 <Image alt={image.alt} height={160} src={image.url} unoptimized width={128} />
                 <p>{image.alt}</p>
@@ -85,7 +88,7 @@ export default async function EditAdminProductPage({
                 <DeleteProductImageForm imageNumber={index + 1} onDelete={deleteProductImage.bind(null, productId, image.id)} />
               </li>
             ))}
-          </ul>
+          </ImageOrderDragArea>
         )}
         <ImageUploader colors={colors} upload={upload} />
       </section>

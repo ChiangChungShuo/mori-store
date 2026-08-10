@@ -1,6 +1,7 @@
 import type { AgeBand } from '@/types/store'
 import type { CartVariantSnapshot } from '@/features/cart/refresh'
 import { isE2EMode } from '@/testing/e2e-mode'
+import { lowestPrice, priceBands, type ProductPriceBand, type ProductSort } from '@/features/catalog/catalog-sort'
 import type { ProductSeries } from '@/features/catalog/product-series'
 import type { CatalogProductImage } from '@/features/catalog/product-images'
 import { colorFamily, listColorFamilies, normalizeProductName } from '@/features/catalog/product-presentation'
@@ -29,6 +30,9 @@ export function resolveCatalogConfiguration(
   throw new Error(CATALOG_CONFIGURATION_ERROR)
 }
 
+export type { ProductPriceBand, ProductSort } from '@/features/catalog/catalog-sort'
+export { lowestPrice, priceBands, productSortOptions } from '@/features/catalog/catalog-sort'
+
 export type ProductFilters = {
   q?: string
   age?: '0-3' | '3-6' | '6-12'
@@ -37,6 +41,8 @@ export type ProductFilters = {
   category?: string
   series?: string
   inStock?: boolean
+  price?: ProductPriceBand
+  sort?: ProductSort
   view?: 'ready' | 'preorder' | 'popular' | 'series'
 }
 
@@ -91,8 +97,11 @@ export function parseProductFilters(searchParams: SearchParams): ProductFilters 
   const category = first(searchParams.category)?.trim()
   const series = first(searchParams.series)?.trim()
   const inStock = first(searchParams.inStock)
+  const price = first(searchParams.price)
+  const sort = first(searchParams.sort)
   const view = first(searchParams.view)
   const views: ProductFilters['view'][] = ['ready', 'preorder', 'popular', 'series']
+  const sorts: ProductSort[] = ['featured', 'price_asc', 'price_desc', 'newest']
 
   return {
     ...(q ? { q: q.slice(0, 120) } : {}),
@@ -102,6 +111,8 @@ export function parseProductFilters(searchParams: SearchParams): ProductFilters 
     ...(category ? { category } : {}),
     ...(category && series ? { series } : {}),
     ...(inStock === 'true' ? { inStock: true } : {}),
+    ...(price && price in priceBands ? { price: price as ProductPriceBand } : {}),
+    ...(sort && sorts.includes(sort as ProductSort) && sort !== 'featured' ? { sort: sort as ProductSort } : {}),
     ...(views.includes(view as ProductFilters['view']) ? { view: view as ProductFilters['view'] } : {}),
   }
 }
@@ -219,11 +230,30 @@ export function applyCatalogFilters(products: CatalogProduct[], filters: Product
         series.categoryName === filters.category && series.name === filters.series
       )))
       && (!filters.inStock || product.variants.some((variant) => variant.stock > 0))
+      && (!filters.price || (() => {
+        const band = priceBands[filters.price!]
+        const price = lowestPrice(product)
+        return price >= band.min && price <= band.max
+      })())
       && (!filters.view || filters.view === 'series'
         || (filters.view === 'ready' && !isPreorder(product.tags) && product.variants.some((variant) => variant.stock > 0))
         || (filters.view === 'preorder' && isPreorder(product.tags))
         || (filters.view === 'popular' && product.tags?.includes('熱賣')))
   })
+}
+
+/**
+ * Orders a filtered catalogue. The default (`featured`) keeps whatever order the
+ * query returned — newest first — so shoppers who never touch the control see
+ * the shop's own arrangement.
+ */
+export function sortCatalogProducts(products: CatalogProduct[], sort: ProductSort | undefined) {
+  if (!sort || sort === 'featured') return products
+  const sorted = [...products]
+  if (sort === 'price_asc') return sorted.sort((left, right) => lowestPrice(left) - lowestPrice(right))
+  if (sort === 'price_desc') return sorted.sort((left, right) => lowestPrice(right) - lowestPrice(left))
+  // `newest` mirrors the query order, which is created_at descending.
+  return sorted
 }
 
 const productFields = `
@@ -329,9 +359,9 @@ export async function listProducts(filters: ProductFilters): Promise<CatalogProd
   // One extra lightweight query so listing cards can show the bundle badge.
   const { getQuantityPriceMap } = await import('@/features/catalog/quantity-prices')
   const tiers = await getQuantityPriceMap()
-  return products.map((product) => (
+  return sortCatalogProducts(products.map((product) => (
     tiers[product.slug]?.length ? { ...product, quantityPrices: tiers[product.slug] } : product
-  ))
+  )), filters.sort)
 }
 
 export async function getProductBySlug(slug: string): Promise<CatalogProduct | null> {

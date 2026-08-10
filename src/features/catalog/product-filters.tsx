@@ -1,14 +1,16 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { FilterClearLink } from '@/components/filter-clear-link'
+import { priceBands, productSortOptions } from '@/features/catalog/catalog-sort'
 import { type ProductFilters as ProductFilterValues } from '@/features/catalog/queries'
 import { AGE_BANDS, ageBandLabel, ageBandRange } from '@/lib/age-bands'
 
 // Builds a /products URL from the applied filters minus one of them, so the
 // active-filter chips can each be removed with a single tap.
-function hrefWithout(filters: ProductFilterValues, drop: 'q' | 'age' | 'size' | 'color' | 'inStock') {
+function hrefWithout(filters: ProductFilterValues, drop: 'q' | 'age' | 'size' | 'color' | 'inStock' | 'price') {
   const params = new URLSearchParams()
   if (filters.category) params.set('category', filters.category)
   if (filters.category && filters.series) params.set('series', filters.series)
@@ -18,6 +20,8 @@ function hrefWithout(filters: ProductFilterValues, drop: 'q' | 'age' | 'size' | 
   if (filters.size && drop !== 'size') params.set('size', filters.size)
   if (filters.color && drop !== 'color') params.set('color', filters.color)
   if (filters.inStock && drop !== 'inStock') params.set('inStock', 'true')
+  if (filters.price && drop !== 'price') params.set('price', filters.price)
+  if (filters.sort) params.set('sort', filters.sort)
   const query = params.toString()
   return query ? `/products?${query}` : '/products'
 }
@@ -31,6 +35,22 @@ export function ProductFilters({ filters, sizeOptions = [], colorOptions = [] }:
   colorOptions?: string[]
 }) {
   const [sheetOpen, setSheetOpen] = useState(false)
+  const router = useRouter()
+
+  // A plain GET form posts every empty field, so one tap on 排序 would leave
+  // ?q=&age=&size=… in the address bar. Build the URL from the filled fields
+  // instead and navigate to that.
+  function submitFilters(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const params = new URLSearchParams()
+    for (const [name, value] of new FormData(event.currentTarget)) {
+      const text = String(value).trim()
+      if (text && !(name === 'sort' && text === 'featured')) params.set(name, text)
+    }
+    setSheetOpen(false)
+    const query = params.toString()
+    router.push(query ? `/products?${query}` : '/products')
+  }
 
   // Keep a value that came from the URL selectable even if it is no longer sold.
   const sizes = filters.size && !sizeOptions.includes(filters.size)
@@ -48,8 +68,9 @@ export function ProductFilters({ filters, sizeOptions = [], colorOptions = [] }:
     filters.age ? { key: 'age' as const, label: `${ageBandLabel(filters.age)}／${ageBandRange(filters.age)}` } : null,
     filters.size ? { key: 'size' as const, label: `尺寸 ${filters.size}` } : null,
     filters.color ? { key: 'color' as const, label: filters.color } : null,
+    filters.price ? { key: 'price' as const, label: priceBands[filters.price].label } : null,
     filters.inStock ? { key: 'inStock' as const, label: '只看有庫存' } : null,
-  ].filter((chip): chip is { key: 'q' | 'age' | 'size' | 'color' | 'inStock'; label: string } => chip !== null)
+  ].filter((chip): chip is { key: 'q' | 'age' | 'size' | 'color' | 'inStock' | 'price'; label: string } => chip !== null)
 
   // A sheet that scrolls the page behind it feels broken on iOS.
   useEffect(() => {
@@ -68,7 +89,7 @@ export function ProductFilters({ filters, sizeOptions = [], colorOptions = [] }:
 
   return (
     <>
-      <form action="/products" method="get" aria-label="篩選商品" className="product-filterbar" data-sheet-open={sheetOpen}>
+      <form action="/products" method="get" aria-label="篩選商品" className="product-filterbar" data-sheet-open={sheetOpen} onSubmit={submitFilters}>
         {filters.category ? <input name="category" type="hidden" value={filters.category} /> : null}
         {filters.category && filters.series ? <input name="series" type="hidden" value={filters.series} /> : null}
         {filters.view ? <input name="view" type="hidden" value={filters.view} /> : null}
@@ -94,6 +115,21 @@ export function ProductFilters({ filters, sizeOptions = [], colorOptions = [] }:
             篩選{activeChips.length ? <span>{activeChips.length}</span> : null}
           </button>
         </div>
+
+        <label className="product-filterbar-sort">
+          <span>排序</span>
+          <select
+            aria-label="排序方式"
+            defaultValue={filters.sort ?? 'featured'}
+            name="sort"
+            // Sorting is not a filter you "apply": pick it and the list reorders.
+            onChange={(event) => event.currentTarget.form?.requestSubmit()}
+          >
+            {productSortOptions.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </label>
 
         <div className="product-filterbar-sheet" role="group" aria-label="篩選條件">
           <div className="product-filterbar-sheet-head">
@@ -131,6 +167,16 @@ export function ProductFilters({ filters, sizeOptions = [], colorOptions = [] }:
             ) : (
               <input aria-label="顏色" defaultValue={filters.color ?? ''} name="color" placeholder="顏色" />
             )}
+          </label>
+
+          <label className="product-filterbar-field">
+            <span>價格</span>
+            <select aria-label="價格" defaultValue={filters.price ?? ''} name="price">
+              <option value="">全部價格</option>
+              {Object.entries(priceBands).map(([value, band]) => (
+                <option key={value} value={value}>{band.label}</option>
+              ))}
+            </select>
           </label>
 
           <label className="product-filterbar-stock">

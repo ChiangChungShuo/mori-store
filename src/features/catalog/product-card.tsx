@@ -7,7 +7,11 @@ import { splitProductDisplayName } from '@/features/catalog/product-presentation
 import { ProductCardImage } from '@/features/catalog/product-card-image'
 import { isPreorder } from '@/lib/preorder'
 
-export function ProductCard({ product }: { product: CatalogProduct }) {
+export function ProductCard({ product, rating }: {
+  product: CatalogProduct
+  /** Average and count, supplied by the listing page in one aggregate read. */
+  rating?: { average: number; count: number }
+}) {
   const colors = new Set(product.variants.map((variant) => variant.color))
   const sizes = [...new Set(product.variants.map((variant) => variant.size))]
     .sort((a, b) => a.localeCompare(b, 'zh-Hant', { numeric: true }))
@@ -52,6 +56,13 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
       <div className="product-card-body">
         {displayName.series ? <p className="product-card-series">{displayName.series}</p> : null}
         <h2><Link href={`/products/${product.slug}`}>{displayName.title}</Link></h2>
+        {rating && rating.count > 0 ? (
+          <p className="product-card-rating" aria-label={`平均 ${rating.average.toFixed(1)} 顆星，共 ${rating.count} 則評論`}>
+            <span aria-hidden="true">★</span>
+            <strong>{rating.average.toFixed(1)}</strong>
+            <small>({rating.count})</small>
+          </p>
+        ) : null}
         <div className="product-card-footer">
           <p className="product-card-options"><span><span className="sr-only">{colors.size} 種顏色</span><span aria-hidden="true">{colors.size} 色</span></span><span aria-hidden="true">・</span><span>尺寸 {sizeLabel}</span></p>
           <p className="product-price-group"><span className="product-price">{formatTwd(minimumPrice)}</span>{compareAtPrice > minimumPrice ? <del>{formatTwd(compareAtPrice)}</del> : null}</p>

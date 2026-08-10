@@ -8,7 +8,7 @@ import { CartProvider, useCart } from '@/features/cart/cart-provider'
 import { ProductCard } from '@/features/catalog/product-card'
 import { ProductFilters } from '@/features/catalog/product-filters'
 import { ProductSeriesFilter } from '@/features/catalog/product-series-filter'
-import { applyCatalogFilters, listProducts, parseProductFilters } from '@/features/catalog/queries'
+import { applyCatalogFilters, listProducts, parseProductFilters, sortCatalogProducts } from '@/features/catalog/queries'
 import type { CatalogProduct } from '@/features/catalog/queries'
 import { VariantPicker } from '@/features/catalog/variant-picker'
 import { ProductColorProvider } from '@/features/catalog/product-color-context'
@@ -436,5 +436,35 @@ describe('ProductCard best-seller badge', () => {
 
     render(createElement(ProductCard, { product: { ...product, tags: ['有機棉'] } }))
     expect(screen.queryByText('熱賣')).not.toBeInTheDocument()
+  })
+})
+
+describe('catalog sorting and price bands', () => {
+  const cheap = { ...product, id: 'cheap', variants: [{ ...product.variants[0], price: 320 }] }
+  const mid = { ...product, id: 'mid', variants: [{ ...product.variants[0], price: 780 }] }
+  const dear = { ...product, id: 'dear', variants: [{ ...product.variants[0], price: 1680 }] }
+
+  it('reads sort and price band from the URL, ignoring unknown values', () => {
+    expect(parseProductFilters({ sort: 'price_asc', price: '500_1000' }))
+      .toEqual({ sort: 'price_asc', price: '500_1000' })
+    // The default sort carries no parameter, so the URL stays clean.
+    expect(parseProductFilters({ sort: 'featured' })).toEqual({})
+    expect(parseProductFilters({ sort: 'cheapest', price: 'free' })).toEqual({})
+  })
+
+  it('filters by the cheapest variant of each product', () => {
+    expect(applyCatalogFilters([cheap, mid, dear], { price: 'under_500' }).map((item) => item.id))
+      .toEqual(['cheap'])
+    expect(applyCatalogFilters([cheap, mid, dear], { price: 'over_1500' }).map((item) => item.id))
+      .toEqual(['dear'])
+  })
+
+  it('orders by price in both directions and leaves the default order alone', () => {
+    expect(sortCatalogProducts([mid, dear, cheap], 'price_asc').map((item) => item.id))
+      .toEqual(['cheap', 'mid', 'dear'])
+    expect(sortCatalogProducts([mid, dear, cheap], 'price_desc').map((item) => item.id))
+      .toEqual(['dear', 'mid', 'cheap'])
+    expect(sortCatalogProducts([mid, dear, cheap], 'featured').map((item) => item.id))
+      .toEqual(['mid', 'dear', 'cheap'])
   })
 })

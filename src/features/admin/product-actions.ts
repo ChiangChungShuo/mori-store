@@ -90,6 +90,7 @@ export interface ProductRepository {
   uploadFile(path: string, file: File): Promise<void>
   copyFile(fromPath: string, toPath: string): Promise<void>
   insertImage(productId: string, path: string, alt: string, color: string | null): Promise<void>
+  listImagePaths(productId: string): Promise<Array<{ path: string; alt: string; color: string | null }>>
   setImageColor(productId: string, imageId: string, color: string | null): Promise<void>
   deleteImage(productId: string, imageId: string): Promise<string>
   reorderImages(productId: string, imageIds: string[]): Promise<void>
@@ -99,6 +100,8 @@ export interface ProductRepository {
 
 type AdminProductDependencies = {
   repository: ProductRepository
+  /** Reads a product back for duplication; the edit page uses the same loader. */
+  loadProduct?: (productId: string) => Promise<AdminProductDetail | null>
   requireAdmin: () => Promise<unknown>
   randomUUID?: () => string
   onChanged?: (productId: string) => void | Promise<void>
@@ -188,6 +191,35 @@ function withAutomaticProductSeo(product: ProductInput): ProductInput {
   }
 }
 
+/**
+ * Turns a saved product into the input for its copy: same content, new identity.
+ * The copy always starts as a draft with no scheduled launch, so duplicating can
+ * never put an unchecked product in front of shoppers.
+ */
+export function buildDuplicateProductInput(source: ProductInput, uniqueToken: string): ProductInput {
+  const name = `${source.name}（複本）`
+  return {
+    ...source,
+    name,
+    slug: generateProductSlug(source.name, uniqueToken),
+    seoTitle: '',
+    seoDescription: '',
+    isNew: false,
+    availableAt: null,
+    // Variant ids belong to the original rows; SKUs must stay unique per store.
+    variants: source.variants.map((variant) => ({
+      ...variant,
+      id: undefined,
+      updatedAt: undefined,
+      sku: `${variant.sku}-COPY`.slice(0, 64),
+    })),
+    quantityPrices: source.quantityPrices.map((tier) => ({ ...tier })),
+    seriesIds: [...source.seriesIds],
+    ageBands: [...source.ageBands],
+    tags: [...(source.tags ?? [])],
+  }
+}
+
 export function createAdminProductActions(dependencies: AdminProductDependencies) {
   const randomUUID = dependencies.randomUUID ?? (() => crypto.randomUUID())
   const changed = dependencies.onChanged ?? (() => undefined)
@@ -230,6 +262,55 @@ export function createAdminProductActions(dependencies: AdminProductDependencies
       }
       await refreshAfterMutation(productId)
       return { ok: true, productId }
+    },
+
+    // Copies a saved product into a fresh draft — content, variants, tiers and
+    // photos — so a new colourway costs one click instead of a full re-entry.
+    async duplicateProduct(productId: string): Promise<ActionResult> {
+      await dependencies.requireAdmin()
+      const id = productIdSchema.safeParse(productId)
+      if (!id.success) return { ok: false, message: '商品不存在' }
+      const source = await dependencies.loadProduct?.(id.data)
+      if (!source) return { ok: false, message: '商品不存在' }
+
+      const input = buildDuplicateProductInput(source.product, randomUUID())
+      const parsed = productSchema.safeParse(input)
+      if (!parsed.success) return { ok: false, message: '這個商品的資料無法複製，請改用手動新增' }
+
+      let copyId: string
+      try {
+        copyId = await dependencies.repository.createProduct(withAutomaticProductSeo(parsed.data))
+      } catch (error) {
+        const friendly = friendlyProductSaveError(error, parsed.data.variants)
+        if (friendly) return friendly
+        logError(`product duplicate failed: ${databaseErrorMessage(error)}`, { productId: id.data })
+        return { ok: false, message: '目前無法複製商品，請稍後再試' }
+      }
+
+      // Photos are copied best-effort: a copy that lost an image is still worth
+      // far more to the admin than no copy at all.
+      let copiedImages = 0
+      try {
+        const images = await dependencies.repository.listImagePaths(id.data)
+        for (const image of images) {
+          const extension = image.path.split('.').pop() || 'png'
+          const target = `${copyId}/${randomUUID()}.${extension}`
+          await dependencies.repository.copyFile(image.path, target)
+          await dependencies.repository.insertImage(copyId, target, image.alt, image.color)
+          copiedImages += 1
+        }
+      } catch (error) {
+        logError(`product duplicate images failed: ${databaseErrorMessage(error)}`, { productId: copyId })
+      }
+
+      await refreshAfterMutation(copyId)
+      return {
+        ok: true,
+        productId: copyId,
+        message: copiedImages > 0
+          ? '已複製為草稿，請確認內容後再上架'
+          : '已複製為草稿（圖片未複製），請確認內容後再上架',
+      }
     },
 
     async updateProduct(productId: string, input: unknown): Promise<ActionResult> {
@@ -489,6 +570,21 @@ function createSupabaseProductRepository(): ProductRepository {
       if (error) throw error
     },
 
+    async listImagePaths(productId) {
+      const supabase = await client()
+      const { data, error } = await supabase
+        .from('product_images')
+        .select('storage_path, alt_text, color, position')
+        .eq('product_id', productId)
+        .order('position')
+      if (error) throw error
+      return (data ?? []).map((image) => ({
+        path: image.storage_path,
+        alt: image.alt_text,
+        color: image.color,
+      }))
+    },
+
     async setImageColor(productId, imageId, color) {
       const supabase = await client()
       const { error } = await supabase.rpc('admin_set_product_image_color', {
@@ -680,7 +776,21 @@ function createFixtureProductRepository(): ProductRepository {
     async copyFile(fromPath, toPath) {
       const store = getE2EStore()
       const existing = store.uploadedProductImages.get(fromPath)
-      store.uploadedProductImages.set(toPath, existing ?? `data:image/png;base64,${fromPath}`)
+      // Seeded fixture photos are plain URLs or /public paths rather than
+      // uploads; keep them as-is so a duplicated product still shows a picture.
+      const fallback = /^(https?:|data:|\/)/.test(fromPath) ? fromPath : `data:image/png;base64,${fromPath}`
+      store.uploadedProductImages.set(toPath, existing ?? fallback)
+    },
+    async listImagePaths(productId) {
+      const store = getE2EStore()
+      const product = getMutableE2EProducts().find((candidate) => candidate.id === productId)
+      if (!product) throw new Error('product_not_found')
+      const images = product.images ?? (product.imageUrl ? [{ url: product.imageUrl, alt: product.imageAlt, color: null }] : [])
+      return images.map((image) => ({
+        path: [...store.uploadedProductImages.entries()].find(([, url]) => url === image.url)?.[0] ?? image.url,
+        alt: image.alt,
+        color: image.color ?? null,
+      }))
     },
     async insertImage(productId, path, alt, color) {
       const product = getMutableE2EProducts().find((candidate) => candidate.id === productId)
@@ -921,6 +1031,7 @@ export async function getAdminProduct(productId: string): Promise<AdminProductDe
 function productionActions() {
   return createAdminProductActions({
     repository: createSupabaseProductRepository(),
+    loadProduct: (productId) => getAdminProduct(productId),
     requireAdmin: async () => {
       const { requireAdmin } = await import('@/lib/auth/require-admin')
       return requireAdmin()
@@ -937,6 +1048,7 @@ function productionActions() {
 function fixtureActions() {
   return createAdminProductActions({
     repository: createFixtureProductRepository(),
+    loadProduct: (productId) => getAdminProduct(productId),
     requireAdmin: async () => {
       const { requireAdmin } = await import('@/lib/auth/require-admin')
       return requireAdmin()
@@ -1013,6 +1125,11 @@ export async function createProductWithImage(input: unknown, formData?: FormData
   }
   const total = files.length + draftPaths.length
   return { ok: true, productId: created.productId, message: `商品與 ${total} 張圖片已建立` }
+}
+
+export async function duplicateProduct(productId: string): Promise<ActionResult> {
+  'use server'
+  return resolvedActions().duplicateProduct(productId)
 }
 
 export async function updateProduct(productId: string, input: unknown): Promise<ActionResult> {

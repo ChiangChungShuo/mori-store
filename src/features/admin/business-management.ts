@@ -386,10 +386,47 @@ export async function updateReminderFromForm(formData: FormData) {
 
 type ReportOrder = Pick<E2EOrder, 'status' | 'total' | 'createdAt' | 'items'>
 
-export function calculateSalesReport(orders: ReportOrder[], period: 'day' | 'month') {
-  const paidOrders = orders.filter((order) => !['pending_payment', 'cancelled'].includes(order.status))
+/**
+ * The report windows. Long ranges group by month so the trend chart stays
+ * readable instead of drawing ninety one-day bars.
+ */
+export const reportRanges = [
+  { key: '7d', label: '近 7 天', days: 7, period: 'day' as const },
+  { key: '30d', label: '近 30 天', days: 30, period: 'day' as const },
+  { key: '90d', label: '近 90 天', days: 90, period: 'month' as const },
+  { key: 'all', label: '全部期間', days: null, period: 'month' as const },
+]
+
+export type ReportRange = (typeof reportRanges)[number]
+
+export function parseReportRange(value: string | undefined): ReportRange {
+  return reportRanges.find((range) => range.key === value) ?? reportRanges[1]
+}
+
+export function reportRangeStart(range: ReportRange, now = new Date()): Date | null {
+  return range.days === null ? null : new Date(now.getTime() - range.days * 24 * 60 * 60 * 1000)
+}
+
+export function calculateSalesReport(
+  orders: ReportOrder[],
+  period: 'day' | 'month',
+  options: {
+    since?: Date | null
+    /** Current cost per variant id; missing entries simply stay out of the margin. */
+    costs?: Map<string, number>
+  } = {},
+) {
+  const since = options.since ? options.since.getTime() : null
+  const costs = options.costs ?? new Map<string, number>()
+  const paidOrders = orders
+    .filter((order) => !['pending_payment', 'cancelled'].includes(order.status))
+    .filter((order) => since === null || new Date(order.createdAt).getTime() >= since)
   const groups = new Map<string, { revenue: number; orders: number }>()
-  const products = new Map<string, { quantity: number; revenue: number }>()
+  const products = new Map<string, { quantity: number; revenue: number; cost: number; costedQuantity: number }>()
+  let costedRevenue = 0
+  let costTotal = 0
+  let itemQuantity = 0
+  let costedQuantity = 0
 
   for (const order of paidOrders) {
     const date = new Intl.DateTimeFormat('en-CA', {
@@ -399,45 +436,81 @@ export function calculateSalesReport(orders: ReportOrder[], period: 'day' | 'mon
     const current = groups.get(date) ?? { revenue: 0, orders: 0 }
     groups.set(date, { revenue: current.revenue + order.total, orders: current.orders + 1 })
     for (const item of order.items) {
-      const product = products.get(item.productName) ?? { quantity: 0, revenue: 0 }
+      const product = products.get(item.productName) ?? { quantity: 0, revenue: 0, cost: 0, costedQuantity: 0 }
+      // A zero cost means "never entered", not "free": counting it would report
+      // a flattering 100% margin on products the admin has not costed yet.
+      const storedCost = costs.get(item.variantId)
+      const unitCost = storedCost !== undefined && storedCost > 0 ? storedCost : undefined
+      const lineRevenue = item.unitPrice * item.quantity
+      itemQuantity += item.quantity
+      if (unitCost !== undefined) {
+        costedRevenue += lineRevenue
+        costTotal += unitCost * item.quantity
+        costedQuantity += item.quantity
+      }
       products.set(item.productName, {
         quantity: product.quantity + item.quantity,
-        revenue: product.revenue + item.unitPrice * item.quantity,
+        revenue: product.revenue + lineRevenue,
+        cost: product.cost + (unitCost ?? 0) * item.quantity,
+        costedQuantity: product.costedQuantity + (unitCost === undefined ? 0 : item.quantity),
       })
     }
   }
 
+  const revenue = paidOrders.reduce((total, order) => total + order.total, 0)
   return {
     periods: [...groups].map(([label, value]) => ({
       label,
       ...value,
       averageOrderValue: value.orders ? Math.round(value.revenue / value.orders) : 0,
     })).sort((a, b) => b.label.localeCompare(a.label)),
-    products: [...products].map(([name, value]) => ({ name, ...value }))
-      .sort((a, b) => b.quantity - a.quantity),
-    revenue: paidOrders.reduce((total, order) => total + order.total, 0),
+    products: [...products].map(([name, value]) => ({
+      name,
+      quantity: value.quantity,
+      revenue: value.revenue,
+      cost: value.cost,
+      // Only claim a profit when every sold unit had a cost on file.
+      profit: value.costedQuantity === value.quantity ? value.revenue - value.cost : null,
+    })).sort((a, b) => b.quantity - a.quantity),
+    revenue,
     orderCount: paidOrders.length,
+    /** Product revenue backed by a known cost — the base the margin is honest about. */
+    costedRevenue,
+    cost: costTotal,
+    grossProfit: costedRevenue - costTotal,
+    marginRate: costedRevenue ? Math.round(((costedRevenue - costTotal) / costedRevenue) * 100) : 0,
+    /** Share of sold units with a cost on file, so the panel can flag gaps. */
+    costCoverage: itemQuantity ? Math.round((costedQuantity / itemQuantity) * 100) : 0,
   }
 }
 
-export async function getSalesReport(period: 'day' | 'month') {
+export async function getSalesReport(period: 'day' | 'month', options: { since?: Date | null } = {}) {
   await requireAdmin()
   if (isE2EMode()) {
     const { getE2EStore } = await import('@/testing/e2e-store')
-    return calculateSalesReport([...getE2EStore().orders.values()], period)
+    const store = getE2EStore()
+    return calculateSalesReport([...store.orders.values()], period, {
+      since: options.since ?? null,
+      costs: new Map(store.variantCosts),
+    })
   }
   const { createClient } = await import('@/lib/supabase/server')
-  const { data, error } = await (await createClient())
-    .from('orders')
-    .select('status, total, created_at, order_items(product_name, quantity, unit_price)')
-  if (error) throw error
-  return calculateSalesReport((data ?? []).map((order) => ({
+  const supabase = await createClient()
+  const [ordersResult, costsResult] = await Promise.all([
+    supabase.from('orders').select('status, total, created_at, order_items(product_name, quantity, unit_price, variant_id)'),
+    // Cost is what the variant costs today; the report labels the margin as an
+    // estimate because historical purchase costs are not stored per order.
+    supabase.from('product_variants').select('id, cost'),
+  ])
+  if (ordersResult.error) throw ordersResult.error
+  const costs = new Map((costsResult.data ?? []).map((variant) => [variant.id, variant.cost]))
+  return calculateSalesReport((ordersResult.data ?? []).map((order) => ({
     status: order.status,
     total: order.total,
     createdAt: order.created_at,
     items: order.order_items.map((item) => ({
-      id: '', variantId: '', sku: '', color: '', size: '',
+      id: '', variantId: item.variant_id ?? '', sku: '', color: '', size: '',
       productName: item.product_name, quantity: item.quantity, unitPrice: item.unit_price,
     })),
-  })), period)
+  })), period, { since: options.since ?? null, costs })
 }

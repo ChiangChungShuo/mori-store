@@ -1,7 +1,14 @@
 'use client'
 
+import { useMemo, useState } from 'react'
 import type { ProductInput } from '@/lib/validation/product'
 import type { ProductVariantErrors } from '@/lib/validation/product'
+import {
+  generateVariantMatrix,
+  parseVariantList,
+  suggestSkuPrefix,
+  withoutBlankVariants,
+} from '@/features/admin/variant-matrix'
 
 type Variant = ProductInput['variants'][number]
 
@@ -38,6 +45,44 @@ function bumpSku(sku: string): string {
 
 export function VariantGrid({ variants, onChange, errors = [], sizeOptions }: VariantGridProps) {
   const SIZE_OPTIONS = sizeOptions && sizeOptions.length > 0 ? sizeOptions : DEFAULT_SIZE_OPTIONS
+  const [generatorOpen, setGeneratorOpen] = useState(false)
+  const [colorsText, setColorsText] = useState('')
+  const [pickedSizes, setPickedSizes] = useState<string[]>([])
+  const [bulkPrice, setBulkPrice] = useState('')
+  const [bulkCost, setBulkCost] = useState('')
+  const [bulkStock, setBulkStock] = useState('0')
+  const [skuPrefix, setSkuPrefix] = useState('')
+  const [generatorNote, setGeneratorNote] = useState('')
+
+  const colorList = parseVariantList(colorsText)
+  const orderedSizes = useMemo(
+    () => SIZE_OPTIONS.filter((size) => pickedSizes.includes(size)),
+    [SIZE_OPTIONS, pickedSizes],
+  )
+  // Preview the exact rows the button will add, so the count on it is the truth.
+  const preview = generateVariantMatrix({
+    colors: colorList,
+    sizes: orderedSizes,
+    skuPrefix: skuPrefix || suggestSkuPrefix(variants),
+    price: Number(bulkPrice) || 0,
+    cost: Number(bulkCost) || 0,
+    stock: Number(bulkStock) || 0,
+    existing: withoutBlankVariants(variants),
+  })
+
+  function generate() {
+    if (preview.variants.length === 0) return
+    const kept = withoutBlankVariants(variants)
+    onChange([...kept, ...preview.variants])
+    setGeneratorNote(
+      preview.skipped > 0
+        ? `已新增 ${preview.variants.length} 個規格，另有 ${preview.skipped} 個組合已存在，未重複建立。`
+        : `已新增 ${preview.variants.length} 個規格，往下確認售價與庫存即可。`,
+    )
+    setColorsText('')
+    setPickedSizes([])
+  }
+
   function update(index: number, field: keyof Variant, value: string | number | undefined) {
     onChange(variants.map((variant, variantIndex) => (
       variantIndex === index ? { ...variant, [field]: value } : variant
@@ -56,6 +101,79 @@ export function VariantGrid({ variants, onChange, errors = [], sizeOptions }: Va
     <fieldset className="admin-variant-fieldset">
       <legend className="sr-only">商品規格</legend>
       <p className="admin-sku-help"><strong>SKU 是什麼？</strong>它是每個「顏色＋尺寸」專用的內部庫存編號，顧客不會看到。例：<code>MORI-TEE-GREEN-110</code>。填好一個後可按「複製此規格」快速新增同色不同尺寸。</p>
+
+      <div className="admin-variant-generator" data-open={generatorOpen}>
+        <button
+          aria-expanded={generatorOpen}
+          className="admin-variant-generator-toggle"
+          onClick={() => { setGeneratorOpen((open) => !open); setGeneratorNote('') }}
+          type="button"
+        >
+          <span><strong>批次產生規格</strong><small>輸入顏色與尺寸，一次建立所有組合並自動編 SKU</small></span>
+          <span aria-hidden="true">{generatorOpen ? '收合' : '展開'}</span>
+        </button>
+
+        {generatorOpen ? (
+          <div className="admin-variant-generator-body">
+            <label className="admin-variant-generator-colors">
+              顏色
+              <input
+                aria-label="批次顏色"
+                onChange={(event) => setColorsText(event.target.value)}
+                placeholder="例：奶油白、霧綠、淺灰（用、或逗號分隔）"
+                value={colorsText}
+              />
+              <small>{colorList.length > 0 ? `已輸入 ${colorList.length} 種顏色` : '可一次輸入多種顏色'}</small>
+            </label>
+
+            <div className="admin-variant-generator-sizes">
+              <span>尺寸</span>
+              <div className="admin-variant-generator-chips">
+                {SIZE_OPTIONS.map((size) => {
+                  const active = pickedSizes.includes(size)
+                  return (
+                    <button
+                      aria-pressed={active}
+                      data-active={active}
+                      key={size}
+                      onClick={() => setPickedSizes((current) => (
+                        active ? current.filter((value) => value !== size) : [...current, size]
+                      ))}
+                      type="button"
+                    >{size}</button>
+                  )
+                })}
+                <button
+                  className="admin-variant-generator-all"
+                  onClick={() => setPickedSizes(pickedSizes.length === SIZE_OPTIONS.length ? [] : [...SIZE_OPTIONS])}
+                  type="button"
+                >{pickedSizes.length === SIZE_OPTIONS.length ? '全部取消' : '全選'}</button>
+              </div>
+            </div>
+
+            <div className="admin-variant-generator-values">
+              <label>售價<input aria-label="批次售價" inputMode="numeric" min="0" onChange={(event) => setBulkPrice(event.target.value)} placeholder="0" type="number" value={bulkPrice} /></label>
+              <label>成本<input aria-label="批次成本" inputMode="numeric" min="0" onChange={(event) => setBulkCost(event.target.value)} placeholder="0" type="number" value={bulkCost} /></label>
+              <label>庫存<input aria-label="批次庫存" inputMode="numeric" min="0" onChange={(event) => setBulkStock(event.target.value)} placeholder="0" type="number" value={bulkStock} /></label>
+              <label>SKU 前綴<input aria-label="SKU 前綴" onChange={(event) => setSkuPrefix(event.target.value)} placeholder={suggestSkuPrefix(variants)} value={skuPrefix} /></label>
+            </div>
+
+            <div className="admin-variant-generator-actions">
+              <p>
+                {preview.variants.length > 0
+                  ? <>將產生 <strong>{preview.variants.length}</strong> 個規格{preview.skipped > 0 ? `（略過 ${preview.skipped} 個已存在的組合）` : ''}，例：<code>{preview.variants[0].sku}</code></>
+                  : colorList.length === 0 || orderedSizes.length === 0
+                    ? '請先輸入顏色並選擇尺寸'
+                    : '這些組合都已經建立了'}
+              </p>
+              <button className="button" disabled={preview.variants.length === 0} onClick={generate} type="button">產生規格</button>
+            </div>
+          </div>
+        ) : null}
+
+        {generatorNote ? <p className="admin-variant-generator-note" role="status">{generatorNote}</p> : null}
+      </div>
+
       <div className="admin-variant-labels" aria-hidden="true"><span>SKU</span><span>顏色</span><span>尺寸</span><span>售價</span><span>成本</span><span>原價</span><span>庫存</span><span /></div>
       {variants.map((variant, index) => (
         <div className="admin-variant-row" data-invalid={Boolean(errors[index] && Object.keys(errors[index]).length > 0)} key={variant.id ?? index}>

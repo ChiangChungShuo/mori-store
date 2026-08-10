@@ -116,6 +116,15 @@ class MemoryProductRepository implements ProductRepository {
     this.imageCount += 1
   }
 
+  async listImagePaths(id: string) {
+    this.events.push(`list-images:${id}`)
+    return Array.from({ length: this.imageCount }, (_, index) => ({
+      path: `${id}/image-${index}.png`,
+      alt: `圖片 ${index + 1}`,
+      color: null,
+    }))
+  }
+
   async setImageColor(id: string, imageId: string, color: string | null) {
     if (this.failImageColor) throw new Error('product_image_color_invalid')
     this.events.push(`set-image-color:${id}:${imageId}:${color ?? 'shared'}`)
@@ -152,6 +161,7 @@ function setup(
     logError,
     actions: createAdminProductActions({
       repository,
+      loadProduct: async (id: string) => ({ id, isPublished: true, product, images: [] }),
       requireAdmin: async () => {
         repository.events.push('admin')
       },
@@ -204,6 +214,36 @@ describe('admin product actions', () => {
       `reorder-images:${productId}:${imageIds.join(',')}`,
     ])
     expect(repository.removedPaths).toEqual([])
+  })
+
+  it('duplicates a product as an unpublished draft with fresh variants and copied photos', async () => {
+    const { actions, repository } = setup()
+    repository.imageCount = 2
+
+    const result = await actions.duplicateProduct(productId)
+
+    expect(result).toMatchObject({ ok: true, productId })
+    expect(result.message).toContain('草稿')
+    expect(repository.savedProduct?.name).toBe('彩色口袋 Tee（複本）')
+    expect(repository.savedProduct?.slug).not.toBe(product.slug)
+    // The copy must not claim the original's rows, or saving it would move them.
+    expect(repository.savedProduct?.variants.every((variant) => !variant.id && !variant.updatedAt)).toBe(true)
+    expect(repository.savedProduct?.variants.map((variant) => variant.sku)).toEqual(['TEE-Y-100-COPY'])
+    expect(repository.savedProduct?.isNew).toBe(false)
+    expect(repository.events.filter((event) => event.startsWith('insert-image')).length).toBe(2)
+    expect(repository.published).toBe(false)
+  })
+
+  it('still returns the duplicate when copying its photos fails', async () => {
+    const { actions, repository, logError } = setup()
+    repository.imageCount = 1
+    repository.failImageInsert = true
+
+    const result = await actions.duplicateProduct(productId)
+
+    expect(result).toMatchObject({ ok: true, productId })
+    expect(result.message).toContain('圖片未複製')
+    expect(logError).toHaveBeenCalled()
   })
 
   it('authorizes and deletes the selected product', async () => {
@@ -703,6 +743,32 @@ describe('admin product form', () => {
 
     fireEvent.click(screen.getAllByRole('button', { name: '移除規格' })[1])
     expect(screen.getAllByLabelText('SKU')).toHaveLength(1)
+    view.unmount()
+  })
+
+  it('generates every colour and size combination from the bulk panel', () => {
+    function VariantHarness() {
+      const [variants, setVariants] = useState(product.variants)
+      return createElement(VariantGrid, { variants, onChange: setVariants, sizeOptions: ['100', '110'] })
+    }
+
+    const view = render(createElement(VariantHarness))
+    const grid = within(view.container)
+
+    fireEvent.click(grid.getByRole('button', { name: /批次產生規格/ }))
+    fireEvent.change(grid.getByLabelText('批次顏色'), { target: { value: '米白、霧綠' } })
+    fireEvent.click(grid.getByRole('button', { name: '100' }))
+    fireEvent.click(grid.getByRole('button', { name: '110' }))
+    fireEvent.change(grid.getByLabelText('批次售價'), { target: { value: '680' } })
+
+    // 4 new rows on top of the single existing 黃色/100 spec.
+    expect(grid.getByRole('button', { name: '產生規格' })).toBeEnabled()
+    fireEvent.click(grid.getByRole('button', { name: '產生規格' }))
+
+    expect(grid.getAllByLabelText('SKU')).toHaveLength(5)
+    expect(grid.getAllByLabelText('售價').slice(-4).map((input) => (input as HTMLInputElement).value))
+      .toEqual(['680', '680', '680', '680'])
+    expect(grid.getByRole('status').textContent).toContain('已新增 4 個規格')
     view.unmount()
   })
 
