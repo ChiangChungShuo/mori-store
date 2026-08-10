@@ -84,12 +84,15 @@ export default async function OrderCompletePage({ params, searchParams }: OrderC
             <p className="eyebrow">become a member</p>
             <h2 id="guest-member-invite-title">用同一個 Email 建立會員</h2>
             <p>
-              這筆訂單已經成立，不需要註冊也能查詢。若用 <strong>{order.email}</strong> 建立會員，
-              下次結帳資料會自動帶入，訂單進度也能直接在會員中心看到
+              這筆訂單已經成立，不需要註冊也能查詢。用 <strong>{order.email}</strong> 建立會員時，
+              Email 與姓名會自動帶入，只要設定密碼即可；下次結帳資料也會自動填好，訂單進度能直接在會員中心看到
               {welcomeGift ? `，還會拿到 ${formatTwd(welcomeGift.amount)} 購物金（下次結帳自動折抵）` : ''}。
             </p>
           </div>
-          <Link className="button" href={`/signup?next=${encodeURIComponent('/account/orders')}`}>建立會員</Link>
+          <Link
+            className="button"
+            href={`/signup?email=${encodeURIComponent(order.email)}${order.recipientName ? `&name=${encodeURIComponent(order.recipientName)}` : ''}&next=${encodeURIComponent('/account/orders')}`}
+          >建立會員</Link>
         </section>
       ) : null}
       <nav className="order-complete-actions" aria-label="訂單完成後續操作">

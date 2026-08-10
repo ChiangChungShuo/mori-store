@@ -34,6 +34,22 @@ function fillRegistration() {
   fireEvent.click(screen.getByLabelText(/我已閱讀並同意/))
 }
 
+describe('SignupForm prefill', () => {
+  it('carries the Email and name over from a guest order', () => {
+    render(<SignupForm prefill={{ email: 'parent@example.com', displayName: '王小美' }} />)
+
+    expect(screen.getByLabelText('Email')).toHaveValue('parent@example.com')
+    expect(screen.getByLabelText(/真實姓名/)).toHaveValue('王小美')
+  })
+
+  it('starts empty without a prefill', () => {
+    render(<SignupForm />)
+
+    expect(screen.getByLabelText('Email')).toHaveValue('')
+    expect(screen.getByLabelText(/真實姓名/)).toHaveValue('')
+  })
+})
+
 describe('Email OTP signup form', () => {
   it('requires valid contact data and legal consent before continuing', () => {
     render(<SignupForm />)

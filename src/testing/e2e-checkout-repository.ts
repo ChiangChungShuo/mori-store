@@ -190,6 +190,7 @@ export function createFixtureCheckoutRepository(
       return order ? {
         orderNumber: order.orderNumber,
         email: order.email,
+        recipientName: order.recipientName,
         storeChain: order.storeChain,
         storeId: order.storeId,
         storeName: order.storeName,

@@ -23,16 +23,20 @@ export function SignupForm({
   nextPath,
   fixtureMode = false,
   welcomeGift,
+  prefill,
 }: {
   nextPath?: string
   fixtureMode?: boolean
   /** Shown before signing up: the reason to create an account at all. */
   welcomeGift?: { amount: number; minimumSpend: number } | null
+  /** Carried over from a guest order, so the shopper retypes nothing. Only a
+   *  starting value — the Email still has to pass the verification code step. */
+  prefill?: { email?: string; displayName?: string }
 }) {
   const [verificationOpen, setVerificationOpen] = useState(false)
   const [registration, setRegistration] = useState({
-    displayName: '',
-    email: '',
+    displayName: prefill?.displayName ?? '',
+    email: prefill?.email ?? '',
     phone: '',
     password: '',
     confirmPassword: '',
