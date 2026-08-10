@@ -756,6 +756,9 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .account-orders-labels, .account-order-row { display: grid; grid-template-columns: minmax(12rem, 1.1fr) minmax(12rem, 1.25fr) 7rem 6rem 6rem; gap: 1rem; align-items: center; }
 .account-orders-labels { border-radius: 1.05rem 1.05rem 0 0; padding: 0.8rem 1.2rem; background: var(--paper); color: var(--muted); font-size: 0.62rem; font-weight: 800; }
 .account-order-row { padding: 1.15rem 1.2rem; border-bottom: 1px solid var(--line); }
+/* A grid item stretches by default, which left the pill padded out to the whole
+   狀態 column; it should be exactly as wide as its label. */
+.account-order-row > .status-badge { justify-self: start; }
 .account-order-row:last-child { border-bottom: 0; }
 .account-order-number, .account-order-product, .account-order-total { display: grid; gap: 0.15rem; }
 .account-order-row span, .account-order-row small { color: var(--muted); font-size: 0.62rem; }
@@ -770,6 +773,30 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .account-order-link { border: 1px solid var(--forest); border-radius: 999px; padding: 0.55rem 0.75rem; color: var(--forest); font-size: 0.66rem; font-weight: 800; text-align: center; text-decoration: none; }
 .account-order-link:hover { background: var(--forest); color: var(--white); }
 .account-order-help { display: flex; justify-content: space-between; gap: 2rem; align-items: center; padding: 1.2rem 1.4rem; }
+/* Ways back into the shop: the member centre is where returning customers land,
+   so it has to lead somewhere other than past orders. */
+.account-quick-links { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem; }
+.account-quick-links a { display: grid; gap: 0.2rem; border: 1px solid #e3eaee; border-radius: 1.1rem; background: var(--white); padding: 1rem 1.1rem; color: var(--forest); text-decoration: none; box-shadow: 0 0.6rem 1.6rem rgb(64 77 94 / 5%); transition: border-color 150ms ease, transform 150ms ease; }
+.account-quick-links a:hover { border-color: var(--sage); transform: translateY(-2px); }
+.account-quick-links a > span { color: var(--sage); font-size: 1.05rem; line-height: 1; }
+.account-quick-links strong { font-size: 0.88rem; }
+.account-quick-links small { color: var(--muted); font-size: 0.7rem; line-height: 1.5; }
+.account-reorder-note { margin: 0 0 0.85rem; color: var(--muted); font-size: 0.8rem; }
+.account-reorder-items { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.account-reorder-items a { display: inline-flex; gap: 0.5rem; align-items: center; border: 1px solid var(--sand); border-radius: 999px; background: var(--paper); padding: 0.55rem 1rem; color: var(--forest); font-size: 0.8rem; font-weight: 700; text-decoration: none; }
+.account-reorder-items a:hover { border-color: var(--forest); background: var(--forest); color: var(--white); }
+.account-reorder-items a span { font-size: 0.7rem; }
+/* 新會員禮: a coupon dressed as a gift, shown before signing up and handed over
+   afterwards. */
+.welcome-gift { display: grid; gap: 0.4rem; border: 1px solid var(--sage); border-radius: 1.1rem; background: var(--oat); padding: 1.1rem 1.25rem; }
+.welcome-gift-label { margin: 0; color: var(--moss); font-size: 0.66rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
+.welcome-gift strong { color: var(--forest); font-family: Georgia, "Noto Serif TC", serif; font-size: 1.3rem; font-weight: 400; }
+.welcome-gift p { margin: 0; color: var(--muted); font-size: 0.8rem; line-height: 1.65; }
+.welcome-gift-code { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-top: 0.45rem; }
+.welcome-gift-code code { border: 1px dashed var(--forest); border-radius: 0.5rem; background: var(--white); padding: 0.5rem 1rem; color: var(--forest); font-size: 0.95rem; font-weight: 800; letter-spacing: 0.08em; }
+.account-page > .welcome-gift { margin-bottom: 1.25rem; }
+.auth-story > .welcome-gift { margin-bottom: 1.5rem; background: rgb(255 255 255 / 88%); }
+@media (max-width: 60rem) { .account-quick-links { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .account-order-help div { display: grid; gap: 0.15rem; }
 .account-order-help strong { color: var(--forest); font-size: 0.78rem; }
 .account-order-help p { margin: 0; color: var(--muted); font-size: 0.68rem; }
@@ -1317,10 +1344,35 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-image-color-field { display: grid; gap: 0.35rem; margin-top: 0.55rem; color: var(--forest); font-size: 0.68rem; font-weight: 800; }
 .admin-image-color-field select { width: 100%; min-height: 2.5rem; border: 1px solid var(--line); border-radius: 0; background: #fbfbfb; color: var(--ink); padding: 0.45rem 0.6rem; font: inherit; font-weight: 600; }
 .admin-image-color-field small { color: var(--muted); font-size: 0.6rem; font-weight: 500; line-height: 1.5; }
-.admin-image-order-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; margin-top: 0.55rem; }
-.admin-image-order-controls button { min-height: 2.25rem; border: 1px solid var(--line); background: var(--white); color: var(--forest); font-size: 0.6rem; font-weight: 800; }
-.admin-image-order-controls button:hover:not(:disabled) { border-color: var(--forest); background: var(--oat); }
-.admin-image-order-controls button:disabled { color: var(--muted); opacity: 0.45; }
+/* Order arrows float over the photo, vertically centred, so each tile stays as
+   tall as its image instead of carrying a row of labelled buttons. */
+.admin-image-frame { position: relative; display: block; }
+.admin-image-order-controls {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 0.4rem;
+  pointer-events: none;
+}
+.admin-image-order-controls button {
+  display: grid;
+  width: 1.9rem;
+  height: 1.9rem;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 92%);
+  color: var(--forest);
+  box-shadow: 0 0.2rem 0.6rem rgb(64 77 94 / 20%);
+  pointer-events: auto;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+.admin-image-order-controls button:hover:not(:disabled) { background: var(--forest); color: var(--white); }
+.admin-image-order-controls button:disabled { opacity: 0; pointer-events: none; }
 .admin-image-delete-form { margin-top: 0.55rem; }
 .admin-image-delete-form button { width: 100%; border: 1px solid #b18e8a; background: transparent; padding: 0.45rem; color: #995a55; font-size: 0.62rem; font-weight: 800; }
 .admin-image-delete-form button:hover { background: #995a55; color: var(--white); }
@@ -1799,18 +1851,26 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .cart-drawer[data-cart-state="added"] summary { animation: cart-bump 620ms cubic-bezier(.2,.9,.2,1.25); }
 .cart-drawer[data-cart-state="added"] .cart-count { background: var(--lime); color: var(--forest); }
 .cart-drawer-backdrop { position: fixed; z-index: 1; inset: 0; border: 0; background: rgb(70 82 97 / 34%); cursor: default; }
-.cart-drawer-panel { position: fixed; z-index: 2; right: 0; top: 0; width: min(29rem, calc(100vw - 1rem)); height: 100dvh; overflow-y: auto; padding: 1.5rem; border-left: 1px solid var(--forest); background: var(--white); box-shadow: -1.2rem 0 3rem rgb(81 88 98 / 18%); animation: drawer-enter 220ms ease-out; }
+/* Column layout: the item list is the only part that scrolls, so the total and
+   the checkout button never leave the screen. */
+.cart-drawer-panel { position: fixed; z-index: 2; right: 0; top: 0; display: flex; flex-direction: column; width: min(29rem, calc(100vw - 1rem)); height: 100dvh; padding: 1.25rem 1.25rem calc(1rem + env(safe-area-inset-bottom)); border-left: 1px solid var(--forest); background: var(--white); box-shadow: -1.2rem 0 3rem rgb(81 88 98 / 18%); animation: drawer-enter 220ms ease-out; }
+.cart-drawer-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.cart-drawer-footer { flex: 0 0 auto; display: grid; gap: 0.75rem; padding-top: 0.9rem; }
 .cart-drawer-heading { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 1px solid var(--line); padding-bottom: 0.9rem; }
 .cart-drawer-heading > div { display: flex; width: 100%; align-items: baseline; justify-content: space-between; }
 .cart-drawer-heading > button { margin-left: 1rem; border: 0; background: transparent; color: var(--forest); font-size: 1.5rem; line-height: 1; }
 .cart-drawer-heading p { margin: 0; color: var(--muted); font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; }
 .cart-drawer-heading h2 { margin: 0; font-family: Georgia, "Noto Serif TC", serif; font-size: 1.6rem; font-weight: 400; }
-.cart-empty { padding-block: 1rem; color: var(--muted); }
+.cart-empty { display: grid; gap: 1rem; justify-items: start; padding-block: 1.5rem; color: var(--muted); font-size: 0.85rem; }
+.cart-empty p { margin: 0; }
 .cart-list, .cart-page-list { margin: 0; padding: 0; list-style: none; }
-.cart-list li { display: grid; grid-template-columns: 5rem minmax(0, 1fr) auto; gap: 0.85rem; align-items: start; padding: 1rem 0; border-bottom: 1px solid var(--line); }
-.cart-list p { margin: 0.2rem 0; color: var(--muted); font-size: 0.72rem; }
+.cart-list li { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr) auto; gap: 0.8rem; align-items: start; padding: 0.95rem 0; border-bottom: 1px solid var(--line); }
+.cart-list p { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.72rem; }
 .cart-list a { font-weight: 700; text-decoration: none; }
-.cart-drawer-image { display: grid; width: 5rem; aspect-ratio: 4 / 5; place-items: center; overflow: hidden; background: var(--oat); }
+.cart-drawer-item-copy > a { display: block; overflow: hidden; color: var(--forest); font-size: 0.82rem; line-height: 1.45; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.cart-drawer-item-side { display: grid; gap: 0.4rem; justify-items: end; text-align: right; }
+.cart-drawer-item-side strong { color: var(--ink); font-size: 0.85rem; white-space: nowrap; }
+.cart-drawer-image { display: grid; width: 4.5rem; aspect-ratio: 4 / 5; place-items: center; overflow: hidden; border-radius: 0.5rem; background: var(--oat); }
 .cart-drawer-image img { width: 100%; height: 100%; object-fit: cover; }
 .cart-drawer-image span { color: var(--sage); font-family: Georgia, serif; font-size: 1.2rem; font-style: italic; }
 .cart-drawer-item-copy { min-width: 0; }
@@ -1818,12 +1878,16 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .quantity-stepper-small button { min-height: 1.85rem; font-size: 0.85rem; }
 .quantity-stepper-small output { font-size: 0.72rem; }
 .cart-drawer-progress { margin: 1rem 0; }
-.cart-drawer-totals { border-top: 1px solid var(--line); padding-top: 0.65rem; }
-.cart-drawer-totals p { display: flex; justify-content: space-between; gap: 1rem; margin: 0; padding: 0.4rem 0; font-size: 0.78rem; }
-.cart-drawer-totals .cart-total { margin: 0.45rem 0 0.9rem; border-top: 1px solid var(--forest); font-size: 1rem; }
-.cart-drawer-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
-.cart-drawer-actions .button { width: 100%; min-width: 0; transform: none; }
+.cart-drawer-totals { display: grid; gap: 0.15rem; border-top: 1px solid var(--line); padding-top: 0.7rem; }
+.cart-drawer-totals p { display: flex; justify-content: space-between; gap: 1rem; margin: 0; padding: 0.2rem 0; color: var(--muted); font-size: 0.76rem; }
+.cart-drawer-totals p strong { color: var(--ink); font-weight: 700; }
+.cart-drawer-totals .cart-total { margin-top: 0.45rem; border-top: 1px solid var(--sand); padding-top: 0.6rem; color: var(--forest); font-size: 0.9rem; }
+.cart-drawer-totals .cart-total strong { color: var(--forest); font-family: Georgia, "Noto Serif TC", serif; font-size: 1.25rem; font-weight: 400; }
+.cart-drawer-actions { display: grid; gap: 0.5rem; justify-items: center; }
+.cart-drawer-actions .button { width: 100%; min-width: 0; min-height: 3.1rem; justify-content: center; font-size: 0.85rem; transform: none; }
 .cart-drawer-actions .button:hover, .cart-drawer-actions .button:active { transform: none; }
+.cart-drawer-view-all { color: var(--muted); font-size: 0.75rem; text-decoration: underline; }
+.cart-drawer-view-all:hover { color: var(--forest); }
 
 .admin-banner-settings { margin-top: 1.25rem; }
 .admin-live-preview { overflow: hidden; border: 1px solid var(--line); background: var(--paper); }
@@ -1856,6 +1920,8 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .cart-card-heading h2, .cart-order-summary h2 { margin: 0; color: var(--ink); font-family: "Avenir Next", "Noto Sans TC", sans-serif; font-size: 1.05rem; font-weight: 750; letter-spacing: 0; }
 .cart-card-heading h2 span { color: var(--forest); font-size: 0.85rem; font-weight: 600; }
 .shipping-progress { margin: 1rem; padding: 1rem; background: var(--oat); }
+.cart-drawer-progress { margin: 0; border-radius: 0.6rem; padding: 0.75rem 0.85rem; }
+.cart-drawer-progress p { margin-bottom: 0.45rem; font-size: 0.76rem; }
 .shipping-progress p { margin: 0 0 0.5rem; font-size: 0.85rem; }
 .shipping-progress strong { color: var(--forest); }
 .shipping-progress small { color: var(--muted); font-size: 0.7rem; }
@@ -1883,7 +1949,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .quantity-stepper button:focus-visible { position: relative; z-index: 1; outline: 2px solid var(--forest); outline-offset: 2px; }
 .quantity-stepper button:disabled { cursor: not-allowed; background: #f8f8f7; color: #bdc0c4; }
 .quantity-stepper output { display: grid; place-items: center; border-inline: 1px solid var(--line); font-size: 0.82rem; }
-.cart-remove-button { border: 0; background: transparent; color: #afb3ac; padding: 0.35rem; font-size: 1.25rem; }
+.cart-remove-button { border: 0; background: transparent; color: var(--muted); padding: 0.2rem 0; font-size: 0.7rem; text-decoration: underline; cursor: pointer; }
 .cart-remove-button:hover { color: #a15954; }
 .cart-sidebar { position: sticky; top: 6.5rem; display: grid; gap: 1rem; }
 .member-nudge { display: grid; grid-template-columns: auto 1fr auto; gap: 0.8rem; align-items: center; padding: 1rem; border: 1px solid var(--line); background: var(--white); }
@@ -2250,6 +2316,35 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-order-reply-form > p[data-success="true"] { color: #5f6b7a; }
 .order-cancelled { margin: 1rem 1.5rem; padding: 1rem; background: #f1ecea; color: #985b55; }
 
+
+/* iPad-sized admin (most of this shop's back-office traffic): the fixed sidebar
+   leaves too little room for a five-column order table, so the sidebar slims
+   down and the orders become cards — the same layout phones already use. */
+@media (max-width: 80rem) {
+  .admin-sidebar { width: 11.5rem; padding: 1.5rem 0.9rem 1rem; }
+  .admin-workspace { margin-left: 11.5rem; }
+  .admin-workspace > .section { width: min(100% - 2rem, 96rem); }
+  .admin-nav a { padding-inline: 0.65rem; font-size: 0.78rem; }
+  .admin-brand { width: 4.5rem; }
+  /* Touch targets, because this is a tablet even though it is wide. */
+  .admin-inline-action, .admin-product-actions button, .admin-order-row-actions button { min-height: 2.6rem; }
+  .admin-order-table { min-width: 0; background: transparent; }
+  .admin-order-table thead { display: none; }
+  .admin-order-table, .admin-order-table tbody, .admin-order-table tr, .admin-order-table th, .admin-order-table td { display: block; width: 100%; }
+  .admin-order-table tr { margin-bottom: 1rem; border: 1px solid var(--line); border-radius: 0.85rem; background: var(--white); padding: 0.9rem 1.1rem; }
+  .admin-order-table th, .admin-order-table td { display: grid; grid-template-columns: 5.2rem minmax(0, 1fr); gap: 0.6rem; padding: 0.4rem 0; border: 0; overflow-wrap: anywhere; }
+  .admin-order-table th::before, .admin-order-table td::before { color: var(--muted); content: attr(data-label); font-size: 0.72rem; font-weight: 700; }
+  .admin-order-table td .status-badge { justify-self: start; }
+  .admin-order-table .admin-order-row-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .admin-product-table th, .admin-product-table td { padding: 0.8rem 0.75rem; }
+  .admin-dashboard-grid { grid-template-columns: 1fr; }
+  .admin-variant-generator-values { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 58rem) {
+  .admin-sidebar { width: 100%; }
+  .admin-workspace { margin-left: 0; }
+}
+
 @media (max-width: 58rem) {
   .site-nav { grid-template-columns: 1fr; min-height: 0; padding-block: 0.9rem; }
   .brand, .nav-links, .nav-actions { grid-column: 1; grid-row: auto; }
@@ -2432,8 +2527,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
   /* An empty basket needs no badge — a "0" chip is just noise. */
   .store-mobile-right .cart-count[data-count="0"] { display: none; }
   .store-mobile-right .wishlist-header-link[data-has-items="false"] .wishlist-header-count { display: none; }
-  .cart-drawer-panel { top: 0; bottom: auto; width: 100vw; padding: 1.2rem; }
-  .cart-drawer-actions { grid-template-columns: 1fr; }
+  .cart-drawer-panel { top: 0; bottom: auto; width: 100vw; padding: 1.1rem 1.1rem calc(0.9rem + env(safe-area-inset-bottom)); }
   .store-picker { padding: 1rem; }
   .store-picker-heading { flex-direction: column; }
   .store-options { grid-template-columns: 1fr; }
@@ -2495,12 +2589,6 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
   .admin-mobile-menu-actions a { color: var(--muted); font-size: 0.74rem; font-weight: 700; text-decoration: none; }
   .admin-mobile-header .mobile-menu-content form button { width: 100%; min-height: 3rem; border: 0; border-radius: 999px; background: var(--forest); color: var(--white); font-family: inherit; font-weight: 700; }
   .admin-workspace { margin-left: 0; }
-  .admin-order-table { min-width: 0; background: transparent; }
-  .admin-order-table thead { display: none; }
-  .admin-order-table, .admin-order-table tbody, .admin-order-table tr, .admin-order-table th, .admin-order-table td { display: block; width: 100%; }
-  .admin-order-table tr { margin-bottom: 1rem; border: 1px solid var(--line); background: var(--white); padding: 0.8rem 1rem; }
-  .admin-order-table th, .admin-order-table td { display: grid; grid-template-columns: 5.2rem minmax(0, 1fr); gap: 0.6rem; padding: 0.4rem 0; border: 0; overflow-wrap: anywhere; }
-  .admin-order-table th::before, .admin-order-table td::before { color: var(--muted); content: attr(data-label); font-size: 0.7rem; font-weight: 700; }
   .admin-workspace > .section { width: min(100% - 1.5rem, 82rem); padding-block: 2.25rem 4rem; }
   .admin-page-heading { align-items: flex-start; flex-direction: column; }
   .admin-page-heading > p { text-align: left; }
@@ -2998,9 +3086,8 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
   top: calc(100% + 0.5rem);
   left: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem 1rem;
-  width: min(34rem, 100%);
+  gap: 1rem;
+  width: min(30rem, 100%);
   max-height: calc(100vh - 7rem);
   overflow-y: auto;
   border: 1px solid var(--sand);
@@ -3011,17 +3098,43 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
   animation: modal-fade-in 140ms ease-out both;
 }
 .product-filterbar:not([data-sheet-open="true"]) .product-filterbar-sheet { display: none; }
-.product-filterbar-sheet-head { display: flex; grid-column: 1 / -1; justify-content: space-between; gap: 1rem; align-items: center; }
+.product-filterbar-sheet-head { display: flex; justify-content: space-between; gap: 1rem; align-items: center; }
 .product-filterbar-sheet-head strong { color: var(--forest); font-family: Georgia, "Noto Serif TC", serif; font-size: 1rem; font-weight: 400; }
 .product-filterbar-sheet-head button { width: 1.9rem; height: 1.9rem; border: 0; border-radius: 999px; background: var(--paper); color: var(--muted); font-size: 0.8rem; cursor: pointer; }
 .product-filterbar-sheet-head button:hover { background: var(--sand); color: var(--forest); }
-.product-filterbar-field { display: grid; gap: 0.3rem; min-width: 0; }
-.product-filterbar-field > span { color: var(--muted); font-size: 0.68rem; font-weight: 800; }
-.product-filterbar-field select, .product-filterbar-field input { width: 100%; min-width: 0; }
+/* Chip groups replace the four dropdowns: one tap each, and every option is
+   visible without opening anything. */
+.product-filter-group { min-width: 0; margin: 0; border: 0; padding: 0; }
+.product-filter-group > legend { padding: 0 0 0.4rem; color: var(--muted); font-size: 0.68rem; font-weight: 800; }
+.product-filter-group > input { width: 100%; min-width: 0; }
+.product-filter-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.product-filter-chips label { position: relative; display: inline-flex; }
+.product-filter-chips input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.product-filter-chips span {
+  display: inline-flex;
+  gap: 0.3rem;
+  align-items: baseline;
+  min-height: 2.2rem;
+  border: 1px solid var(--sand);
+  border-radius: 999px;
+  background: var(--white);
+  padding: 0.4rem 0.85rem;
+  color: var(--ink);
+  font-size: 0.76rem;
+  line-height: 1.35;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
+}
+.product-filter-chips span small { color: var(--muted); font-size: 0.64rem; }
+.product-filter-chips label:hover span { border-color: var(--moss); }
+.product-filter-chips input:checked + span { border-color: var(--forest); background: var(--forest); color: var(--white); }
+.product-filter-chips input:checked + span small { color: rgb(255 255 255 / 78%); }
+.product-filter-chips input:focus-visible + span { box-shadow: 0 0 0 3px rgb(106 127 144 / 22%); }
 /* The stock toggle shares the closing row with the buttons so the whole panel
    stays inside a laptop screen. */
-.product-filterbar-sheet .product-filterbar-stock { justify-content: center; align-self: end; margin-top: 0.25rem; padding-top: 0.7rem; border-top: 1px solid transparent; }
-.product-filterbar-sheet .filter-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.25rem; padding-top: 0.7rem; border-top: 1px solid var(--line); }
+.product-filterbar-sheet .product-filterbar-stock { justify-content: flex-start; width: 100%; }
+.product-filterbar-sheet .filter-actions { display: flex; justify-content: space-between; gap: 0.5rem; align-items: center; padding-top: 0.85rem; border-top: 1px solid var(--line); }
+.product-filterbar-sheet .filter-actions .button { min-height: 2.7rem; padding-inline: 1.8rem; }
 .product-filterbar-active { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin: -1.4rem 0 1.6rem; }
 .product-filterbar-active > span { color: var(--muted); font-size: 0.68rem; font-weight: 700; }
 .product-filterbar-active a { display: inline-flex; gap: 0.35rem; align-items: center; border: 1px solid #d7e1e7; border-radius: 999px; background: #eef4f7; padding: 0.32rem 0.7rem; color: var(--forest); font-size: 0.68rem; font-weight: 700; text-decoration: none; }
@@ -3044,8 +3157,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
     bottom: 0;
     left: 0;
     top: auto;
-    grid-template-columns: 1fr;
-    gap: 0.7rem;
+    gap: 0.9rem;
     width: auto;
     max-height: 84vh;
     overflow-y: auto;
@@ -3057,9 +3169,9 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
   }
   .product-filterbar-sheet-head strong { font-size: 1.05rem; }
   .product-filterbar-sheet-head button { width: 2rem; height: 2rem; font-size: 0.85rem; }
-  .product-filterbar .product-filterbar-field select, .product-filterbar .product-filterbar-field input { min-height: 3.1rem; border-radius: 0.85rem; background-color: var(--paper); font-size: 0.9rem; }
-  .product-filterbar-sheet .product-filterbar-stock { width: 100%; justify-content: center; min-height: 3.1rem; }
-  .product-filterbar-sheet .filter-actions { display: grid; grid-template-columns: 1.6fr 1fr; gap: 0.5rem; margin: 0.2rem 0 0; padding-top: 0.7rem; }
+  .product-filter-chips span { min-height: 2.6rem; padding: 0.5rem 1rem; font-size: 0.82rem; }
+  .product-filterbar-sheet .product-filterbar-stock { width: 100%; justify-content: center; min-height: 3rem; }
+  .product-filterbar-sheet .filter-actions { display: grid; grid-template-columns: 1fr 1.6fr; gap: 0.5rem; margin: 0.2rem 0 0; padding-top: 0.7rem; }
   .product-filterbar .button, .product-filterbar .filter-clear-button { min-height: 3.1rem; justify-content: center; }
   .product-filterbar .filter-clear-button { border-color: var(--sand); }
   .product-filterbar-active { margin: 0.7rem 0 1.2rem; }
@@ -3158,7 +3270,11 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
   .catalog-categories { margin: 0 0 1rem; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 2rem), transparent 100%); mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 2rem), transparent 100%); }
   .catalog-categories a { padding: 0.55rem 0.7rem 0.65rem; font-size: 0.74rem; }
   .catalog-categories a::after { right: 0.7rem; left: 0.7rem; }
-  .catalog-count { margin: 1.1rem 0 0.85rem; }
+  /* Every row above the grid costs a phone shopper half a product card, so the
+     catalogue header is trimmed hard here. */
+  .catalog-count { margin: 0.6rem 0 0.6rem; }
+  .catalog-page > .product-filterbar { margin-bottom: 0.9rem; }
+  .product-filterbar-sort { margin-top: 0.5rem; }
   .recently-viewed { width: min(100% - 1.5rem, 76rem); padding-block: 1.3rem 2rem; }
   .recently-viewed-card { flex-basis: 7rem; width: 7rem; }
 }
@@ -3199,6 +3315,11 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 /* Catalog page density --------------------------------------------------------- */
 .catalog-page { padding-block-start: 1.6rem; }
 .catalog-page .page-heading { margin-bottom: 2rem; }
+@media (max-width: 36rem) {
+  .catalog-page .page-heading { margin-bottom: 1rem; }
+  .catalog-page .page-heading h1 { font-size: clamp(1.7rem, 8vw, 2.1rem); }
+  .catalog-page .page-heading span { font-size: 0.78rem; }
+}
 
 /* Buy column rhythm ------------------------------------------------------------ */
 .variant-picker p[role="status"] { margin: 0.5rem 0 0.7rem; color: var(--muted); font-size: 0.72rem; }

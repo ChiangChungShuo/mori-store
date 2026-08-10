@@ -140,56 +140,76 @@ export function ProductFilters({ filters, sizeOptions = [], colorOptions = [] }:
             <button aria-label="關閉篩選" onClick={() => setSheetOpen(false)} type="button">✕</button>
           </div>
 
-          <label className="product-filterbar-field">
-            <span>年齡</span>
-            <select aria-label="年齡" defaultValue={filters.age ?? ''} name="age">
-              <option value="">全部年齡</option>
-              {AGE_BANDS.map((band) => <option value={band.value} key={band.value}>{band.label}｜{band.range}</option>)}
-            </select>
-          </label>
+          {/* Chips rather than dropdowns: one tap instead of open-scroll-pick,
+              and the whole panel reads at a glance. */}
+          <fieldset className="product-filter-group">
+            <legend>年齡</legend>
+            <div className="product-filter-chips">
+              <label><input defaultChecked={!filters.age} name="age" type="radio" value="" /><span>全部</span></label>
+              {AGE_BANDS.map((band) => (
+                <label key={band.value}>
+                  <input defaultChecked={filters.age === band.value} name="age" type="radio" value={band.value} />
+                  <span>{band.label}<small>{band.range}</small></span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
 
-          <label className="product-filterbar-field">
-            <span>尺寸</span>
+          <fieldset className="product-filter-group">
+            <legend>尺寸</legend>
             {sizes.length > 0 ? (
-              <select aria-label="尺寸" defaultValue={filters.size ?? ''} name="size">
-                <option value="">全部尺寸</option>
-                {sizes.map((size) => <option value={size} key={size}>{size}</option>)}
-              </select>
+              <div className="product-filter-chips">
+                <label><input defaultChecked={!filters.size} name="size" type="radio" value="" /><span>全部</span></label>
+                {sizes.map((size) => (
+                  <label key={size}>
+                    <input defaultChecked={filters.size === size} name="size" type="radio" value={size} />
+                    <span>{size}</span>
+                  </label>
+                ))}
+              </div>
             ) : (
               <input aria-label="尺寸" defaultValue={filters.size ?? ''} inputMode="numeric" name="size" placeholder="尺寸" />
             )}
-          </label>
+          </fieldset>
 
-          <label className="product-filterbar-field">
-            <span>顏色</span>
+          <fieldset className="product-filter-group">
+            <legend>顏色</legend>
             {colors.length > 0 ? (
-              <select aria-label="顏色" defaultValue={filters.color ?? ''} name="color">
-                <option value="">全部顏色</option>
-                {colors.map((color) => <option value={color} key={color}>{color}</option>)}
-              </select>
+              <div className="product-filter-chips">
+                <label><input defaultChecked={!filters.color} name="color" type="radio" value="" /><span>全部</span></label>
+                {colors.map((color) => (
+                  <label key={color}>
+                    <input defaultChecked={filters.color === color} name="color" type="radio" value={color} />
+                    <span>{color}</span>
+                  </label>
+                ))}
+              </div>
             ) : (
               <input aria-label="顏色" defaultValue={filters.color ?? ''} name="color" placeholder="顏色" />
             )}
-          </label>
+          </fieldset>
 
-          <label className="product-filterbar-field">
-            <span>價格</span>
-            <select aria-label="價格" defaultValue={filters.price ?? ''} name="price">
-              <option value="">全部價格</option>
+          <fieldset className="product-filter-group">
+            <legend>價格</legend>
+            <div className="product-filter-chips">
+              <label><input defaultChecked={!filters.price} name="price" type="radio" value="" /><span>全部</span></label>
               {Object.entries(priceBands).map(([value, band]) => (
-                <option key={value} value={value}>{band.label}</option>
+                <label key={value}>
+                  <input defaultChecked={filters.price === value} name="price" type="radio" value={value} />
+                  <span>{band.label}</span>
+                </label>
               ))}
-            </select>
-          </label>
+            </div>
+          </fieldset>
 
           <label className="product-filterbar-stock">
             <input defaultChecked={filters.inStock} name="inStock" type="checkbox" value="true" />
-            <span>只顯示有庫存</span>
+            <span>只看現在有庫存的商品</span>
           </label>
 
           <div className="filter-actions">
-            <button type="submit" className="button">套用篩選</button>
             <FilterClearLink href={clearHref} />
+            <button type="submit" className="button">套用篩選</button>
           </div>
         </div>
       </form>

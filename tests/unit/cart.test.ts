@@ -321,7 +321,8 @@ describe('CartProvider', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '移除 自在長褲' }))
     fireEvent.click(screen.getByRole('button', { name: '確定移除' }))
-    expect(await screen.findByText('購物車目前是空的，去看看本週新品吧。')).toBeInTheDocument()
+    expect(await screen.findByText('購物車還是空的')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '去逛逛商品' })).toBeInTheDocument()
   })
 })
 

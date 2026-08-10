@@ -156,9 +156,11 @@ describe('ProductFilters', () => {
 
     expect(screen.getByRole('form', { name: '篩選商品' })).toHaveAttribute('method', 'get')
     expect(screen.getByLabelText('搜尋商品')).toHaveValue('外套')
-    expect(screen.getByLabelText('年齡')).toHaveValue('6-12')
-    expect(screen.getByLabelText('尺寸')).toHaveValue('120')
-    expect(screen.getByLabelText('只顯示有庫存')).toBeChecked()
+    // Age and size are chips now: the matching radio is the checked one.
+    expect(screen.getByRole('radio', { name: /Junior/ })).toBeChecked()
+    expect(screen.getByRole('group', { name: '年齡' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: '120' })).toBeChecked()
+    expect(screen.getByLabelText('只看現在有庫存的商品')).toBeChecked()
   })
 })
 

@@ -64,68 +64,82 @@ export function CartDrawer({ settings }: { settings: StorefrontSettings }) {
           <div><p>your cart</p><h2>購物車</h2></div>
           <button aria-label="關閉購物車" onClick={() => setOpen(false)} type="button">×</button>
         </div>
-        {items.length === 0 ? <p className="cart-empty">購物車目前是空的，去看看本週新品吧。</p> : (
-          <ul className="cart-list">
-            {items.map((item) => (
-              <li key={item.variantId}>
-                <Link className="cart-drawer-image" href={`/products/${item.productSlug}`}>
-                  {item.imageUrl ? (
-                    <Image alt={item.name} height={100} src={item.imageUrl} width={80} />
-                  ) : <span aria-label={item.name} role="img">mori</span>}
-                </Link>
-                <div className="cart-drawer-item-copy">
-                  <Link href={`/products/${item.productSlug}`}>{item.name}</Link>
-                  <p>{item.color}／尺寸 {item.size}</p>
-                  <p>{formatTwd(item.unitPrice)}</p>
-                  <div className="quantity-stepper quantity-stepper-small" role="group" aria-label={`${item.name} 數量調整`}>
-                    <button
-                      aria-label={`減少 ${item.name} 數量`}
-                      disabled={item.quantity <= 1}
-                      onClick={() => dispatch({ type: 'setQuantity', variantId: item.variantId, quantity: item.quantity - 1 })}
-                      type="button"
-                    >−</button>
-                    <output aria-label={`${item.name} 數量`} aria-live="polite">{item.quantity}</output>
-                    <button
-                      aria-label={`增加 ${item.name} 數量`}
-                      disabled={item.quantity >= getCartQuantityLimit(item.maxStock)}
-                      onClick={() => dispatch({ type: 'setQuantity', variantId: item.variantId, quantity: item.quantity + 1 })}
-                      type="button"
-                    >＋</button>
-                  </div>
-                </div>
-                <button
-                  aria-label={`移除 ${item.name}`}
-                  className="cart-remove-button"
-                  type="button"
-                  onClick={() => setPendingRemoval({ variantId: item.variantId, name: item.name })}
-                >×</button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {items.length > 0 && freeShippingRemaining !== null ? (
-          <div className="shipping-progress cart-drawer-progress">
-            <p>{freeShippingRemaining > 0
-              ? <>再買 <strong>{formatTwd(freeShippingRemaining)}</strong> 即享免運</>
-              : <strong>已達免運門檻</strong>}</p>
-            <div className="shipping-progress-track" aria-label={`免運進度 ${freeShippingProgress}%`}>
-              <span style={{ width: `${freeShippingProgress}%` }} />
+        {/* The list scrolls on its own so the total and the checkout button stay
+            on screen however many items are in the cart — on a phone they used
+            to be pushed below the fold after the third product. */}
+        <div className="cart-drawer-scroll">
+          {items.length === 0 ? (
+            <div className="cart-empty">
+              <p>購物車還是空的</p>
+              <Link className="button" href="/products" onClick={() => setOpen(false)}>去逛逛商品</Link>
             </div>
-            <small>滿 {formatTwd(settings.freeShippingThreshold ?? 0)} 超商取貨免運</small>
-          </div>
-        ) : null}
-        {items.length > 0 ? (
-          <div className="cart-drawer-totals">
-            <p><span>商品小計</span><strong>{formatTwd(totals.subtotal)}</strong></p>
-            {totals.bundleDiscount > 0 ? <p className="cart-discount"><span>多件優惠</span><strong>-{formatTwd(totals.bundleDiscount)}</strong></p> : null}
-            <p><span>運費</span><strong>{totals.shipping === 0 ? '免運' : formatTwd(totals.shipping)}</strong></p>
-            <p className="cart-total"><span>合計</span><strong>{formatTwd(totals.total)}</strong></p>
-          </div>
-        ) : null}
-        <div className="cart-drawer-actions">
-          <Link href="/cart" className="button button-secondary" onClick={() => setOpen(false)}>查看購物車</Link>
-          {items.length > 0 ? <Link href="/checkout" className="button" onClick={() => setOpen(false)}>前往結帳</Link> : null}
+          ) : (
+            <ul className="cart-list">
+              {items.map((item) => (
+                <li key={item.variantId}>
+                  <Link className="cart-drawer-image" href={`/products/${item.productSlug}`} onClick={() => setOpen(false)}>
+                    {item.imageUrl ? (
+                      <Image alt={item.name} height={100} src={item.imageUrl} width={80} />
+                    ) : <span aria-label={item.name} role="img">mori</span>}
+                  </Link>
+                  <div className="cart-drawer-item-copy">
+                    <Link href={`/products/${item.productSlug}`} onClick={() => setOpen(false)}>{item.name}</Link>
+                    <p>{item.color}／尺寸 {item.size}</p>
+                    <div className="quantity-stepper quantity-stepper-small" role="group" aria-label={`${item.name} 數量調整`}>
+                      <button
+                        aria-label={`減少 ${item.name} 數量`}
+                        disabled={item.quantity <= 1}
+                        onClick={() => dispatch({ type: 'setQuantity', variantId: item.variantId, quantity: item.quantity - 1 })}
+                        type="button"
+                      >−</button>
+                      <output aria-label={`${item.name} 數量`} aria-live="polite">{item.quantity}</output>
+                      <button
+                        aria-label={`增加 ${item.name} 數量`}
+                        disabled={item.quantity >= getCartQuantityLimit(item.maxStock)}
+                        onClick={() => dispatch({ type: 'setQuantity', variantId: item.variantId, quantity: item.quantity + 1 })}
+                        type="button"
+                      >＋</button>
+                    </div>
+                  </div>
+                  <div className="cart-drawer-item-side">
+                    <strong>{formatTwd(item.unitPrice * item.quantity)}</strong>
+                    <button
+                      aria-label={`移除 ${item.name}`}
+                      className="cart-remove-button"
+                      type="button"
+                      onClick={() => setPendingRemoval({ variantId: item.variantId, name: item.name })}
+                    >移除</button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
+
+        {items.length > 0 ? (
+          <div className="cart-drawer-footer">
+            {freeShippingRemaining !== null ? (
+              <div className="shipping-progress cart-drawer-progress">
+                <p>{freeShippingRemaining > 0
+                  ? <>再買 <strong>{formatTwd(freeShippingRemaining)}</strong> 就免運</>
+                  : <strong>已達免運門檻，這筆訂單免運費</strong>}</p>
+                <div className="shipping-progress-track" aria-label={`免運進度 ${freeShippingProgress}%`}>
+                  <span style={{ width: `${freeShippingProgress}%` }} />
+                </div>
+              </div>
+            ) : null}
+            <div className="cart-drawer-totals">
+              <p><span>商品小計</span><strong>{formatTwd(totals.subtotal)}</strong></p>
+              {totals.bundleDiscount > 0 ? <p className="cart-discount"><span>多件優惠</span><strong>-{formatTwd(totals.bundleDiscount)}</strong></p> : null}
+              <p><span>運費</span><strong>{totals.shipping === 0 ? '免運' : formatTwd(totals.shipping)}</strong></p>
+              <p className="cart-total"><span>合計</span><strong>{formatTwd(totals.total)}</strong></p>
+            </div>
+            <div className="cart-drawer-actions">
+              <Link href="/checkout" className="button" onClick={() => setOpen(false)}>前往結帳</Link>
+              <Link href="/cart" className="cart-drawer-view-all" onClick={() => setOpen(false)}>查看完整購物車</Link>
+            </div>
+          </div>
+        ) : null}
       </div>
     </details>
     <ConfirmModal

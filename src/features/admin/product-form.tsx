@@ -210,9 +210,15 @@ export function ProductImageOrderControls({
     })
   }
 
+  // Arrows sit on the photo itself: the row of labelled buttons under every
+  // tile cost more height than the thumbnails and read as form fields.
   return <div className="admin-image-order-controls" aria-label={`調整圖片 ${imageNumber} 順序`}>
-    <button aria-label={`將圖片 ${imageNumber} 往前移`} disabled={pending || !onMoveEarlier} type="button" onClick={() => move(onMoveEarlier)}>← 往前</button>
-    <button aria-label={`將圖片 ${imageNumber} 往後移`} disabled={pending || !onMoveLater} type="button" onClick={() => move(onMoveLater)}>往後 →</button>
+    <button aria-label={`將圖片 ${imageNumber} 往前移`} disabled={pending || !onMoveEarlier} title="往前移" type="button" onClick={() => move(onMoveEarlier)}>
+      <svg aria-hidden="true" fill="none" height="14" viewBox="0 0 14 14" width="14"><path d="M8.75 2.5 4.25 7l4.5 4.5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" /></svg>
+    </button>
+    <button aria-label={`將圖片 ${imageNumber} 往後移`} disabled={pending || !onMoveLater} title="往後移" type="button" onClick={() => move(onMoveLater)}>
+      <svg aria-hidden="true" fill="none" height="14" viewBox="0 0 14 14" width="14"><path d="M5.25 2.5 9.75 7l-4.5 4.5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" /></svg>
+    </button>
   </div>
 }
 

@@ -67,7 +67,7 @@ export default async function EditAdminProductPage({
       <ProductForm key={variantSignature} carePresets={carePresets} categories={categories} contentSources={contentSources} initialProduct={product.product} materialPresets={materialPresets} onSave={save} saveContentDefaults={saveProductContentDefaults} series={series} sizeOptions={sizeOptions} />
       <section className="admin-product-images-section">
         <header><div><p className="eyebrow">product gallery</p><h2>商品圖片</h2></div><p>第一張圖片會作為商品列表主圖，其餘圖片會出現在商品頁輪播。</p></header>
-        {product.images.length > 1 ? <p className="admin-image-drag-hint">用滑鼠拖曳圖片就能調整順序，放開即儲存；也可以用每張圖下方的 ← → 按鈕。</p> : null}
+        {product.images.length > 1 ? <p className="admin-image-drag-hint">用滑鼠拖曳圖片就能調整順序，放開即儲存；也可以按圖片左右兩側的箭頭移動。</p> : null}
         {product.images.length === 0 ? (
           <div className="admin-image-empty"><strong>尚未上傳圖片</strong><span>商品至少需要一張圖片才能上架。</span></div>
         ) : (
@@ -76,18 +76,20 @@ export default async function EditAdminProductPage({
               <li data-image-id={image.id} data-primary={index === 0} draggable key={image.id}>
                 {index === 0 ? <span>主圖</span> : <span>{String(index + 1).padStart(2, '0')}</span>}
                 {product.images.length > 1 ? <span className="admin-image-grip"><svg aria-hidden="true" fill="none" height="10" viewBox="0 0 10 10" width="10"><circle cx="3" cy="2" r="1" fill="currentColor" /><circle cx="7" cy="2" r="1" fill="currentColor" /><circle cx="3" cy="5" r="1" fill="currentColor" /><circle cx="7" cy="5" r="1" fill="currentColor" /><circle cx="3" cy="8" r="1" fill="currentColor" /><circle cx="7" cy="8" r="1" fill="currentColor" /></svg>拖曳</span> : null}
-                <Image alt={image.alt} draggable={false} height={160} src={image.url} unoptimized width={128} />
+                <div className="admin-image-frame">
+                  <Image alt={image.alt} draggable={false} height={160} src={image.url} unoptimized width={128} />
+                  <ProductImageOrderControls
+                    imageNumber={index + 1}
+                    onMoveEarlier={index > 0 ? reorderProductImages.bind(null, productId, moveImage(index, -1)) : undefined}
+                    onMoveLater={index < product.images.length - 1 ? reorderProductImages.bind(null, productId, moveImage(index, 1)) : undefined}
+                  />
+                </div>
                 <p>{image.alt}</p>
                 <ProductImageColorForm
                   imageNumber={index + 1}
                   color={image.color}
                   colors={colors}
                   onSave={updateProductImageColor.bind(null, productId, image.id)}
-                />
-                <ProductImageOrderControls
-                  imageNumber={index + 1}
-                  onMoveEarlier={index > 0 ? reorderProductImages.bind(null, productId, moveImage(index, -1)) : undefined}
-                  onMoveLater={index < product.images.length - 1 ? reorderProductImages.bind(null, productId, moveImage(index, 1)) : undefined}
                 />
                 <DeleteProductImageForm imageNumber={index + 1} onDelete={deleteProductImage.bind(null, productId, image.id)} />
               </li>

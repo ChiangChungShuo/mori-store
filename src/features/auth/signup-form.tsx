@@ -22,9 +22,12 @@ const initialPasswordState: SignupPasswordState = { ok: false }
 export function SignupForm({
   nextPath,
   fixtureMode = false,
+  welcomeGift,
 }: {
   nextPath?: string
   fixtureMode?: boolean
+  /** Shown before signing up: the reason to create an account at all. */
+  welcomeGift?: { amount: number; minimumSpend: number } | null
 }) {
   const [verificationOpen, setVerificationOpen] = useState(false)
   const [registration, setRegistration] = useState({
@@ -328,6 +331,13 @@ export function SignupForm({
       </section>
 
       <section className="auth-story" aria-label="mori 會員服務">
+        {welcomeGift ? (
+          <aside className="welcome-gift" data-variant="invite">
+            <p className="welcome-gift-label">新會員禮</p>
+            <strong>註冊就送 NT${welcomeGift.amount.toLocaleString('zh-TW')} 購物金</strong>
+            <p>完成註冊後，會員中心就會顯示你的專屬優惠碼，結帳輸入即可折抵{welcomeGift.minimumSpend > 0 ? `（單筆滿 NT$${welcomeGift.minimumSpend.toLocaleString('zh-TW')} 可用）` : ''}。</p>
+          </aside>
+        ) : null}
         <p className="eyebrow">mori members</p>
         <h2>陪孩子，把每天穿得舒服一點。</h2>
         <p>完成 Email 驗證後，即可查看訂單、取貨門市與付款狀態。</p>

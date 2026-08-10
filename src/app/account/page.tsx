@@ -1,12 +1,16 @@
 import Link from 'next/link'
 import { AccountOrderRow } from '@/features/account/account-order-row'
 import { getAccountSummary } from '@/features/account/summary'
+import { RecentlyViewed } from '@/features/catalog/recently-viewed'
+import { WelcomeGiftCard } from '@/features/marketing/welcome-gift-card'
 import { requireUser } from '@/lib/auth/require-user'
 import { formatTwd } from '@/lib/money'
 
 export default async function AccountPage() {
   const user = await requireUser()
   const account = await getAccountSummary(user)
+  // The last order's products, so a repeat purchase starts from one tap.
+  const reorderItems = [...new Set(account.orders.flatMap((order) => order.items.map((item) => item.productName)))].slice(0, 6)
 
   return (
     <main className="account-page">
@@ -14,6 +18,29 @@ export default async function AccountPage() {
         <div><p className="eyebrow">member garden</p><h1>{account.displayName}，歡迎回來。</h1></div>
         <p>這裡收好你的訂單、紅利與會員成長紀錄。</p>
       </header>
+
+      {/* The member centre used to be a dead end: everything here reported on
+          past orders and nothing led back to the shop. */}
+      <nav className="account-quick-links" aria-label="快速前往">
+        <Link href="/products"><span aria-hidden="true">🛍</span><strong>繼續購物</strong><small>看看最新上架與現貨</small></Link>
+        <Link href="/wishlist"><span aria-hidden="true">♡</span><strong>追蹤清單</strong><small>回頭買下收藏的款式</small></Link>
+        <Link href="/account/orders"><span aria-hidden="true">▤</span><strong>我的訂單</strong><small>查看付款與取貨進度</small></Link>
+        <Link href="/faq"><span aria-hidden="true">?</span><strong>常見問題</strong><small>出貨、尺寸與退換說明</small></Link>
+      </nav>
+
+      <WelcomeGiftCard variant="member" />
+
+      {reorderItems.length > 0 ? (
+        <section className="account-section account-reorder">
+          <header><div><p className="eyebrow">buy it again</p><h2>再買一次</h2></div><Link href="/account/orders">看更多訂單 →</Link></header>
+          <p className="account-reorder-note">孩子長得快，上次買的款式常常只是需要大一號。</p>
+          <div className="account-reorder-items">
+            {reorderItems.map((name) => (
+              <Link href={`/products?q=${encodeURIComponent(name)}`} key={name}>{name}<span aria-hidden="true">→</span></Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="member-pass" aria-label="mori 會員資料">
         <div className="member-pass-identity"><p>mori family pass</p><strong>{account.displayName}</strong><span>{account.memberNumber}</span></div>
@@ -46,6 +73,8 @@ export default async function AccountPage() {
         <header><div><p className="eyebrow">profile</p><h2>基本資料</h2></div></header>
         <dl><div><dt>會員姓名</dt><dd>{account.displayName}</dd></div><div><dt>Email</dt><dd>{account.email}</dd></div><div><dt>手機號碼</dt><dd>{account.phone ?? '尚未提供'}</dd></div><div><dt>預設收件資料</dt><dd>{account.orders[0] ? `${account.orders[0].recipientName} · ${account.orders[0].recipientPhone}` : '完成第一筆訂單後自動帶入'}</dd></div></dl>
       </section>
+
+      <RecentlyViewed title="你最近看過" />
     </main>
   )
 }
