@@ -54,7 +54,7 @@ describe('shared fixture orders', () => {
       storeId: '123456',
       storeName: '台北門市',
       customerNote: '',
-      paymentMethod: 'online_test' as const,
+      paymentMethod: 'bank_transfer' as const,
     }
 
     const first = await checkout.createPaymentAttempt(customer, [{ variantId: variant.id, quantity: 1 }])
@@ -82,7 +82,7 @@ describe('shared fixture orders', () => {
       storeId: '123456',
       storeName: '台北門市',
       customerNote: '請協助確認包裝完整，謝謝。',
-      paymentMethod: 'online_test',
+      paymentMethod: 'bank_transfer',
     }, [{ variantId: '00000000-0000-4000-8000-000000000001', quantity: 2 }])
     const result = await checkout.completeTestPayment(attemptId, 'success')
     const replay = await checkout.completeTestPayment(attemptId, 'success')
@@ -104,7 +104,7 @@ describe('shared fixture orders', () => {
       recipientPhone: '0912345678',
       customerNote: '請協助確認包裝完整，謝謝。',
       merchantReply: '',
-      paymentMethod: 'online_test',
+      paymentMethod: 'bank_transfer',
       storeChain: 'seven_eleven',
       storeId: '123456',
       storeName: '台北門市',
@@ -136,7 +136,7 @@ describe('shared fixture orders', () => {
       recipientPhone: '0912345678',
       customerNote: '請協助確認包裝完整，謝謝。',
       merchantReply: '',
-      paymentMethod: 'online_test',
+      paymentMethod: 'bank_transfer',
       storeChain: 'seven_eleven',
       storeId: '123456',
       storeName: '台北門市',

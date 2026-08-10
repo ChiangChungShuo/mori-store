@@ -24,14 +24,26 @@ function rank(rows: Array<{ query: string; results: number }>) {
     .map(([term]) => term)
 }
 
+/**
+ * Anyone can post analytics events, so a term is only shown once it still finds
+ * something in the live catalog. Injected junk matches no product and never
+ * reaches a shopper's screen.
+ */
+async function keepTermsThatStillFindProducts(terms: string[]): Promise<string[]> {
+  if (terms.length === 0) return []
+  const { applyCatalogFilters, listProducts } = await import('@/features/catalog/queries')
+  const catalog = await listProducts({})
+  return terms.filter((term) => applyCatalogFilters(catalog, { q: term }).length > 0)
+}
+
 export async function listPopularSearchTerms(): Promise<string[]> {
   const since = new Date(Date.now() - LOOKBACK_DAYS * 24 * 3600 * 1000).toISOString()
 
   if (isE2EMode()) {
     const { getE2EStore } = await import('@/testing/e2e-store')
-    return rank(getE2EStore().events
+    return keepTermsThatStillFindProducts(rank(getE2EStore().events
       .filter((event) => event.type === 'search' && event.createdAt >= since)
-      .map((event) => ({ query: event.searchQuery ?? '', results: event.resultCount ?? 0 })))
+      .map((event) => ({ query: event.searchQuery ?? '', results: event.resultCount ?? 0 }))))
   }
 
   try {
@@ -46,10 +58,10 @@ export async function listPopularSearchTerms(): Promise<string[]> {
       .not('search_query', 'is', null)
       .limit(500)
     if (error || !data) return []
-    return rank(data.map((row) => ({
+    return keepTermsThatStillFindProducts(rank(data.map((row) => ({
       query: String(row.search_query ?? ''),
       results: Number(row.search_result_count ?? 0),
-    })))
+    }))))
   } catch {
     // Analytics must never break the catalog.
     return []

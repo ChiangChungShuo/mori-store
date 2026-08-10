@@ -130,7 +130,7 @@ export interface CheckoutRepository {
   completePayment(
     attemptId: string,
     providerReference: string,
-    paymentMethod?: PaymentMethod,
+    options?: { useTestGateway?: boolean },
   ): Promise<PaymentCompletion>
   getCompletedOrderForAttempt(attemptId: string): Promise<CompletedOrder | null>
 }
@@ -285,6 +285,7 @@ export function createCheckoutService(
     const completion = await repository.completePayment(
       canonicalAttemptId,
       createTestProviderReference(canonicalAttemptId),
+      { useTestGateway: true },
     )
     if (completion.status === 'requires_review') {
       return {
@@ -308,7 +309,6 @@ export function createCheckoutService(
     const completion = await repository.completePayment(
       canonicalAttemptId,
       `manual-order:${canonicalAttemptId}`,
-      attempt.paymentMethod ?? 'bank_transfer',
     )
     if (completion.status === 'requires_review') {
       throw new CheckoutAttemptError(
@@ -612,10 +612,12 @@ async function createLiveRepository(): Promise<CheckoutRepository> {
       if (current.data?.status !== status) throw new Error('payment attempt is not pending')
     },
 
-    async completePayment(attemptId, providerReference, paymentMethod) {
-      const rpc = paymentMethod === 'bank_transfer' || paymentMethod === 'convenience_cod'
-        ? 'finalize_manual_order'
-        : 'complete_test_payment'
+    async completePayment(attemptId, providerReference, options) {
+      // Manual fulfilment is the only flow this shop runs. The test gateway
+      // marks an order paid without any money arriving, so against the real
+      // database it is refused outright rather than merely unused.
+      if (options?.useTestGateway) throw new Error('測試付款流程未啟用')
+      const rpc = 'finalize_manual_order'
       const { data, error } = await admin.rpc(rpc, {
         payment_attempt_id: attemptId,
         provider_reference: providerReference,

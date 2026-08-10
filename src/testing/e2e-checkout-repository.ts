@@ -86,7 +86,7 @@ export function createFixtureCheckoutRepository(
       attempt.status = status
     },
 
-    async completePayment(attemptId, providerReference) {
+    async completePayment(attemptId, providerReference, options) {
       const attempt = store.attempts.get(attemptId)
       if (!attempt) throw new Error('payment attempt not found')
       if (attempt.status === 'paid' && attempt.orderNumber) {
@@ -136,7 +136,9 @@ export function createFixtureCheckoutRepository(
         subtotal: attempt.subtotal,
         shippingFee: attempt.shippingFee,
         total: attempt.total,
-        status: attempt.paymentMethod === 'online_test'
+        // The test gateway is the only thing that can produce an order that is
+        // already paid; manual methods wait for the transfer or the pickup.
+        status: options?.useTestGateway
           ? 'paid'
           : attempt.paymentMethod === 'convenience_cod' ? 'preparing' : 'pending_payment',
         createdAt,
@@ -150,7 +152,7 @@ export function createFixtureCheckoutRepository(
           unitPrice: item.unit_price,
           quantity: item.quantity,
         })),
-        payment: attempt.paymentMethod === 'online_test'
+        payment: options?.useTestGateway
           ? { status: 'paid', providerReference, paidAt: createdAt }
           : { status: 'submitted', providerReference, paidAt: null },
       })

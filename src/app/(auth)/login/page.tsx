@@ -1,6 +1,6 @@
 import { AuthForm } from '@/features/auth/auth-form'
 import { safeNextPath } from '@/lib/auth/protection'
-import { isE2EMode } from '@/testing/e2e-mode'
+import { showsDemoCredentials } from '@/testing/e2e-mode'
 
 type LoginPageProps = {
   searchParams: Promise<{ next?: string; registered?: string; reset?: string }>
@@ -16,5 +16,5 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         ? '註冊成功，請使用剛才設定的 Email 與密碼登入。'
         : undefined
 
-  return <AuthForm fixtureMode={isE2EMode()} mode="sign-in" nextPath={safeNextPath(next) ?? undefined} notice={notice} />
+  return <AuthForm fixtureMode={showsDemoCredentials()} mode="sign-in" nextPath={safeNextPath(next) ?? undefined} notice={notice} />
 }

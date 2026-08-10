@@ -10,7 +10,10 @@ export const checkoutSchema = z.object({
   storeId: z.string().trim().min(1, '請輸入門市店號').max(20, '店號請控制在 20 字以內'),
   couponCode: z.string().trim().toUpperCase().max(32).optional(),
   customerNote: z.string().trim().max(500, '訂單留言不可超過 500 個字').optional(),
-  paymentMethod: z.enum(['bank_transfer', 'convenience_cod', 'online_test']).optional(),
+  // Only the manual methods the shop actually operates. `online_test` used to be
+  // accepted here, which let a shopper edit the hidden field and route their
+  // order through the test gateway — landing it in `paid` without paying.
+  paymentMethod: z.enum(['bank_transfer', 'convenience_cod']).optional(),
 })
 
 export type CheckoutInput = z.infer<typeof checkoutSchema>

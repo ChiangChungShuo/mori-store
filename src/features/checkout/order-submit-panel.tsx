@@ -8,7 +8,8 @@ import type { OrderSubmissionResult, PaymentMethod } from '@/features/checkout/t
 
 type ConfirmItem = { productName: string; color: string; size: string; quantity: number }
 
-const paymentMethodLabels: Record<PaymentMethod, string> = {
+// Includes the retired online_test label so historic orders still read correctly.
+const paymentMethodLabels: Record<string, string> = {
   bank_transfer: '銀行匯款',
   convenience_cod: '超商取貨付款',
   online_test: '線上付款',
