@@ -31,13 +31,13 @@ export default async function StoreHomePage() {
   const readyToShip = products.filter((product) => (
     getProductAvailability(product) === 'available' && !isPreorder(product.tags)
   ))
-  const lovedIsRanked = bestSellers.length > 0
-  const loved = [
-    ...bestSellers,
-    // Top the row up so a single tagged product does not sit alone in a 4-wide
-    // grid; the lede says which part of the row is which.
-    ...readyToShip.filter((product) => !bestSellers.some((seller) => seller.id === product.id)),
-  ].slice(0, 4)
+  const sellable = products.filter((product) => getProductAvailability(product) !== 'sold_out')
+  // 熱賣 first, then whatever else is worth showing, so the row is always full
+  // even in a season where everything is pre-order.
+  const loved = [...new Map(
+    [...bestSellers, ...readyToShip, ...sellable].map((product) => [product.id, product]),
+  ).values()].slice(0, 4)
+  const lovedMode = bestSellers.length > 0 ? 'loved' : readyToShip.length > 0 ? 'ready' : 'picks'
   // Second buying moment, placed in the long brand stretch further down.
   const alreadyShown = new Set([...loved, ...newProducts].map((product) => product.id))
   const keepBrowsing = products.filter((product) => !alreadyShown.has(product.id)).slice(0, 4)
@@ -71,17 +71,18 @@ export default async function StoreHomePage() {
         <section id="popular" className="section" aria-labelledby="popular-title">
           <header className="section-heading">
             <div>
-              <p className="eyebrow">{lovedIsRanked ? 'most loved' : 'ready to ship'}</p>
-              <h2 id="popular-title">{lovedIsRanked ? '大家都在買' : '現貨，今天就能訂'}</h2>
-
+              <p className="eyebrow">{lovedMode === 'loved' ? 'most loved' : lovedMode === 'ready' ? 'ready to ship' : 'mori picks'}</p>
+              <h2 id="popular-title">{lovedMode === 'loved' ? '大家都在買' : lovedMode === 'ready' ? '現貨，今天就能訂' : '本季精選'}</h2>
             </div>
-            <Link href={lovedIsRanked ? '/products?view=popular' : '/products?view=ready'} className="text-link">
-              {lovedIsRanked ? '看全部熱賣 →' : '看全部現貨 →'}
+            <Link href={lovedMode === 'loved' ? '/products?view=popular' : lovedMode === 'ready' ? '/products?view=ready' : '/products'} className="text-link">
+              {lovedMode === 'loved' ? '看全部熱賣 →' : lovedMode === 'ready' ? '看全部現貨 →' : '瀏覽全部商品 →'}
             </Link>
           </header>
-          <p className="section-lede">{lovedIsRanked
-            ? `標上「熱賣」的款式排在最前面${loved.length > bestSellers.length ? '，後面接的是現在有貨的推薦' : ''}。`
-            : '有庫存、下單後就能安排出貨的日常款式（不含預購）。'}</p>
+          <p className="section-lede">{lovedMode === 'loved'
+            ? '標上「熱賣」的款式排在最前面，都是最近最多人選的。'
+            : lovedMode === 'ready'
+              ? '有庫存、下單後就能安排出貨的日常款式（不含預購）。'
+              : '這幾件是目前最推薦的款式，預購商品會標明預計出貨時間。'}</p>
           <div className="product-grid">
             {loved.map((product) => <ProductCard product={product} key={product.id} rating={ratings.get(product.id)} />)}
           </div>
