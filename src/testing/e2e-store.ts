@@ -101,6 +101,7 @@ export type E2EStoreState = {
   productSeries: ProductSeries[]
   productSeriesProducts: Array<{ productId: string; seriesId: string }>
   contentPresets: { material: string[]; care: string[]; size: string[]; series: string[] }
+  productContentDefaults: { material: string; careInstructions: string; sizeGuide: string } | null
   productDrafts: Array<{ id: string; label: string; data: unknown; updatedAt: string }>
   customerPhotos: Array<{ id: string; productId: string | null; imageUrl: string; caption: string }>
   productReviews: Array<{
@@ -261,6 +262,7 @@ export function createE2EStore(): E2EStoreState {
       { productId: '00000000-0000-4000-8000-000000000200', seriesId: '10000000-0000-4000-8000-000000000003' },
     ],
     contentPresets: { material: [...defaultMaterialPresets], care: [...defaultCarePresets], size: [...defaultSizePresets], series: [] },
+    productContentDefaults: null,
     productDrafts: [],
     customerPhotos: [],
     productReviews: [],
@@ -314,6 +316,7 @@ export function getE2EStore() {
   fixtureGlobal.__moriE2EStore.productSeriesProducts ??= createE2EStore().productSeriesProducts
   fixtureGlobal.__moriE2EStore.contentPresets ??= { material: [...defaultMaterialPresets], care: [...defaultCarePresets], size: [...defaultSizePresets], series: [] }
   fixtureGlobal.__moriE2EStore.contentPresets.series ??= []
+  fixtureGlobal.__moriE2EStore.productContentDefaults ??= null
   fixtureGlobal.__moriE2EStore.productDrafts ??= []
   fixtureGlobal.__moriE2EStore.promotionRedemptions ??= []
   fixtureGlobal.__moriE2EStore.variantCosts ??= new Map()

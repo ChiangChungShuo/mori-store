@@ -15,6 +15,7 @@ import { showToast } from '@/components/toast'
 import { compressImagesForUpload } from '@/lib/image-compression'
 import { applyStoredWatermark } from '@/lib/image-watermark'
 import type { SaveDraftState } from '@/features/admin/product-drafts'
+import type { ProductContentDefaults, ProductContentSources } from '@/features/admin/product-content-defaults'
 import type { ProductSeries } from '@/features/catalog/product-series'
 import { priceProductBundle } from '@/features/cart/bundle-pricing'
 import { formatTwd } from '@/lib/money'
@@ -42,6 +43,10 @@ type ProductFormProps = {
   draftImageAlt?: string
   saveDraft?: (draftId: string | null, payload: FormData) => Promise<SaveDraftState>
   discardDraft?: (draftId: string) => Promise<void>
+  /** Store defaults and the previous product, for the 不用重打 shortcuts. */
+  contentSources?: ProductContentSources
+  contentPrefilled?: boolean
+  saveContentDefaults?: (values: ProductContentDefaults) => Promise<{ ok: boolean; message: string }>
 }
 
 
@@ -246,7 +251,7 @@ export function ProductImageColorForm({
   </label>
 }
 
-export function ProductForm({ initialProduct, onSave, requireImage = false, categories = [...defaultProductCategories], series = [], materialPresets = [], carePresets = [], sizeOptions = [], draftId: initialDraftId = null, draftImages: initialDraftImages = [], draftImageAlt: initialDraftImageAlt = '', saveDraft, discardDraft }: ProductFormProps) {
+export function ProductForm({ initialProduct, onSave, requireImage = false, categories = [...defaultProductCategories], series = [], materialPresets = [], carePresets = [], sizeOptions = [], draftId: initialDraftId = null, draftImages: initialDraftImages = [], draftImageAlt: initialDraftImageAlt = '', saveDraft, discardDraft, contentSources, contentPrefilled: initialContentPrefilled = false, saveContentDefaults }: ProductFormProps) {
   const router = useRouter()
   const [product, setProduct] = useState<ProductInput>({ ...initialProduct, seriesIds: initialProduct.seriesIds ?? [], quantityPrices: initialProduct.quantityPrices ?? [] })
   const [draftId, setDraftId] = useState<string | null>(initialDraftId)
@@ -270,6 +275,19 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
   const [minimumAvailableAt] = useState(() => toDateTimeLocalValue(new Date()))
   const imagePreviewsRef = useRef<string[]>([])
   const dragImageIndex = useRef<number | null>(null)
+  const [savingDefaults, setSavingDefaults] = useState(false)
+  const [contentPrefilled, setContentPrefilled] = useState(initialContentPrefilled)
+
+  // Fills only the three repeated fields; the rest of the product is untouched.
+  function applyContent(values: ProductContentDefaults) {
+    setProduct((current) => ({
+      ...current,
+      material: values.material,
+      careInstructions: values.careInstructions,
+      sizeGuide: values.sizeGuide,
+    }))
+    setResult(null)
+  }
   // Baseline for the leave-without-saving warning; refreshed after each save.
   const [savedSnapshot, setSavedSnapshot] = useState(() => JSON.stringify({ ...initialProduct, seriesIds: initialProduct.seriesIds ?? [], quantityPrices: initialProduct.quantityPrices ?? [] }))
   const dirty = JSON.stringify(product) !== savedSnapshot || imageFiles.length > 0
@@ -618,6 +636,44 @@ export function ProductForm({ initialProduct, onSave, requireImage = false, cate
 
           <section className="admin-form-card">
             <header><div><span>02</span><h2>商品內容</h2></div><p>說清楚穿著感、材質與照顧方式。</p></header>
+            {contentSources ? (
+              <div className="admin-content-reuse">
+                <p><strong>材質、洗滌與平量不用每次重打</strong><small>{contentPrefilled ? '已自動帶入，直接改成這件的資料即可。' : '沿用上一件，或存成商店預設，之後新增商品會自動帶入。'}</small></p>
+                <div className="admin-content-reuse-actions">
+                  {contentSources.previous ? (
+                    <button onClick={() => applyContent(contentSources.previous!)} type="button">
+                      沿用上一件（{contentSources.previous.name.slice(0, 12)}）
+                    </button>
+                  ) : null}
+                  {contentSources.defaults ? (
+                    <button onClick={() => applyContent(contentSources.defaults!)} type="button">套用商店預設</button>
+                  ) : null}
+                  {saveContentDefaults ? (
+                    <button
+                      disabled={savingDefaults}
+                      onClick={() => startTransition(async () => {
+                        setSavingDefaults(true)
+                        const outcome = await saveContentDefaults({
+                          material: product.material,
+                          careInstructions: product.careInstructions,
+                          sizeGuide: product.sizeGuide,
+                        })
+                        setSavingDefaults(false)
+                        showToast(outcome.message, outcome.ok)
+                      })}
+                      type="button"
+                    >{savingDefaults ? '儲存中…' : '把目前內容設為商店預設'}</button>
+                  ) : null}
+                  {contentPrefilled ? (
+                    <button
+                      className="admin-content-reuse-clear"
+                      onClick={() => { applyContent({ material: '', careInstructions: '', sizeGuide: '' }); setContentPrefilled(false) }}
+                      type="button"
+                    >清空這三欄</button>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
             <div className="admin-form-grid">
               <label className="admin-field-wide">簡短描述（選填）<textarea aria-invalid={attempted && Boolean(result?.fieldErrors?.summary)} value={product.summary ?? ''} onChange={(event) => setText('summary', event.target.value)} placeholder="一句話突出主要賣點，會顯示在商品列表卡片上" rows={2} maxLength={200} />{result?.fieldErrors?.summary && <small>{result.fieldErrors.summary[0]}</small>}<small className="admin-field-hint">最多 200 字；留白時列表會改用完整說明開頭。</small></label>
               <label className="admin-field-wide">商品說明（建議填寫）<textarea aria-invalid={attempted && Boolean(result?.fieldErrors?.description)} value={product.description} onChange={(event) => setText('description', event.target.value)} placeholder="描述版型、觸感與適合的穿著情境（可換行分段）" rows={5} />{result?.fieldErrors?.description && <small>{result.fieldErrors.description[0]}</small>}</label>

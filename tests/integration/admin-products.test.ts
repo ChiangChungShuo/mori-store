@@ -882,6 +882,39 @@ describe('admin product form', () => {
     view.unmount()
   })
 
+  it('reuses material, care and measurements from the last product or the store defaults', async () => {
+    const saveContentDefaults = vi.fn().mockResolvedValue({ ok: true, message: '已設為商店預設，下次新增商品會自動帶入' })
+    const view = render(createElement('div', null,
+      createElement(ProductForm, {
+        initialProduct: { ...newProduct, material: '', careInstructions: '', sizeGuide: '' },
+        onSave: vi.fn(),
+        contentSources: {
+          defaults: { material: '95% 棉 5% 彈性纖維', careInstructions: '冷水手洗', sizeGuide: '版型：正常版型' },
+          previous: { name: '雲朵包屁衣', material: '100% 有機棉', careInstructions: '洗衣袋冷洗', sizeGuide: '版型：寬鬆' },
+        },
+        saveContentDefaults,
+      }),
+      createElement(Toaster),
+    ))
+    const form = within(view.container)
+
+    fireEvent.click(form.getByRole('button', { name: /沿用上一件（雲朵包屁衣）/ }))
+    expect(form.getByLabelText(/材質/)).toHaveValue('100% 有機棉')
+    expect(form.getByLabelText(/洗滌說明/)).toHaveValue('洗衣袋冷洗')
+    expect(form.getByLabelText('尺寸指南')).toHaveValue('版型：寬鬆')
+
+    fireEvent.click(form.getByRole('button', { name: '套用商店預設' }))
+    expect(form.getByLabelText(/材質/)).toHaveValue('95% 棉 5% 彈性纖維')
+
+    fireEvent.click(form.getByRole('button', { name: '把目前內容設為商店預設' }))
+    await vi.waitFor(() => expect(saveContentDefaults).toHaveBeenCalledWith({
+      material: '95% 棉 5% 彈性纖維',
+      careInstructions: '冷水手洗',
+      sizeGuide: '版型：正常版型',
+    }))
+    view.unmount()
+  })
+
   it('does not ask the owner to enter SEO fields manually', () => {
     const view = render(createElement(ProductForm, { initialProduct: product, onSave: vi.fn() }))
     const form = within(view.container)

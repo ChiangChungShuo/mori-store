@@ -6,6 +6,7 @@ import { listProductCategories } from '@/features/catalog/categories'
 import { listContentPresets } from '@/features/catalog/content-presets'
 import { DRAFT_IMAGES_KEY, DRAFT_IMAGE_ALT_KEY, discardProductDraft, getProductDraft, saveProductDraft } from '@/features/admin/product-drafts'
 import { listProductSeries } from '@/features/catalog/product-series'
+import { getProductContentSources, saveProductContentDefaults } from '@/features/admin/product-content-defaults'
 
 const newProduct: ProductInput = {
   name: '',
@@ -28,13 +29,14 @@ type NewProductPageProps = {
 
 export default async function NewAdminProductPage({ searchParams }: NewProductPageProps) {
   const { draft: draftId } = await searchParams
-  const [categories, series, materialPresets, carePresets, sizeOptions, draftData] = await Promise.all([
+  const [categories, series, materialPresets, carePresets, sizeOptions, draftData, contentSources] = await Promise.all([
     listProductCategories(),
     listProductSeries(),
     listContentPresets('material'),
     listContentPresets('care'),
     listContentPresets('size'),
     draftId ? getProductDraft(draftId) : Promise.resolve(null),
+    getProductContentSources(),
   ])
   // Split the stored draft into product fields and its saved images; the
   // image keys must not leak into the strict product schema.
@@ -43,9 +45,19 @@ export default async function NewAdminProductPage({ searchParams }: NewProductPa
     [DRAFT_IMAGE_ALT_KEY]: rawDraftImageAlt,
     ...draftProduct
   } = (draftData ?? {}) as Record<string, unknown>
+  // 材質／洗滌／平量 are the same on almost every product, so a fresh form starts
+  // from the store defaults (or the last product) instead of three empty boxes.
+  const contentPrefill = contentSources.defaults ?? contentSources.previous
   const initialProduct: ProductInput = draftData
     ? { ...newProduct, ...(draftProduct as Partial<ProductInput>) }
-    : newProduct
+    : contentPrefill
+      ? {
+        ...newProduct,
+        material: contentPrefill.material,
+        careInstructions: contentPrefill.careInstructions,
+        sizeGuide: contentPrefill.sizeGuide,
+      }
+      : newProduct
   const draftImages = Array.isArray(rawDraftImages)
     ? rawDraftImages.filter((url): url is string => typeof url === 'string')
     : []
@@ -61,6 +73,8 @@ export default async function NewAdminProductPage({ searchParams }: NewProductPa
       <ProductForm
         carePresets={carePresets}
         categories={categories}
+        contentPrefilled={!draftData && Boolean(contentPrefill)}
+        contentSources={contentSources}
         draftId={draftData ? draftId : null}
         draftImageAlt={draftImageAlt}
         draftImages={draftImages}
@@ -69,6 +83,7 @@ export default async function NewAdminProductPage({ searchParams }: NewProductPa
         materialPresets={materialPresets}
         onSave={createProductWithImage}
         requireImage
+        saveContentDefaults={saveProductContentDefaults}
         saveDraft={saveProductDraft}
         series={series}
         sizeOptions={sizeOptions}

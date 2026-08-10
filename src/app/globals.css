@@ -1090,6 +1090,18 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .admin-form-grid small, .admin-age-fieldset > small { color: #a15954; }
 .admin-form-grid .admin-field-hint { color: var(--muted); font-weight: 500; }
 .admin-recommended-missing { margin: 0.75rem 0 0; border-top: 1px dashed var(--line); padding-top: 0.7rem; color: var(--muted); font-size: 0.68rem; line-height: 1.6; }
+/* 材質／洗滌／平量 repeat on nearly every product, so they get their own
+   reuse strip instead of being retyped each time. */
+.admin-content-reuse { display: grid; gap: 0.7rem; margin-bottom: 1.1rem; border: 1px dashed var(--sage); border-radius: 0.5rem; background: var(--oat); padding: 0.85rem 1rem; }
+.admin-content-reuse p { display: grid; gap: 0.15rem; margin: 0; }
+.admin-content-reuse strong { color: var(--forest); font-size: 0.76rem; }
+.admin-content-reuse small { color: var(--muted); font-size: 0.68rem; line-height: 1.55; }
+.admin-content-reuse-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.admin-content-reuse-actions button { min-height: 2.2rem; border: 1px solid var(--sage); border-radius: 999px; background: var(--white); padding: 0.35rem 0.85rem; color: var(--forest); font-family: inherit; font-size: 0.68rem; font-weight: 800; cursor: pointer; }
+.admin-content-reuse-actions button:hover:not(:disabled) { border-color: var(--forest); background: var(--forest); color: var(--white); }
+.admin-content-reuse-actions button:disabled { opacity: 0.5; cursor: default; }
+.admin-content-reuse-actions .admin-content-reuse-clear { margin-left: auto; border-color: transparent; background: transparent; color: var(--muted); text-decoration: underline; }
+.admin-content-reuse-actions .admin-content-reuse-clear:hover { border-color: transparent; background: transparent; color: var(--forest); }
 /* 分類 wraps its own <label>, which is a taller line box than the plain text
    labels beside it, and a bare <select> grows past the input's min-height —
    together they pushed the select 8px down and made it 8px taller. Pin both. */

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { ProductCard } from '@/features/catalog/product-card'
 import { getProductAvailability } from '@/features/catalog/availability'
+import { isPreorder } from '@/lib/preorder'
 import { listProducts } from '@/features/catalog/queries'
 import { getBannerSlides } from '@/features/storefront/banner-settings'
 import { HeroCarousel } from '@/features/storefront/hero-carousel'
@@ -24,12 +25,19 @@ export default async function StoreHomePage() {
   ])
   const newProducts = products.filter((product) => product.isNew).slice(0, 8)
   // A first-time visitor wants to know what other people buy before they want to
-  // know what is new. Falls back to in-stock picks so the row is never empty —
-  // with a heading that matches whichever list it ends up showing.
-  const bestSellers = products.filter((product) => product.tags?.includes('熱賣')).slice(0, 4)
-  const readyToShip = products.filter((product) => getProductAvailability(product) === 'available').slice(0, 4)
-  const loved = bestSellers.length >= 2 ? bestSellers : readyToShip
-  const lovedIsRanked = bestSellers.length >= 2
+  // know what is new. Pre-order items are excluded from the 現貨 fallback — they
+  // are exactly what "今天就能訂" is not.
+  const bestSellers = products.filter((product) => product.tags?.includes('熱賣'))
+  const readyToShip = products.filter((product) => (
+    getProductAvailability(product) === 'available' && !isPreorder(product.tags)
+  ))
+  const lovedIsRanked = bestSellers.length > 0
+  const loved = [
+    ...bestSellers,
+    // Top the row up so a single tagged product does not sit alone in a 4-wide
+    // grid; the lede says which part of the row is which.
+    ...readyToShip.filter((product) => !bestSellers.some((seller) => seller.id === product.id)),
+  ].slice(0, 4)
   // Second buying moment, placed in the long brand stretch further down.
   const alreadyShown = new Set([...loved, ...newProducts].map((product) => product.id))
   const keepBrowsing = products.filter((product) => !alreadyShown.has(product.id)).slice(0, 4)
@@ -65,12 +73,15 @@ export default async function StoreHomePage() {
             <div>
               <p className="eyebrow">{lovedIsRanked ? 'most loved' : 'ready to ship'}</p>
               <h2 id="popular-title">{lovedIsRanked ? '大家都在買' : '現貨，今天就能訂'}</h2>
+
             </div>
             <Link href={lovedIsRanked ? '/products?view=popular' : '/products?view=ready'} className="text-link">
               {lovedIsRanked ? '看全部熱賣 →' : '看全部現貨 →'}
             </Link>
           </header>
-          <p className="section-lede">{lovedIsRanked ? '這幾件最近最多爸媽回購，尺寸偏好與版型都在商品頁寫清楚了。' : '有庫存、下單後就能安排出貨的日常款式。'}</p>
+          <p className="section-lede">{lovedIsRanked
+            ? `標上「熱賣」的款式排在最前面${loved.length > bestSellers.length ? '，後面接的是現在有貨的推薦' : ''}。`
+            : '有庫存、下單後就能安排出貨的日常款式（不含預購）。'}</p>
           <div className="product-grid">
             {loved.map((product) => <ProductCard product={product} key={product.id} rating={ratings.get(product.id)} />)}
           </div>

@@ -217,7 +217,6 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                 : '參考上方尺寸表的身高與年齡對照；介於兩個尺寸之間時建議選大一號，不確定也可以先訊息問我們。',
             },
             { q: '可以怎麼付款？', a: '目前採用銀行匯款（ATM／網路銀行轉帳）。送出訂單後會顯示收款帳號，完成匯款請回報帳號末 5 碼，核帳後即安排出貨。' },
-            { q: '可以退換貨嗎？', a: '依法提供收貨次日起七日鑑賞期（非試用期）；除此之外，商品有瑕疵、寄錯或缺件時我們一定負責處理，其餘情況售出後不做退換。' },
           ].map((item) => (
             <details className="faq-item" key={item.q}>
               <summary>{item.q}<span className="faq-item-icon" aria-hidden="true" /></summary>
