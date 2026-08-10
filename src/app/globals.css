@@ -120,11 +120,11 @@ header#top { position: sticky; z-index: 60; top: 0; background: var(--paper); bo
 .account-menu summary::-webkit-details-marker { display: none; }
 .account-menu summary:hover, .account-menu[open] summary { border-color: var(--line); background: var(--white); }
 .account-menu summary svg { width: 1.6rem; height: 1.6rem; fill: none; stroke: currentcolor; stroke-linecap: round; stroke-width: 1.5; }
-.account-menu-panel { position: absolute; z-index: 85; top: calc(100% + 0.7rem); right: 0; display: grid; width: 14rem; border: 1px solid var(--line); background: var(--white); padding: 0.55rem; box-shadow: var(--shadow); }
+.account-menu-panel { position: absolute; z-index: 85; top: calc(100% + 0.7rem); right: 0; display: grid; width: 14rem; overflow: hidden; border: 1px solid var(--line); border-radius: 1rem; background: var(--white); padding: 0.55rem; box-shadow: var(--shadow); }
 .account-menu-panel header { display: grid; gap: 0.1rem; margin: -0.55rem -0.55rem 0.35rem; background: #f1f2f4; padding: 0.9rem 1rem; }
 .account-menu-panel header small { color: var(--moss); font-size: 0.54rem; font-weight: 800; letter-spacing: 0.15em; }
 .account-menu-panel header strong { color: var(--forest); font-family: Georgia, "Noto Serif TC", serif; font-size: 0.95rem; font-weight: 500; }
-.account-menu-panel a, .account-menu-panel button { display: flex; width: 100%; min-height: 2.5rem; align-items: center; border: 0; background: transparent; color: var(--forest); padding: 0.55rem 0.7rem; font-size: 0.72rem; font-weight: 700; text-decoration: none; }
+.account-menu-panel a, .account-menu-panel button { display: flex; width: 100%; min-height: 2.5rem; align-items: center; border: 0; border-radius: 0.6rem; background: transparent; color: var(--forest); padding: 0.55rem 0.7rem; font-size: 0.72rem; font-weight: 700; text-decoration: none; }
 .account-menu-panel a:hover, .account-menu-panel button:hover { background: #f5f5f7; }
 .account-menu-panel form { border-top: 1px solid var(--line); }
 .account-menu-panel .account-menu-admin { border-top: 1px solid var(--line); color: var(--muted); }
@@ -253,7 +253,9 @@ header#top { position: sticky; z-index: 60; top: 0; background: var(--paper); bo
   min-height: 3rem;
   padding: 0.75rem 1.4rem;
   border: 1px solid var(--forest);
-  border-radius: 0;
+  /* Pill CTAs: the storefront's filters, chips and size pickers are all rounded,
+     so square buttons were the only hard-cornered controls left. */
+  border-radius: 999px;
   background: var(--forest);
   color: var(--white);
   font-size: 0.8rem;
@@ -269,6 +271,7 @@ header#top { position: sticky; z-index: 60; top: 0; background: var(--paper); bo
 .button-secondary { border-color: var(--forest); background: transparent; color: var(--forest); }
 .button-secondary:hover { background: var(--forest); color: var(--white); }
 .button-wide { width: 100%; }
+.age-links a { border-radius: 1.1rem; }
 .text-button {
   border: 0;
   border-bottom: 1px solid currentColor;
@@ -342,6 +345,7 @@ header#top { position: sticky; z-index: 60; top: 0; background: var(--paper); bo
   gap: 0.5rem;
   align-items: center;
   padding: 0.65rem 0.85rem;
+  border-radius: 999px;
   background: rgb(249 249 250 / 94%);
   color: var(--forest);
   font-size: 0.72rem;
@@ -1610,15 +1614,17 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .product-filters .button, .product-filters .filter-clear-button { min-height: 2.9rem; padding: 0.45rem 1rem; font-size: 0.72rem; }
 .product-filters input, .product-filters select, .cart-page select,
 .checkout-form input, .checkout-form select {
-  min-height: 2.9rem;
+  min-height: 3rem;
   border: 1px solid #bfc2c6;
+  border-radius: 0.85rem;
   background: var(--white);
-  padding: 0.55rem 0.7rem;
+  padding: 0.6rem 0.9rem;
   color: inherit;
 }
+.checkout-form input[type="checkbox"], .checkout-form input[type="radio"] { min-height: auto; border-radius: 0; }
 .product-filters .checkbox-label { display: flex; align-items: center; }
 .product-filters .checkbox-label input { min-height: auto; }
-.filter-clear-button { display: inline-flex; min-height: 3rem; gap: 0.4rem; align-items: center; justify-content: center; border: 1px solid var(--sand); background: var(--paper); color: var(--forest); padding: 0.7rem 1rem; font-size: 0.72rem; font-weight: 800; text-decoration: none; transition: border-color 150ms ease, background 150ms ease, transform 150ms ease; }
+.filter-clear-button { display: inline-flex; min-height: 3rem; gap: 0.4rem; align-items: center; justify-content: center; border: 1px solid var(--sand); border-radius: 999px; background: var(--paper); color: var(--forest); padding: 0.7rem 1rem; font-size: 0.72rem; font-weight: 800; text-decoration: none; transition: border-color 150ms ease, background 150ms ease, transform 150ms ease; }
 .filter-clear-button:hover { border-color: var(--forest); background: #eef0f2; transform: translateY(-1px); }
 .filter-clear-button:disabled { border-color: var(--line); color: var(--muted); transform: none; cursor: not-allowed; }
 .product-filters .filter-actions { align-self: end; }
@@ -1672,7 +1678,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .product-gallery-arrow:hover { border-color: var(--forest); background: var(--forest); color: var(--white); }
 .product-gallery-prev { left: 0.8rem; }
 .product-gallery-next { right: 0.8rem; }
-.product-gallery-zoom { position: absolute; right: 0.75rem; top: 0.75rem; border: 0; background: rgb(249 249 250 / 88%); padding: 0.45rem 0.65rem; color: var(--forest); font-size: 0.62rem; font-weight: 800; }
+.product-gallery-zoom { position: absolute; right: 0.75rem; top: 0.75rem; border: 0; border-radius: 999px; background: rgb(249 249 250 / 88%); padding: 0.45rem 0.8rem; color: var(--forest); font-size: 0.62rem; font-weight: 800; }
 .product-gallery-lightbox { position: fixed; z-index: 80; inset: 0; display: grid; place-items: center; background: rgb(64 76 91 / 92%); padding: 4rem 1rem 1rem; }
 .product-gallery-lightbox img { width: auto; max-width: min(90vw, 62rem); height: auto; max-height: 88vh; object-fit: contain; }
 .product-gallery-lightbox > button { position: absolute; top: 1rem; right: 1rem; display: grid; width: 2.8rem; height: 2.8rem; place-items: center; border: 1px solid rgb(255 255 255 / 50%); border-radius: 50%; background: transparent; color: var(--white); font-size: 1.5rem; }
@@ -1690,7 +1696,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .product-feature-list span { color: var(--muted); font-size: 0.65rem; }
 .product-feature-list strong { font-size: 0.72rem; font-weight: 700; }
 .product-service-note { margin: 1rem 0 0; padding-top: 0.35rem; color: var(--muted); font-size: 0.66rem; }
-.wishlist-button { display: inline-flex; flex: 0 0 auto; min-height: 2.75rem; gap: 0.5rem; align-items: center; justify-content: center; border: 1px solid var(--forest); background: transparent; color: var(--forest); padding: 0.55rem 0.8rem; font-size: 0.68rem; font-weight: 800; }
+.wishlist-button { display: inline-flex; flex: 0 0 auto; min-height: 2.75rem; gap: 0.5rem; align-items: center; justify-content: center; border: 1px solid var(--forest); border-radius: 999px; background: transparent; color: var(--forest); padding: 0.55rem 0.8rem; font-size: 0.68rem; font-weight: 800; }
 .wishlist-button span { font-size: 1.1rem; line-height: 1; }
 .wishlist-button[aria-pressed="true"] { border-color: #b1767b; background: #fcfafa; color: #9c535b; }
 .wishlist-button[aria-pressed="true"] > span:first-child { color: #ba7c81; }
@@ -1866,7 +1872,8 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .cart-drawer-footer { flex: 0 0 auto; display: grid; gap: 0.75rem; padding-top: 0.9rem; }
 .cart-drawer-heading { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 1px solid var(--line); padding-bottom: 0.9rem; }
 .cart-drawer-heading > div { display: flex; width: 100%; align-items: baseline; justify-content: space-between; }
-.cart-drawer-heading > button { margin-left: 1rem; border: 0; background: transparent; color: var(--forest); font-size: 1.5rem; line-height: 1; }
+.cart-drawer-heading > button { display: grid; width: 2.1rem; height: 2.1rem; place-items: center; margin-left: 1rem; border: 0; border-radius: 999px; background: var(--paper); color: var(--forest); font-size: 1.05rem; line-height: 1; }
+.cart-drawer-heading > button:hover { background: var(--sand); }
 .cart-drawer-heading p { margin: 0; color: var(--muted); font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; }
 .cart-drawer-heading h2 { margin: 0; font-family: Georgia, "Noto Serif TC", serif; font-size: 1.6rem; font-weight: 400; }
 .cart-empty { display: grid; gap: 1rem; justify-items: start; padding-block: 1.5rem; color: var(--muted); font-size: 0.85rem; }
@@ -1923,11 +1930,11 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .cart-page { width: min(100% - 3rem, 84rem); }
 .cart-page > .page-heading { margin-bottom: 2rem; }
 .cart-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(19rem, 22rem); gap: 1.5rem; align-items: start; }
-.cart-products-card { overflow: hidden; border: 1px solid var(--line); background: var(--white); }
+.cart-products-card { overflow: hidden; border: 1px solid var(--line); border-radius: 1.1rem; background: var(--white); }
 .cart-card-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 4rem; padding: 1rem 1.25rem; border-bottom: 1px solid var(--line); }
 .cart-card-heading h2, .cart-order-summary h2 { margin: 0; color: var(--ink); font-family: "Avenir Next", "Noto Sans TC", sans-serif; font-size: 1.05rem; font-weight: 750; letter-spacing: 0; }
 .cart-card-heading h2 span { color: var(--forest); font-size: 0.85rem; font-weight: 600; }
-.shipping-progress { margin: 1rem; padding: 1rem; background: var(--oat); }
+.shipping-progress { margin: 1rem; border-radius: 0.85rem; padding: 1rem; background: var(--oat); }
 .cart-drawer-progress { margin: 0; border-radius: 0.6rem; padding: 0.75rem 0.85rem; }
 .cart-drawer-progress p { margin-bottom: 0.45rem; font-size: 0.76rem; }
 .shipping-progress p { margin: 0 0 0.5rem; font-size: 0.85rem; }
@@ -1950,7 +1957,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .cart-product-info p { color: var(--muted); font-size: 0.76rem; }
 .cart-unit-price { font-size: 0.86rem; }
 .cart-line-total { color: var(--forest); font-size: 0.92rem; font-weight: 800; }
-.quantity-stepper { display: grid; grid-template-columns: repeat(3, 2.4rem); justify-self: start; width: max-content; border: 1px solid var(--line); }
+.quantity-stepper { display: grid; grid-template-columns: repeat(3, 2.4rem); justify-self: start; width: max-content; overflow: hidden; border: 1px solid var(--line); border-radius: 999px; }
 .quantity-stepper button { min-height: 2.4rem; border: 0; background: var(--white); color: var(--forest); font-size: 1.05rem; cursor: pointer; transition: background 160ms ease, color 160ms ease, transform 120ms ease; }
 .quantity-stepper button:hover:not(:disabled) { background: var(--forest); color: var(--white); }
 .quantity-stepper button:active:not(:disabled) { transform: scale(.92); }
@@ -1968,20 +1975,20 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .cart-summary p, .cart-summary li { display: flex; justify-content: space-between; gap: 1rem; }
 .cart-summary ul { display: grid; gap: 0.5rem; padding: 0; list-style: none; }
 .cart-total { padding-top: 1rem; border-top: 1px solid var(--forest); font-size: 1.1rem; }
-.cart-order-summary { border: 1px solid var(--line); background: var(--white); }
+.cart-order-summary { overflow: hidden; border: 1px solid var(--line); border-radius: 1.1rem; background: var(--white); }
 .cart-order-summary h2 { margin: -1.5rem -1.5rem 0.5rem; padding: 1.1rem 1.5rem; border-bottom: 1px solid var(--line); }
 .cart-order-summary p { padding-block: 0.6rem; margin: 0; border-bottom: 1px solid var(--line); font-size: 0.84rem; }
 .cart-order-summary .cart-total { margin-bottom: 1rem; border-top: 0; color: var(--forest); font-size: 1rem; }
-.cart-coupon-panel { margin: 0.75rem 0 0.25rem; border: 1px solid var(--line); background: var(--oat); padding: 1rem; }
+.cart-coupon-panel { margin: 0.75rem 0 0.25rem; border: 1px solid var(--line); border-radius: 0.9rem; background: var(--oat); padding: 1rem; }
 .cart-coupon-heading { display: flex !important; grid-template-columns: none !important; gap: 0.7rem !important; align-items: center; margin-bottom: 0.8rem; }
 .cart-coupon-heading > span { display: grid; width: 2rem; height: 2rem; flex: 0 0 auto; place-items: center; border-radius: 50%; background: var(--forest); color: var(--white); font-family: Georgia, serif; font-size: 0.75rem; }
 .cart-coupon-heading > div { display: grid; gap: 0.1rem; }
 .cart-coupon-heading label { color: var(--forest); font-size: 0.76rem; font-weight: 800; }
 .cart-coupon-heading small { color: var(--muted); font-size: 0.6rem; }
 .cart-coupon-form { display: grid; grid-template-columns: minmax(0, 1fr) 4.5rem; gap: 0.45rem; }
-.cart-coupon-panel input { width: 100%; min-width: 0; min-height: 2.8rem; border-color: #d0d2d5; background: var(--white); padding-inline: 0.75rem; text-transform: uppercase; }
+.cart-coupon-panel input { width: 100%; min-width: 0; min-height: 2.8rem; border-color: #d0d2d5; border-radius: 999px; background: var(--white); padding-inline: 0.9rem; text-transform: uppercase; }
 .cart-coupon-panel input:focus { border-color: var(--forest); outline: 2px solid rgb(93 109 128 / 12%); outline-offset: 1px; }
-.cart-coupon-panel button { min-height: 2.8rem; border: 1px solid var(--forest); background: var(--forest); padding-inline: 0.7rem; color: var(--white); font-size: 0.68rem; font-weight: 800; }
+.cart-coupon-panel button { min-height: 2.8rem; border: 1px solid var(--forest); border-radius: 999px; background: var(--forest); padding-inline: 0.7rem; color: var(--white); font-size: 0.68rem; font-weight: 800; }
 .cart-coupon-panel button:disabled { cursor: not-allowed; opacity: 0.45; }
 .cart-coupon-panel .coupon-success, .cart-coupon-panel .coupon-error { display: block; margin: 0.55rem 0 0; border: 0; padding: 0; font-size: 0.65rem; }
 .cart-coupon-panel .coupon-success { color: #656e7a; }
@@ -2043,7 +2050,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .checkout-form { display: block; max-width: none; }
 .checkout-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(21rem, 0.72fr); gap: clamp(1.5rem, 4vw, 4rem); align-items: start; }
 .checkout-details { display: grid; min-width: 0; gap: 1rem; }
-.checkout-card { min-width: 0; border: 1px solid var(--line); background: var(--white); padding: 1.5rem; }
+.checkout-card { min-width: 0; border: 1px solid var(--line); border-radius: 1.1rem; background: var(--white); padding: 1.5rem; }
 .checkout-card > header { display: flex; gap: 0.9rem; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--line); padding-bottom: 1rem; }
 .checkout-card > header > span { display: grid; width: 2rem; height: 2rem; flex: 0 0 auto; place-items: center; border-radius: 50%; background: var(--forest); color: var(--white); font-family: Georgia, serif; font-size: 0.72rem; }
 .checkout-card > header h2 { margin: 0; color: var(--forest); font-family: Georgia, "Noto Serif TC", serif; font-size: 1.35rem; font-weight: 400; }
@@ -2064,14 +2071,14 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .checkout-payment-option small, .checkout-customer-note small { color: var(--muted); font-size: 0.64rem; font-weight: 500; line-height: 1.45; }
 .checkout-note-card { display: grid; gap: 1rem; }
 .checkout-customer-note { display: grid; gap: 0.45rem; color: var(--forest); font-size: 0.76rem; font-weight: 800; }
-.checkout-customer-note textarea { width: 100%; min-height: 7.5rem; border: 1px solid var(--sand); background: var(--paper); padding: 0.85rem; resize: vertical; line-height: 1.65; }
+.checkout-customer-note textarea { width: 100%; min-height: 7.5rem; border: 1px solid var(--sand); border-radius: 0.85rem; background: var(--paper); padding: 0.85rem; resize: vertical; line-height: 1.65; }
 .checkout-customer-note textarea:focus { border-color: var(--forest); background: var(--white); outline: 2px solid rgb(93 109 128 / 12%); outline-offset: 1px; }
 .checkout-customer-note > small { display: flex; justify-content: space-between; gap: 1rem; }
 .checkout-coupon-status { margin: 0; color: var(--muted); font-size: 0.65rem; }
-.checkout-pickup-note { display: grid; grid-template-columns: 6rem 1fr; gap: 1rem; padding: 1rem 1.25rem; background: #eceeef; color: var(--forest); }
+.checkout-pickup-note { display: grid; grid-template-columns: 6rem 1fr; gap: 1rem; border-radius: 1.1rem; padding: 1rem 1.25rem; background: #eceeef; color: var(--forest); }
 .checkout-pickup-note strong { font-size: 0.75rem; }
 .checkout-pickup-note p { margin: 0; color: #71777f; font-size: 0.7rem; }
-.checkout-sidebar-summary { position: sticky; top: 1.25rem; min-width: 0; border: 1px solid var(--forest); background: var(--paper); padding: 1.35rem; box-shadow: 0.55rem 0.55rem 0 var(--sand); }
+.checkout-sidebar-summary { position: sticky; top: 1.25rem; min-width: 0; border: 1px solid var(--forest); border-radius: 1.1rem; background: var(--paper); padding: 1.35rem; box-shadow: 0.55rem 0.55rem 0 var(--sand); }
 .checkout-summary-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: end; margin-bottom: 1rem; border-bottom: 1px solid var(--forest); padding-bottom: 1rem; }
 .checkout-summary-heading p { margin: 0 0 0.2rem; color: var(--muted); font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; }
 .checkout-summary-heading h2 { margin: 0; color: var(--forest); font-family: Georgia, "Noto Serif TC", serif; font-size: 1.65rem; font-weight: 400; }
@@ -2102,7 +2109,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .checkout-order-summary .checkout-discount { color: #656e7a; }
 .checkout-incomplete { margin: 0 0 0.65rem; color: var(--muted); font-size: 0.65rem; line-height: 1.5; text-align: center; }
 .checkout-submit:disabled { cursor: not-allowed; opacity: 0.48; }
-.checkout-payment-note { margin-block: 1rem; padding: 0.9rem; background: var(--oat); }
+.checkout-payment-note { margin-block: 1rem; border-radius: 0.85rem; padding: 0.9rem; background: var(--oat); }
 .checkout-payment-note strong { color: var(--forest); font-size: 0.72rem; }
 .checkout-payment-note p { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.64rem; }
 .checkout-submit { width: 100%; min-height: 3.2rem; }
@@ -2114,7 +2121,7 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
 .payment-page { width: min(100% - 3rem, 82rem); }
 .payment-page > .page-heading { margin-bottom: 1.5rem; }
 .payment-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(20rem, 0.65fr); gap: clamp(1.5rem, 4vw, 3.5rem); align-items: start; }
-.payment-products, .payment-delivery-card, .payment-total-card { border: 1px solid var(--line); background: var(--white); }
+.payment-products, .payment-delivery-card, .payment-total-card { overflow: hidden; border: 1px solid var(--line); border-radius: 1.1rem; background: var(--white); }
 .payment-products > header { display: flex; justify-content: space-between; gap: 1rem; align-items: end; padding: 1.35rem 1.5rem; border-bottom: 1px solid var(--forest); }
 .payment-products header p, .payment-delivery-card header p { margin: 0 0 0.2rem; color: var(--muted); font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; }
 .payment-products h2, .payment-delivery-card h2, .payment-total-card h2 { margin: 0; color: var(--forest); font-family: Georgia, "Noto Serif TC", serif; font-size: 1.65rem; font-weight: 400; }
