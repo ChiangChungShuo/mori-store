@@ -95,12 +95,14 @@ describe('fixture catalog', () => {
 })
 
 describe('parseProductFilters', () => {
-  it('uses series only together with a category', () => {
+  it('accepts a series with or without a category', () => {
     expect(parseProductFilters({ category: ' 上衣 ', series: ' Mori flora 漫花系列 ' })).toEqual({
       category: '上衣',
       series: 'Mori flora 漫花系列',
     })
-    expect(parseProductFilters({ series: 'Mori flora 漫花系列' })).toEqual({})
+    expect(parseProductFilters({ series: 'Mori flora 漫花系列' })).toEqual({
+      series: 'Mori flora 漫花系列',
+    })
   })
 
   it('keeps only the fixed 0-12 age bands and supported stock value', () => {
@@ -127,15 +129,19 @@ describe('parseProductFilters', () => {
 })
 
 describe('ProductFilters', () => {
-  it('carries the active category and series along as hidden inputs', () => {
+  it('offers product status and series inside the filter panel', () => {
     const { container } = render(createElement(ProductFilters, {
       filters: { category: '上衣', series: 'Mori flora 漫花系列' },
+      seriesOptions: [
+        { id: '10000000-0000-4000-8000-000000000001', categoryName: '上衣', name: 'Mori flora 漫花系列', position: 0 },
+      ],
     }))
 
     expect(container.querySelector('input[name="category"]')).toHaveValue('上衣')
-    expect(container.querySelector('input[name="series"]')).toHaveValue('Mori flora 漫花系列')
-    // 分類 is picked from the pill nav above, not inside the toolbar.
-    expect(screen.queryByLabelText('分類')).toBeNull()
+    expect(screen.getByRole('group', { name: '商品狀態' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: '預購新品' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: '系列' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Mori flora 漫花系列' })).toBeChecked()
   })
 
   it('keeps 清除條件 inside the current category', () => {
@@ -206,8 +212,8 @@ describe('store navigation', () => {
     render(createElement(SiteHeader))
 
     expect(screen.getByRole('link', { name: '新品' })).toHaveAttribute('href', '/#new')
-    expect(screen.getByRole('link', { name: '依年齡' })).toHaveAttribute('href', '/#ages')
-    expect(screen.getByRole('link', { name: '品牌故事' })).toHaveAttribute('href', '/#story')
+    expect(screen.getByRole('link', { name: '現貨' })).toHaveAttribute('href', '/products?view=ready')
+    expect(screen.getByRole('link', { name: '預購' })).toHaveAttribute('href', '/products?view=preorder')
   })
 
   it('shows member destinations after login', () => {
@@ -245,8 +251,7 @@ describe('ProductCard', () => {
   it('keeps the catalog card focused on options and price, only badging exceptions', () => {
     render(createElement(ProductCard, { product }))
 
-    // 現貨 is the default state — only 預購/售完/即將上架 earn a badge.
-    expect(screen.queryByText('現貨')).not.toBeInTheDocument()
+    expect(screen.getByText('現貨')).toBeInTheDocument()
     expect(screen.getByText('2 種顏色')).toBeInTheDocument()
     expect(screen.getByText('尺寸 100–120')).toBeInTheDocument()
     expect(screen.getByText('NT$680')).toBeInTheDocument()
@@ -396,6 +401,8 @@ describe('VariantPicker', () => {
   it('derives sizes from the selected color and disables unavailable variants', () => {
     renderPicker()
 
+    expect(screen.getByText('尚未選擇規格')).toBeInTheDocument()
+    expect(screen.getByText('NT$680 起')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '尺寸 110' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: '尺寸 120（缺貨）' })).toBeDisabled()
     expect(screen.getByRole('button', { name: '加入購物車' })).toBeDisabled()
@@ -407,6 +414,8 @@ describe('VariantPicker', () => {
     fireEvent.click(screen.getByRole('button', { name: '尺寸 110' }))
     expect(screen.getByRole('button', { name: '加入購物車' })).toBeEnabled()
     expect(screen.getByRole('status')).toHaveTextContent('尺寸已選擇，可以加入購物車')
+    expect(screen.getByText('珊瑚粉／110')).toBeInTheDocument()
+    expect(screen.getByText('NT$720')).toBeInTheDocument()
   })
 
   it('confirms the add action and announces it to the cart', () => {

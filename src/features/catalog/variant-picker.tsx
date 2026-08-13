@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { useCart } from '@/features/cart/cart-provider'
 import type { CatalogProduct } from '@/features/catalog/queries'
 import { trackStorefrontEvent } from '@/features/analytics/tracker'
@@ -8,6 +8,7 @@ import { getProductAvailability } from '@/features/catalog/availability'
 import { useProductColor } from '@/features/catalog/product-color-context'
 import { primaryImageForColor } from '@/features/catalog/product-images'
 import { RestockForm } from '@/features/catalog/restock-form'
+import { formatTwd } from '@/lib/money'
 
 export function VariantPicker({ product, memberEmail }: { product: CatalogProduct; memberEmail?: string | null }) {
   const { dispatch } = useCart()
@@ -21,6 +22,7 @@ export function VariantPicker({ product, memberEmail }: { product: CatalogProduc
   const [size, setSize] = useState('')
   const variantsForColor = product.variants.filter((variant) => variant.color === color)
   const selectedVariant = variantsForColor.find((variant) => variant.size === size)
+  const minimumPrice = Math.min(...product.variants.map((variant) => variant.price))
   const availability = getProductAvailability(product)
   const stockMessage = availability === 'sold_out'
       ? '此商品目前已售完'
@@ -31,6 +33,46 @@ export function VariantPicker({ product, memberEmail }: { product: CatalogProduc
   useEffect(() => () => {
     if (feedbackTimer.current !== null) window.clearTimeout(feedbackTimer.current)
   }, [])
+
+  function addSelectedVariant(event: MouseEvent<HTMLButtonElement>) {
+    if (!selectedVariant || selectedVariant.stock === 0) return
+    dispatch({
+      type: 'add',
+      item: {
+        variantId: selectedVariant.id,
+        productSlug: product.slug,
+        name: product.name,
+        imageUrl: primaryImageForColor(product.images ?? [], selectedVariant.color)?.url ?? product.imageUrl,
+        color: selectedVariant.color,
+        size: selectedVariant.size,
+        unitPrice: selectedVariant.price,
+        quantity: 1,
+        maxStock: selectedVariant.stock,
+      },
+    })
+    trackStorefrontEvent('add_to_cart', { productName: product.name })
+
+    setAdded(true)
+    if (feedbackTimer.current !== null) window.clearTimeout(feedbackTimer.current)
+    feedbackTimer.current = window.setTimeout(() => setAdded(false), 1400)
+
+    const cartTarget = document.querySelector<HTMLElement>('.cart-drawer summary')
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (cartTarget && !reduceMotion) {
+      const start = event.currentTarget.getBoundingClientRect()
+      const end = cartTarget.getBoundingClientRect()
+      const flyer = document.createElement('span')
+      flyer.className = 'cart-flyer'
+      flyer.style.setProperty('--fly-start-x', `${start.left + start.width / 2}px`)
+      flyer.style.setProperty('--fly-start-y', `${start.top + start.height / 2}px`)
+      flyer.style.setProperty('--fly-end-x', `${end.left + end.width / 2}px`)
+      flyer.style.setProperty('--fly-end-y', `${end.top + end.height / 2}px`)
+      flyer.addEventListener('animationend', () => flyer.remove(), { once: true })
+      document.body.append(flyer)
+    }
+
+    window.dispatchEvent(new CustomEvent('mori:cart-added'))
+  }
 
   return (
     <div className="variant-picker">
@@ -74,54 +116,22 @@ export function VariantPicker({ product, memberEmail }: { product: CatalogProduc
 
       <p aria-live="polite" role="status">{stockMessage}</p>
       {availability === 'sold_out' ? <RestockForm defaultEmail={memberEmail ?? ''} productId={product.id} /> : null}
-      {availability !== 'sold_out' ? <button
-        className="button add-to-cart-button"
-        data-cart-state={added ? 'added' : 'idle'}
-        disabled={availability !== 'available' || !selectedVariant || selectedVariant.stock === 0}
-        type="button"
-        onClick={(event) => {
-          if (!selectedVariant || selectedVariant.stock === 0) return
-          dispatch({
-            type: 'add',
-            item: {
-              variantId: selectedVariant.id,
-              productSlug: product.slug,
-              name: product.name,
-              imageUrl: primaryImageForColor(product.images ?? [], selectedVariant.color)?.url ?? product.imageUrl,
-              color: selectedVariant.color,
-              size: selectedVariant.size,
-              unitPrice: selectedVariant.price,
-              quantity: 1,
-              maxStock: selectedVariant.stock,
-            },
-          })
-          trackStorefrontEvent('add_to_cart', { productName: product.name })
-
-          setAdded(true)
-          if (feedbackTimer.current !== null) window.clearTimeout(feedbackTimer.current)
-          feedbackTimer.current = window.setTimeout(() => setAdded(false), 1400)
-
-          const cartTarget = document.querySelector<HTMLElement>('.cart-drawer summary')
-          const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-          if (cartTarget && !reduceMotion) {
-            const start = event.currentTarget.getBoundingClientRect()
-            const end = cartTarget.getBoundingClientRect()
-            const flyer = document.createElement('span')
-            flyer.className = 'cart-flyer'
-            flyer.style.setProperty('--fly-start-x', `${start.left + start.width / 2}px`)
-            flyer.style.setProperty('--fly-start-y', `${start.top + start.height / 2}px`)
-            flyer.style.setProperty('--fly-end-x', `${end.left + end.width / 2}px`)
-            flyer.style.setProperty('--fly-end-y', `${end.top + end.height / 2}px`)
-            flyer.addEventListener('animationend', () => flyer.remove(), { once: true })
-            document.body.append(flyer)
-          }
-
-          window.dispatchEvent(new CustomEvent('mori:cart-added'))
-        }}
-      >
-        <span aria-hidden="true">{added ? '✓' : '+'}</span>
-        {availability === 'coming_soon' ? '尚未開放購買' : added ? '已加入購物車' : '加入購物車'}
-      </button> : null}
+      {availability !== 'sold_out' ? <div className="product-purchase-bar">
+        <div className="product-purchase-summary">
+          <strong>{formatTwd(selectedVariant?.price ?? minimumPrice)}{selectedVariant ? '' : ' 起'}</strong>
+          <span>{selectedVariant ? `${selectedVariant.color}／${selectedVariant.size}` : '尚未選擇規格'}</span>
+        </div>
+        <button
+          className="button add-to-cart-button"
+          data-cart-state={added ? 'added' : 'idle'}
+          disabled={availability !== 'available' || !selectedVariant || selectedVariant.stock === 0}
+          type="button"
+          onClick={addSelectedVariant}
+        >
+          <span aria-hidden="true">{added ? '✓' : '+'}</span>
+          {availability === 'coming_soon' ? '尚未開放購買' : added ? '已加入購物車' : '加入購物車'}
+        </button>
+      </div> : null}
     </div>
   )
 }

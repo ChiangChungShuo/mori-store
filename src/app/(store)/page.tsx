@@ -1,16 +1,12 @@
-import { listProductRatings } from '@/features/reviews/product-review-data'
+import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { ProductCard } from '@/features/catalog/product-card'
-import { getProductAvailability } from '@/features/catalog/availability'
-import { isPreorder } from '@/lib/preorder'
 import { listProducts } from '@/features/catalog/queries'
 import { getBannerSlides } from '@/features/storefront/banner-settings'
 import { HeroCarousel } from '@/features/storefront/hero-carousel'
 import { absoluteUrl } from '@/lib/site'
-import { AGE_BANDS } from '@/lib/age-bands'
-import { getStorefrontSettings } from '@/features/checkout/settings'
-import { formatTwd } from '@/lib/money'
+import { normalizeSeriesName } from '@/features/catalog/product-presentation'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,30 +16,21 @@ export const metadata: Metadata = {
 }
 
 export default async function StoreHomePage() {
-  const [products, bannerSlides, ratings, settings] = await Promise.all([
+  const [products, bannerSlides] = await Promise.all([
     listProducts({}),
     getBannerSlides(),
-    listProductRatings(),
-    getStorefrontSettings(),
   ])
   const newProducts = products.filter((product) => product.isNew).slice(0, 8)
-  // A first-time visitor wants to know what other people buy before they want to
-  // know what is new. Pre-order items are excluded from the 現貨 fallback — they
-  // are exactly what "今天就能訂" is not.
-  const bestSellers = products.filter((product) => product.tags?.includes('熱賣'))
-  const readyToShip = products.filter((product) => (
-    getProductAvailability(product) === 'available' && !isPreorder(product.tags)
-  ))
-  const sellable = products.filter((product) => getProductAvailability(product) !== 'sold_out')
-  // 熱賣 first, then whatever else is worth showing, so the row is always full
-  // even in a season where everything is pre-order.
-  const loved = [...new Map(
-    [...bestSellers, ...readyToShip, ...sellable].map((product) => [product.id, product]),
-  ).values()].slice(0, 4)
-  const lovedMode = bestSellers.length > 0 ? 'loved' : readyToShip.length > 0 ? 'ready' : 'picks'
-  // Second buying moment, placed in the long brand stretch further down.
-  const alreadyShown = new Set([...loved, ...newProducts].map((product) => product.id))
-  const keepBrowsing = products.filter((product) => !alreadyShown.has(product.id)).slice(0, 4)
+  const featuredSeries = products.flatMap((product) => product.series)[0]
+  const featuredProduct = featuredSeries
+    ? products.find((product) => product.series.some((series) => series.id === featuredSeries.id) && product.imageUrl)
+    : products.find((product) => product.imageUrl)
+  const featuredSeriesName = featuredSeries
+    ? normalizeSeriesName(featuredSeries.name)
+    : 'MORIMUR BABY 日常選品'
+  const featuredSeriesHref = featuredSeries
+    ? `/products?series=${encodeURIComponent(featuredSeries.name)}`
+    : '/products'
 
   return (
     <main>
@@ -53,44 +40,8 @@ export default async function StoreHomePage() {
         <Link href="/products?view=ready"><span>ready to ship</span><strong>現貨快速出貨</strong><small>不用等預購，先挑現在有貨的尺寸</small></Link>
         <Link href="/products?view=preorder"><span>pre-order</span><strong>預購新品</strong><small>查看本季新款與預計出貨說明</small></Link>
         <Link href="/products?view=popular"><span>most loved</span><strong>本週熱賣</strong><small>大家最近正在看的熱門款式</small></Link>
-        <Link href="/products#categories"><span>all categories</span><strong>依分類瀏覽</strong><small>上衣、褲裝、洋裝與更多品項</small></Link>
+        <Link href={featuredSeriesHref}><span>featured series</span><strong>依系列瀏覽</strong><small>從本季主打系列開始挑選</small></Link>
       </nav>
-
-      <section id="ages" className="section" aria-labelledby="ages-title">
-        <header className="section-heading">
-          <div><p className="eyebrow">shop by age</p><h2 id="ages-title">照著成長階段挑</h2></div>
-          <p>從剛學會走路，到開始有自己的穿搭主張。</p>
-        </header>
-        <div className="age-links">
-          {AGE_BANDS.map((band) => (
-            <Link href={`/products?age=${band.value}`} key={band.value}>
-              <strong>{band.label}</strong><span>{band.range}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {loved.length > 0 ? (
-        <section id="popular" className="section" aria-labelledby="popular-title">
-          <header className="section-heading">
-            <div>
-              <p className="eyebrow">{lovedMode === 'loved' ? 'most loved' : lovedMode === 'ready' ? 'ready to ship' : 'MORIMUR BABY picks'}</p>
-              <h2 id="popular-title">{lovedMode === 'loved' ? '大家都在買' : lovedMode === 'ready' ? '現貨，今天就能訂' : '本季精選'}</h2>
-            </div>
-            <Link href={lovedMode === 'loved' ? '/products?view=popular' : lovedMode === 'ready' ? '/products?view=ready' : '/products'} className="text-link">
-              {lovedMode === 'loved' ? '看全部熱賣 →' : lovedMode === 'ready' ? '看全部現貨 →' : '瀏覽全部商品 →'}
-            </Link>
-          </header>
-          <p className="section-lede">{lovedMode === 'loved'
-            ? '標上「熱賣」的款式排在最前面，都是最近最多人選的。'
-            : lovedMode === 'ready'
-              ? '有庫存、下單後就能安排出貨的日常款式（不含預購）。'
-              : '這幾件是目前最推薦的款式，預購商品會標明預計出貨時間。'}</p>
-          <div className="product-grid">
-            {loved.map((product) => <ProductCard product={product} key={product.id} rating={ratings.get(product.id)} />)}
-          </div>
-        </section>
-      ) : null}
 
       <section id="new" className="section" aria-labelledby="new-title">
         <header className="section-heading">
@@ -101,20 +52,20 @@ export default async function StoreHomePage() {
           <p>商品準備中，第一批新品很快見面。</p>
         ) : (
           <div className="product-grid">
-            {newProducts.map((product) => <ProductCard product={product} key={product.id} rating={ratings.get(product.id)} />)}
+            {newProducts.map((product) => <ProductCard product={product} key={product.id} />)}
           </div>
         )}
       </section>
 
-      <section className="section category-feature" aria-labelledby="category-title">
-        <div className="category-copy">
-          <p className="eyebrow">MORIMUR BABY selection</p>
-          <h2 id="category-title">會跑、會跳，<br />也好好整理。</h2>
-          <p>柔軟上衣、耐穿下著與不費力就能搭好的日常單品。</p>
-          <Link href="/products" className="button button-light">挑選日常衣櫥</Link>
+      <section className="section home-featured-series" aria-labelledby="featured-series-title">
+        <div className="home-featured-series-copy">
+          <p className="eyebrow">featured series</p>
+          <h2 id="featured-series-title">{featuredSeriesName}</h2>
+          <p>{featuredProduct?.summary || featuredProduct?.description || '柔軟、自在，也保留孩子每天活動需要的空間。'}</p>
+          <Link href={featuredSeriesHref} className="button">逛逛這個系列</Link>
         </div>
-        <div className="category-tags" aria-label="選品原則">
-          <span>柔軟親膚</span><span>自在活動</span><span>耐洗耐穿</span>
+        <div className="home-featured-series-image">
+          {featuredProduct?.imageUrl ? <Image alt={featuredProduct.imageAlt} fill sizes="(max-width: 58rem) 100vw, 50vw" src={featuredProduct.imageUrl} /> : <span aria-hidden="true">MORIMUR BABY</span>}
         </div>
       </section>
 
@@ -129,32 +80,6 @@ export default async function StoreHomePage() {
         </ol>
       </section>
 
-      {keepBrowsing.length > 0 ? (
-        <section className="section home-keep-browsing" aria-labelledby="keep-browsing-title">
-          <header className="section-heading">
-            <div><p className="eyebrow">keep looking</p><h2 id="keep-browsing-title">再看看這幾件</h2></div>
-            <Link href="/products" className="text-link">瀏覽全部商品 →</Link>
-          </header>
-          <div className="product-grid">
-            {keepBrowsing.map((product) => <ProductCard product={product} key={product.id} rating={ratings.get(product.id)} />)}
-          </div>
-          <p className="home-keep-browsing-cta">
-            <Link className="button" href="/products">挑選日常衣櫥</Link>
-             <small>{settings.freeShippingThreshold ? `滿 ${formatTwd(settings.freeShippingThreshold)} 免運・` : ''}7-ELEVEN 取貨</small>
-          </p>
-        </section>
-      ) : null}
-
-      <section id="story" className="section brand-story" aria-labelledby="story-title">
-        <p className="eyebrow">our point of view</p>
-        <h2 id="story-title">衣服不該限制孩子怎麼玩。</h2>
-        <p>MORIMUR BABY 的開始，源自於一位媽媽為孩子挑選衣服時的龜毛。因為知道孩子每天都穿在身上，所以更在意每一塊布料、每一份舒適與耐穿，也希望把這份安心，分享給每一位來到 MORIMUR BABY 的孩子。</p>
-        <dl className="story-values">
-          <div><dt>01</dt><dd>舒服，是每天願意穿的第一件事。</dd></div>
-          <div><dt>02</dt><dd>耐穿，才能陪著孩子真正生活。</dd></div>
-          <div><dt>03</dt><dd>簡單自在，搭配獨特且屬於自己的風格。</dd></div>
-        </dl>
-      </section>
     </main>
   )
 }

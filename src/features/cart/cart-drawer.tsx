@@ -9,6 +9,7 @@ import { calculateCart } from '@/features/cart/totals'
 import type { StorefrontSettings } from '@/features/checkout/settings'
 import { formatTwd } from '@/lib/money'
 import { ConfirmModal } from '@/components/confirm-modal'
+import { findNextQuantityOffer } from '@/features/cart/bundle-pricing'
 
 export function CartDrawer({ settings, isSignedIn = false }: { settings: StorefrontSettings; isSignedIn?: boolean }) {
   const { items, dispatch, quantityTiers } = useCart()
@@ -25,6 +26,14 @@ export function CartDrawer({ settings, isSignedIn = false }: { settings: Storefr
   const freeShippingProgress = settings.freeShippingThreshold && settings.freeShippingThreshold > 0
     ? Math.min(100, Math.round((totals.discountedSubtotal / settings.freeShippingThreshold) * 100))
     : 100
+  const nextQuantityOffer = findNextQuantityOffer(items.map((item) => ({
+    productKey: item.productSlug,
+    unitPrice: item.unitPrice,
+    quantity: item.quantity,
+  })), quantityTiers)
+  const nextOfferProduct = nextQuantityOffer
+    ? items.find((item) => item.productSlug === nextQuantityOffer.productKey)
+    : null
 
   useEffect(() => {
     function bumpCart() {
@@ -128,6 +137,10 @@ export function CartDrawer({ settings, isSignedIn = false }: { settings: Storefr
                 </div>
               </div>
             ) : null}
+            <div className="cart-benefit-summary cart-drawer-benefits" aria-label="購物優惠進度">
+              <p><span>目前已省</span><strong>{formatTwd(totals.bundleDiscount)}</strong></p>
+              {nextQuantityOffer && nextOfferProduct ? <p><span>{nextOfferProduct.name}</span><strong>再買 {nextQuantityOffer.remainingQuantity} 件享優惠</strong></p> : null}
+            </div>
             <div className="cart-drawer-totals">
               <p><span>商品小計</span><strong>{formatTwd(totals.subtotal)}</strong></p>
               {totals.bundleDiscount > 0 ? <p className="cart-discount"><span>多件優惠</span><strong>-{formatTwd(totals.bundleDiscount)}</strong></p> : null}

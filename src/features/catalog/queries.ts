@@ -109,7 +109,7 @@ export function parseProductFilters(searchParams: SearchParams): ProductFilters 
     ...(size ? { size } : {}),
     ...(color ? { color } : {}),
     ...(category ? { category } : {}),
-    ...(category && series ? { series } : {}),
+    ...(series ? { series } : {}),
     ...(inStock === 'true' ? { inStock: true } : {}),
     ...(price && price in priceBands ? { price: price as ProductPriceBand } : {}),
     ...(sort && sorts.includes(sort as ProductSort) && sort !== 'featured' ? { sort: sort as ProductSort } : {}),
@@ -227,7 +227,7 @@ export function applyCatalogFilters(products: CatalogProduct[], filters: Product
       && (!filters.color || product.variants.some((variant) => colorFamily(variant.color) === filters.color))
       && (!filters.category || product.category === filters.category)
       && (!filters.series || product.series.some((series) => (
-        series.categoryName === filters.category && series.name === filters.series
+        (!filters.category || series.categoryName === filters.category) && series.name === filters.series
       )))
       && (!filters.inStock || product.variants.some((variant) => variant.stock > 0))
       && (!filters.price || (() => {

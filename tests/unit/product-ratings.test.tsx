@@ -58,16 +58,16 @@ describe('listProductRatings', () => {
   })
 })
 
-describe('ProductCard rating', () => {
-  it('shows the score and count once a product has reviews', () => {
+describe('ProductCard merchandising', () => {
+  it('keeps review details off the concise listing card', () => {
     render(
       <WishlistAuthProvider isSignedIn={false}>
         {createElement(ProductCard, { product, rating: { average: 4.5, count: 2 } })}
       </WishlistAuthProvider>,
     )
 
-    expect(screen.getByLabelText('平均 4.5 顆星，共 2 則評論')).toBeInTheDocument()
-    expect(screen.getByText('4.5')).toBeInTheDocument()
+    expect(screen.queryByLabelText('平均 4.5 顆星，共 2 則評論')).not.toBeInTheDocument()
+    expect(document.querySelector('.product-card-rating')).toBeNull()
   })
 
   it('stays quiet when nobody has reviewed yet', () => {

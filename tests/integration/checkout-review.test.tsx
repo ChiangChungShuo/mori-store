@@ -36,6 +36,35 @@ afterEach(() => {
 })
 
 describe('checkout review UX', () => {
+  it('restores recipient and pickup details after returning from authentication', async () => {
+    window.localStorage.setItem('mori-cart-v1', JSON.stringify([staleItem]))
+    window.sessionStorage.setItem('mori-checkout-draft', JSON.stringify({
+      email: 'parent@example.com',
+      recipientName: '王小美',
+      phone: '0912345678',
+      chain: 'seven_eleven',
+      storeName: '忠孝門市',
+      storeId: '123456',
+      customerNote: '請小心包裝',
+    }))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({
+      items: [freshItem],
+      summary: { subtotal: 720, shipping: 60, total: 780 },
+    })))
+
+    render(createElement(CartProvider, null, createElement(CheckoutForm, {
+      action: vi.fn().mockResolvedValue({ status: 'idle' }),
+    })))
+
+    expect(await screen.findByDisplayValue('parent@example.com')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('王小美')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('0912345678')).toBeInTheDocument()
+    expect(screen.getByLabelText('取貨門市名稱')).toHaveValue('忠孝門市')
+    expect(screen.getByLabelText('門市店號')).toHaveValue('123456')
+    expect(screen.getByDisplayValue('請小心包裝')).toBeInTheDocument()
+    expect(JSON.parse(window.localStorage.getItem('mori-cart-v1') ?? '[]')).toHaveLength(1)
+  })
+
   it('renders the server-refreshed items, shipping and total instead of stale cart prices', async () => {
     window.localStorage.setItem('mori-cart-v1', JSON.stringify([staleItem]))
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({

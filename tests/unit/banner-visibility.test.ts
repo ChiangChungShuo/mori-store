@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { activeBannerSlides, type BannerSlide } from '@/features/storefront/banner-settings'
+import { activeBannerSlides, normalizeBannerButtonHref, type BannerSlide } from '@/features/storefront/banner-settings'
 
 const slide = (overrides: Partial<BannerSlide> = {}): BannerSlide => ({
   imageUrl: '/hero.jpg',
@@ -29,5 +29,13 @@ describe('homepage campaign expiry', () => {
 
     expect(activeBannerSlides(slides, new Date('2026-08-10T23:59:59+08:00'))).toHaveLength(1)
     expect(activeBannerSlides(slides, new Date('2026-08-11T00:00:00+08:00'))).toHaveLength(0)
+  })
+})
+
+describe('normalizeBannerButtonHref', () => {
+  it('converts legacy category and series paths into working catalog links', () => {
+    expect(normalizeBannerButtonHref('/下身')).toBe('/products?category=%E4%B8%8B%E8%BA%AB')
+    expect(normalizeBannerButtonHref('/Mori Blanche')).toBe('/products?q=Mori%20Blanche')
+    expect(normalizeBannerButtonHref('/products?view=ready')).toBe('/products?view=ready')
   })
 })

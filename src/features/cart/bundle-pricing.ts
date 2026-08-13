@@ -207,6 +207,53 @@ export function calculateBundleDiscounts(
   return { discount, byProduct }
 }
 
+export type NextQuantityOffer = {
+  productKey: string
+  currentQuantity: number
+  targetQuantity: number
+  remainingQuantity: number
+  saving: number
+}
+
+/** Finds the closest not-yet-reached tier that genuinely lowers the price. */
+export function findNextQuantityOffer(
+  lines: BundleCartLine[],
+  tiersByProduct: Record<string, QuantityPriceTier[]> | Map<string, QuantityPriceTier[]>,
+): NextQuantityOffer | null {
+  const lookup = tiersByProduct instanceof Map
+    ? tiersByProduct
+    : new Map(Object.entries(tiersByProduct))
+  const grouped = new Map<string, { quantity: number; minimumUnitPrice: number }>()
+
+  for (const line of lines) {
+    const current = grouped.get(line.productKey)
+    grouped.set(line.productKey, {
+      quantity: (current?.quantity ?? 0) + line.quantity,
+      minimumUnitPrice: Math.min(current?.minimumUnitPrice ?? Number.POSITIVE_INFINITY, line.unitPrice),
+    })
+  }
+
+  const offers: NextQuantityOffer[] = []
+  for (const [productKey, current] of grouped) {
+    for (const tier of normalizeQuantityTiers(lookup.get(productKey) ?? [])) {
+      if (tier.quantity <= current.quantity) continue
+      const saving = current.minimumUnitPrice * tier.quantity - tier.bundlePrice
+      if (saving <= 0) continue
+      offers.push({
+        productKey,
+        currentQuantity: current.quantity,
+        targetQuantity: tier.quantity,
+        remainingQuantity: tier.quantity - current.quantity,
+        saving,
+      })
+    }
+  }
+
+  return offers.sort((left, right) => (
+    left.remainingQuantity - right.remainingQuantity || right.saving - left.saving
+  ))[0] ?? null
+}
+
 /**
  * Product-page copy for one tier, e.g. "任選 2 件 NT$1,000（省 NT$180）".
  * `unitPrice` is the cheapest published price, so the saving is never overstated.

@@ -13,6 +13,7 @@ import type { CouponValidation } from '@/features/checkout/coupons'
 import type { CatalogProduct } from '@/features/catalog/queries'
 import { ProductCard } from '@/features/catalog/product-card'
 import { ConfirmModal } from '@/components/confirm-modal'
+import { findNextQuantityOffer } from '@/features/cart/bundle-pricing'
 
 const couponStorageKey = 'mori-checkout-coupon'
 type PendingCartAction = { type: 'remove'; variantId: string; name: string } | { type: 'clear' }
@@ -50,6 +51,15 @@ export function CartPageClient({ settings, isSignedIn = false, recommendedProduc
     ? couponResult
     : null
   const payableTotal = Math.max(0, totals.total - (appliedCoupon?.discount ?? 0))
+  const currentSavings = totals.bundleDiscount + (appliedCoupon?.discount ?? 0)
+  const nextQuantityOffer = findNextQuantityOffer(items.map((item) => ({
+    productKey: item.productSlug,
+    unitPrice: item.unitPrice,
+    quantity: item.quantity,
+  })), quantityTiers)
+  const nextOfferProduct = nextQuantityOffer
+    ? items.find((item) => item.productSlug === nextQuantityOffer.productKey)
+    : null
   const cartProductSlugs = useMemo(() => new Set(items.map((item) => item.productSlug)), [items])
   const suggestions = (recommendedProducts ?? [])
     .filter((product) => !cartProductSlugs.has(product.slug))
@@ -177,6 +187,10 @@ export function CartPageClient({ settings, isSignedIn = false, recommendedProduc
                   <small>消費滿 {formatTwd(settings.freeShippingThreshold ?? 0)}，超商取貨免運</small>
                 </div>
               ) : null}
+              <div className="cart-benefit-summary" aria-label="購物優惠進度">
+                <p><span>目前已省</span><strong>{formatTwd(currentSavings)}</strong></p>
+                {nextQuantityOffer && nextOfferProduct ? <p><span>{nextOfferProduct.name}</span><strong>再買 {nextQuantityOffer.remainingQuantity} 件，可套用任 {nextQuantityOffer.targetQuantity} 件優惠</strong></p> : <p><span>多件優惠</span><strong>{totals.bundleDiscount > 0 ? '已自動套用最佳組合' : '目前沒有更近的優惠門檻'}</strong></p>}
+              </div>
 
               <div className="cart-table-heading" aria-hidden="true">
                 <span>商品資料</span><span>商品單價</span><span>數量</span><span>商品小計</span>

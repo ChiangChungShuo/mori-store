@@ -30,9 +30,24 @@ export function activeBannerSlides(slides: BannerSlide[], now = new Date()) {
   })
 }
 
+const legacyCategoryPaths = new Set(['上衣', '外套', '母嬰用品', '套裝', '下身', '居家系列'])
+
+export function normalizeBannerButtonHref(href: string) {
+  if (href === '/' || href.startsWith('/products') || href.startsWith('/#')) return href
+  const value = decodeURIComponent(href.slice(1)).trim()
+  if (!value) return '/products'
+  return legacyCategoryPaths.has(value)
+    ? `/products?category=${encodeURIComponent(value)}`
+    : `/products?q=${encodeURIComponent(value)}`
+}
+
+function normalizeBannerLinks(slides: BannerSlide[]) {
+  return slides.map((slide) => ({ ...slide, buttonHref: normalizeBannerButtonHref(slide.buttonHref) }))
+}
+
 function visibleBannerSlides(slides: BannerSlide[]) {
   const activeSlides = activeBannerSlides(slides)
-  return activeSlides.length > 0 ? activeSlides : defaultBannerSlides
+  return normalizeBannerLinks(activeSlides.length > 0 ? activeSlides : defaultBannerSlides)
 }
 
 export const defaultBannerSlides: BannerSlide[] = [{

@@ -26,12 +26,12 @@ export function SiteHeader({ cart, isSignedIn = false, isAdmin = false, categori
                 <h2 id="store-mobile-products-heading">商品導覽</h2>
                 <Link href="/#new">新品</Link>
                 <Link href="/products">所有商品</Link>
-                <Link href="/#ages">依年齡</Link>
+                <Link href="/products?view=ready">現貨快速出貨</Link>
                 <details className="store-mobile-categories">
                   <summary>商品分類 <span aria-hidden="true">⌄</span></summary>
                   <CategorySeriesMenu categories={categories} series={series} variant="mobile" />
                 </details>
-                <Link href="/#story">品牌故事</Link>
+                <Link href="/products?view=preorder">預購新品</Link>
               </section>
               <section aria-labelledby="store-mobile-service-heading">
                 <h2 id="store-mobile-service-heading">服務</h2>
@@ -60,12 +60,12 @@ export function SiteHeader({ cart, isSignedIn = false, isAdmin = false, categori
         <div className="nav-links desktop-navigation">
           <Link href="/#new">新品</Link>
           <Link href="/products">所有商品</Link>
-          <Link href="/#ages">依年齡</Link>
+          <Link href="/products?view=ready">現貨</Link>
           <AutoCloseDetails className="nav-category-menu">
             <summary>全部分類 <span aria-hidden="true">⌄</span></summary>
             <CategorySeriesMenu categories={categories} series={series} variant="desktop" />
           </AutoCloseDetails>
-          <Link href="/#story">品牌故事</Link>
+          <Link href="/products?view=preorder">預購</Link>
         </div>
         <div className="nav-actions desktop-navigation">
           {isSignedIn ? <WishlistHeaderLink /> : null}

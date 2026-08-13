@@ -3,13 +3,12 @@ import { formatTwd } from '@/lib/money'
 import type { CatalogProduct } from '@/features/catalog/queries'
 import { WishlistButton } from '@/features/wishlist/wishlist-button'
 import { getProductAvailability } from '@/features/catalog/availability'
-import { splitProductDisplayName } from '@/features/catalog/product-presentation'
+import { normalizeSeriesName, splitProductDisplayName } from '@/features/catalog/product-presentation'
 import { ProductCardImage } from '@/features/catalog/product-card-image'
 import { isPreorder } from '@/lib/preorder'
 
-export function ProductCard({ product, rating }: {
+export function ProductCard({ product }: {
   product: CatalogProduct
-  /** Average and count, supplied by the listing page in one aggregate read. */
   rating?: { average: number; count: number }
 }) {
   const colors = new Set(product.variants.map((variant) => variant.color))
@@ -19,6 +18,7 @@ export function ProductCard({ product, rating }: {
   const minimumPrice = Math.min(...product.variants.map((variant) => variant.price))
   const compareAtPrice = Math.max(...product.variants.map((variant) => variant.compareAtPrice ?? 0))
   const displayName = splitProductDisplayName(product.name)
+  const seriesName = displayName.series ?? (product.series[0] ? normalizeSeriesName(product.series[0].name) : null)
   const availability = getProductAvailability(product)
   const preorder = isPreorder(product.tags)
   const bestSeller = product.tags?.includes('熱賣') ?? false
@@ -39,9 +39,10 @@ export function ProductCard({ product, rating }: {
       <span className="product-image-placeholder" aria-hidden="true">mori</span>
     )}
     {soldOut ? <span className="product-availability" data-status="sold_out">售完</span> : null}
-    {!soldOut && preorder ? <span className="product-availability" data-status="preorder">預購</span> : null}
-    {!soldOut && bestSeller ? <span className="product-availability" data-status="popular">熱賣</span> : null}
-    {availability === 'coming_soon' ? <span className="product-availability" data-status="coming_soon"><small>即將上架</small>預計 {comingSoonDate} 開賣</span> : null}
+    {!soldOut && availability === 'coming_soon' ? <span className="product-availability" data-status="coming_soon"><small>即將上架</small>預計 {comingSoonDate} 開賣</span> : null}
+    {!soldOut && availability === 'available' && preorder ? <span className="product-availability" data-status="preorder">預購</span> : null}
+    {!soldOut && availability === 'available' && !preorder && bestSeller ? <span className="product-availability" data-status="popular">熱賣</span> : null}
+    {!soldOut && availability === 'available' && !preorder && !bestSeller ? <span className="product-availability" data-status="ready">現貨</span> : null}
     <span className="product-card-action">查看商品 <span aria-hidden="true">↗</span></span>
   </>
 
@@ -54,15 +55,8 @@ export function ProductCard({ product, rating }: {
         aria-label={`查看 ${product.name}`}
       >{image}</Link>
       <div className="product-card-body">
-        {displayName.series ? <p className="product-card-series">{displayName.series}</p> : null}
+        {seriesName ? <p className="product-card-series">{seriesName}</p> : null}
         <h2><Link href={`/products/${product.slug}`}>{displayName.title}</Link></h2>
-        {rating && rating.count > 0 ? (
-          <p className="product-card-rating" aria-label={`平均 ${rating.average.toFixed(1)} 顆星，共 ${rating.count} 則評論`}>
-            <span aria-hidden="true">★</span>
-            <strong>{rating.average.toFixed(1)}</strong>
-            <small>({rating.count})</small>
-          </p>
-        ) : null}
         <div className="product-card-footer">
           <p className="product-card-options"><span><span className="sr-only">{colors.size} 種顏色</span><span aria-hidden="true">{colors.size} 色</span></span><span aria-hidden="true">・</span><span>尺寸 {sizeLabel}</span></p>
           <p className="product-price-group"><span className="product-price">{formatTwd(minimumPrice)}</span>{compareAtPrice > minimumPrice ? <del>{formatTwd(compareAtPrice)}</del> : null}</p>

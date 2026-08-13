@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   calculateBundleDiscounts,
   describeQuantityTier,
+  findNextQuantityOffer,
   normalizeQuantityTiers,
   priceProductBundle,
 } from '@/features/cart/bundle-pricing'
@@ -188,5 +189,31 @@ describe('describeQuantityTier', () => {
 
   it('never reports a negative saving', () => {
     expect(describeQuantityTier({ quantity: 2, bundlePrice: 900 }, 300).saving).toBe(0)
+  })
+})
+
+describe('findNextQuantityOffer', () => {
+  it('finds the nearest real offer without pooling different products', () => {
+    expect(findNextQuantityOffer([
+      { productKey: 'tee', unitPrice: 590, quantity: 1 },
+      { productKey: 'pants', unitPrice: 800, quantity: 1 },
+    ], {
+      tee,
+      pants: [{ quantity: 3, bundlePrice: 2200 }],
+    })).toEqual({
+      productKey: 'tee',
+      currentQuantity: 1,
+      targetQuantity: 2,
+      remainingQuantity: 1,
+      saving: 180,
+    })
+  })
+
+  it('ignores a tier that does not actually save money', () => {
+    expect(findNextQuantityOffer([
+      { productKey: 'tee', unitPrice: 300, quantity: 1 },
+    ], {
+      tee: [{ quantity: 2, bundlePrice: 700 }],
+    })).toBeNull()
   })
 })

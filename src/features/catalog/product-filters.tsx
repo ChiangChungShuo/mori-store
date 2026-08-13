@@ -7,14 +7,15 @@ import { FilterClearLink } from '@/components/filter-clear-link'
 import { priceBands, productSortOptions } from '@/features/catalog/catalog-sort'
 import { type ProductFilters as ProductFilterValues } from '@/features/catalog/queries'
 import { AGE_BANDS, ageBandLabel, ageBandRange } from '@/lib/age-bands'
+import type { ProductSeries } from '@/features/catalog/product-series'
 
 // Builds a /products URL from the applied filters minus one of them, so the
 // active-filter chips can each be removed with a single tap.
-function hrefWithout(filters: ProductFilterValues, drop: 'q' | 'age' | 'size' | 'color' | 'inStock' | 'price') {
+function hrefWithout(filters: ProductFilterValues, drop: 'q' | 'age' | 'size' | 'color' | 'inStock' | 'price' | 'series' | 'view') {
   const params = new URLSearchParams()
   if (filters.category) params.set('category', filters.category)
-  if (filters.category && filters.series) params.set('series', filters.series)
-  if (filters.view) params.set('view', filters.view)
+  if (filters.series && drop !== 'series') params.set('series', filters.series)
+  if (filters.view && drop !== 'view') params.set('view', filters.view)
   if (filters.q && drop !== 'q') params.set('q', filters.q)
   if (filters.age && drop !== 'age') params.set('age', filters.age)
   if (filters.size && drop !== 'size') params.set('size', filters.size)
@@ -29,10 +30,11 @@ function hrefWithout(filters: ProductFilterValues, drop: 'q' | 'age' | 'size' | 
 // Filter toolbar. Desktop lays every control out in one row; on phones the
 // detail controls collapse into a bottom sheet behind a 篩選 button, because a
 // six-row stacked form pushed the products themselves below the fold.
-export function ProductFilters({ filters, sizeOptions = [], colorOptions = [] }: {
+export function ProductFilters({ filters, sizeOptions = [], colorOptions = [], seriesOptions = [] }: {
   filters: ProductFilterValues
   sizeOptions?: string[]
   colorOptions?: string[]
+  seriesOptions?: ProductSeries[]
 }) {
   const [sheetOpen, setSheetOpen] = useState(false)
   const router = useRouter()
@@ -59,6 +61,11 @@ export function ProductFilters({ filters, sizeOptions = [], colorOptions = [] }:
   const colors = filters.color && !colorOptions.includes(filters.color)
     ? [...colorOptions, filters.color]
     : colorOptions
+  const availableSeries = [...new Map(
+    seriesOptions
+      .filter((series) => !filters.category || series.categoryName === filters.category)
+      .map((series) => [series.name, series]),
+  ).values()]
   const clearHref = filters.category
     ? `/products?category=${encodeURIComponent(filters.category)}${filters.view ? `&view=${filters.view}` : ''}`
     : filters.view ? `/products?view=${filters.view}` : '/products'
@@ -70,7 +77,9 @@ export function ProductFilters({ filters, sizeOptions = [], colorOptions = [] }:
     filters.color ? { key: 'color' as const, label: filters.color } : null,
     filters.price ? { key: 'price' as const, label: priceBands[filters.price].label } : null,
     filters.inStock ? { key: 'inStock' as const, label: '只看有庫存' } : null,
-  ].filter((chip): chip is { key: 'q' | 'age' | 'size' | 'color' | 'inStock' | 'price'; label: string } => chip !== null)
+    filters.series ? { key: 'series' as const, label: filters.series } : null,
+    filters.view ? { key: 'view' as const, label: filters.view === 'ready' ? '現貨快速出貨' : filters.view === 'preorder' ? '預購新品' : filters.view === 'popular' ? '本週熱賣' : '依系列瀏覽' } : null,
+  ].filter((chip): chip is { key: 'q' | 'age' | 'size' | 'color' | 'inStock' | 'price' | 'series' | 'view'; label: string } => chip !== null)
 
   useEffect(() => {
     if (!sheetOpen) return
@@ -94,8 +103,6 @@ export function ProductFilters({ filters, sizeOptions = [], colorOptions = [] }:
     <>
       <form action="/products" method="get" aria-label="篩選商品" className="product-filterbar" data-sheet-open={sheetOpen} onSubmit={submitFilters}>
         {filters.category ? <input name="category" type="hidden" value={filters.category} /> : null}
-        {filters.category && filters.series ? <input name="series" type="hidden" value={filters.series} /> : null}
-        {filters.view ? <input name="view" type="hidden" value={filters.view} /> : null}
 
         <div className="product-filterbar-lead">
           <input
@@ -139,6 +146,29 @@ export function ProductFilters({ filters, sizeOptions = [], colorOptions = [] }:
             <strong>篩選條件</strong>
             <button aria-label="關閉篩選" onClick={() => setSheetOpen(false)} type="button">✕</button>
           </div>
+
+          <fieldset className="product-filter-group">
+            <legend>商品狀態</legend>
+            <div className="product-filter-chips">
+              <label><input defaultChecked={!filters.view || filters.view === 'series'} name="view" type="radio" value="" /><span>全部商品</span></label>
+              <label><input defaultChecked={filters.view === 'ready'} name="view" type="radio" value="ready" /><span>現貨快速出貨</span></label>
+              <label><input defaultChecked={filters.view === 'preorder'} name="view" type="radio" value="preorder" /><span>預購新品</span></label>
+              <label><input defaultChecked={filters.view === 'popular'} name="view" type="radio" value="popular" /><span>本週熱賣</span></label>
+            </div>
+          </fieldset>
+
+          <fieldset className="product-filter-group">
+            <legend>系列</legend>
+            <div className="product-filter-chips product-filter-series-chips">
+              <label><input defaultChecked={!filters.series} name="series" type="radio" value="" /><span>全部系列</span></label>
+              {availableSeries.map((series) => (
+                <label key={`${series.categoryName}-${series.name}`}>
+                  <input defaultChecked={filters.series === series.name} name="series" type="radio" value={series.name} />
+                  <span>{series.name}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
 
           {/* Chips rather than dropdowns: one tap instead of open-scroll-pick,
               and the whole panel reads at a glance. */}
