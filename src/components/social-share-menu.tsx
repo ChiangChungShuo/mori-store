@@ -13,7 +13,7 @@ export function ProductShareButtons({ productName }: { productName: string }) {
 
   function share(channel: (typeof channels)[number]['key']) {
     const url = encodeURIComponent(window.location.href)
-    const text = encodeURIComponent(`${productName}｜mori 童裝商城`)
+    const text = encodeURIComponent(`${productName}｜MORIMUR BABY`)
     const shareUrl = channel === 'line'
       ? `https://social-plugins.line.me/lineit/share?url=${url}`
       : channel === 'facebook'

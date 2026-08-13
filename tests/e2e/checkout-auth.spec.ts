@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-test('lets a guest reach checkout from the cart without logging in', async ({ page }) => {
+test('requires a guest to log in before checkout', async ({ page }) => {
   test.skip(Boolean(process.env.E2E_BASE_URL), 'local fixture authentication only')
 
   await page.goto('/cart')
@@ -19,14 +19,10 @@ test('lets a guest reach checkout from the cart without logging in', async ({ pa
   })
   await page.reload()
 
-  const toCheckout = page.getByRole('link', { name: '前往結帳' })
-  await expect(toCheckout).toHaveAttribute('href', '/checkout')
+  const toCheckout = page.getByRole('link', { name: '登入後結帳' })
+  await expect(toCheckout).toHaveAttribute('href', '/login?next=%2Fcheckout')
   await toCheckout.click()
 
-  // Guest lands on the checkout form directly — no redirect to /login.
-  await expect(page).toHaveURL('/checkout')
-  await expect(page.getByRole('heading', { name: '填寫資料' })).toBeVisible()
-  await expect(page.getByLabel('Email', { exact: true })).toBeVisible()
-  await expect(page.getByLabel('收件人姓名')).toBeVisible()
-  await expect(page.getByLabel('手機號碼')).toBeVisible()
+  await expect(page).toHaveURL('/login?next=%2Fcheckout')
+  await expect(page.getByRole('heading', { name: '歡迎回到 MORIMUR BABY' })).toBeVisible()
 })

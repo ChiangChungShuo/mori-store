@@ -5,7 +5,7 @@ import { createPaymentAttempt } from '@/features/checkout/service'
 import { validateCoupon } from '@/features/checkout/coupons'
 import { CheckoutProgress } from '@/features/checkout/checkout-progress'
 import { CVS_STORE_COOKIE, type PickedStore } from '@/lib/checkout/cvs-map'
-import { getCurrentUser } from '@/lib/auth/require-user'
+import { requireUser } from '@/lib/auth/require-user'
 import { getAccountSummary } from '@/features/account/summary'
 import {
   CheckoutAttemptError,
@@ -21,8 +21,8 @@ type CheckoutPageProps = {
 }
 
 export default async function CheckoutPage({ searchParams }: CheckoutPageProps) {
-  const user = await getCurrentUser()
-  const account = user ? await getAccountSummary(user) : null
+  const user = await requireUser('/checkout')
+  const account = await getAccountSummary(user)
   const previousOrder = account?.orders[0]
   const initialValues = {
     email: previousOrder?.email ?? account?.email ?? '',
@@ -56,6 +56,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
     formData: FormData,
   ): Promise<CheckoutActionState> {
     'use server'
+    await requireUser('/checkout')
 
     let cart: CheckoutCartItem[] = []
     try {
@@ -75,7 +76,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
         storeId: formData.get('storeId')?.toString() ?? '',
         couponCode: formData.get('couponCode')?.toString() ?? '',
         customerNote: formData.get('customerNote')?.toString() ?? '',
-        paymentMethod: formData.get('paymentMethod')?.toString() as 'bank_transfer' | 'convenience_cod',
+        paymentMethod: formData.get('paymentMethod')?.toString() as 'bank_transfer',
       }, cart)
       attemptId = attempt.attemptId
     } catch (error) {

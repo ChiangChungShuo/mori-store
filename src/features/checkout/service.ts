@@ -1,4 +1,4 @@
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
+import { createHash, timingSafeEqual } from 'node:crypto'
 import { calculateCart } from '@/features/cart/totals'
 import type { QuantityPriceTier } from '@/features/cart/bundle-pricing'
 import { parseCartRefreshRequest } from '@/features/cart/refresh'
@@ -109,7 +109,7 @@ export type PaymentCompletion = {
 export type CompletedOrder = {
   orderNumber: string
   email: string
-  /** Carried into the signup link so a guest does not retype their own name. */
+  /** Preserved for historical order-completion links. */
   recipientName?: string
   storeChain: StoreChain
   storeId: string
@@ -203,6 +203,8 @@ export function createCheckoutService(
 
   async function createPaymentAttempt(input: CheckoutInput, cart: CheckoutCartItem[]) {
     const customer = checkoutSchema.parse(input)
+    const userId = await repository.getCurrentUserId()
+    if (!userId) throw new Error('請先登入會員再結帳')
     const requestedItems = parseCartRefreshRequest({ items: cart })
     if (!requestedItems?.length) throw new CheckoutAttemptError('cart_invalid')
 
@@ -242,12 +244,10 @@ export function createCheckoutService(
       ? await resolveCoupon(customer.couponCode, totals.discountedSubtotal, customer.email)
       : null
     if (coupon && !coupon.ok) throw new CheckoutAttemptError('coupon_invalid')
-    const userId = await repository.getCurrentUserId()
-    const guestToken = userId ? null : randomBytes(32).toString('base64url')
-    // 購物金 comes off the payable total automatically — members never type a
-    // code. Guests have no balance, so nothing is applied for them.
+    const guestToken = null
+    // 購物金 comes off the payable total automatically — members never type a code.
     const payableAfterCoupon = Math.max(0, totals.total - (coupon?.discount ?? 0))
-    const creditBalance = userId ? await repository.getMemberCreditBalance(userId) : 0
+    const creditBalance = await repository.getMemberCreditBalance(userId)
     const creditApplied = Math.max(0, Math.min(creditBalance, payableAfterCoupon))
     const attempt = await repository.insertPaymentAttempt({
       userId,

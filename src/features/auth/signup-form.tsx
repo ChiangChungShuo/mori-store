@@ -149,9 +149,9 @@ export function SignupForm({
     <main className="auth-shell signup-shell">
       <section className="auth-card signup-card">
         <div className="auth-topbar">
-          <Link className="auth-home-link" href="/" aria-label="回到 mori 商城首頁">
+          <Link className="auth-home-link" href="/" aria-label="回到 MORIMUR BABY 商城首頁">
             <span className="auth-home-mark"><BrandLogo /></span>
-            <span>mori 商城</span>
+            <span>MORIMUR BABY</span>
           </Link>
           <Link className="auth-back-link" href="/products">先逛逛商品 →</Link>
         </div>
@@ -334,7 +334,7 @@ export function SignupForm({
         <p className="auth-switch">已經有帳號？ <Link href={nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : '/login'}>前往登入</Link></p>
       </section>
 
-      <section className="auth-story" aria-label="mori 會員服務">
+      <section className="auth-story" aria-label="MORIMUR BABY 會員服務">
         {welcomeGift ? (
           <aside className="welcome-gift" data-variant="invite">
             <p className="welcome-gift-label">新會員禮</p>
@@ -342,10 +342,10 @@ export function SignupForm({
             <p>註冊完成後直接存進你的會員帳戶，下次結帳自動折抵，不用輸入優惠碼。</p>
           </aside>
         ) : null}
-        <p className="eyebrow">mori members</p>
+        <p className="eyebrow">MORIMUR BABY members</p>
         <h2>陪孩子，把每天穿得舒服一點。</h2>
         <p>完成 Email 驗證後，即可查看訂單、取貨門市與付款狀態。</p>
-        <ol className="size-track" aria-label="mori 適穿年齡">
+        <ol className="size-track" aria-label="MORIMUR BABY 適穿年齡">
           <li>0–2</li><li>3–5</li><li>6–9</li><li>10–12</li>
         </ol>
       </section>

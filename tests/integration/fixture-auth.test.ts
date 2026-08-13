@@ -338,7 +338,7 @@ describe('fixture authentication', () => {
     await expect(requireAdmin()).resolves.toMatchObject({ id: 'admin', role: 'admin' })
   })
 
-  it('attaches fixture checkout attempts to members while guests remain anonymous', async () => {
+  it('requires a fixture member and attaches checkout attempts to that member', async () => {
     enableFixtureMode()
     const store = getE2EStore()
     const input = {
@@ -351,8 +351,7 @@ describe('fixture authentication', () => {
     }
     const cart = [{ variantId: '00000000-0000-4000-8000-000000000001', quantity: 1 }]
 
-    const guestAttempt = await createPaymentAttempt(input, cart)
-    expect(store.attempts.get(guestAttempt.attemptId)?.userId).toBeNull()
+    await expect(createPaymentAttempt(input, cart)).rejects.toThrow('請先登入會員再結帳')
 
     const email = `member-${crypto.randomUUID()}@example.com`
     await signUpE2E(email, 'parent123')

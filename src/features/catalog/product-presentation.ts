@@ -7,6 +7,23 @@ const SERIES_NAMES: Array<[RegExp, string]> = [
   [/Mori\s+Campus(?:\s*學院系列)?/gi, 'Mori Campus'],
 ]
 
+const SERIES_LABELS: Array<[RegExp, string]> = [
+  [/Mori\s+(?:Lento|Lemto)(?:\s*[|｜]?\s*慢日系列)?/gi, 'Mori Lento｜慢日系列'],
+  [/Mori\s+Flora(?:\s*[|｜]?\s*漫花系列)?/gi, 'Mori Flora｜漫花系列'],
+  [/Mori\s+Olive(?:\s*[|｜]?\s*森語系列)?/gi, 'Mori Olive｜森語系列'],
+  [/Mori\s+Blanche(?:\s*[|｜]?\s*(?:純境|白境)系列)?/gi, 'Mori Blanche｜純境系列'],
+  [/Mori\s+Lumi(?:\s*[|｜]?\s*(?:拾光|微光)系列)?/gi, 'Mori Lumi｜拾光系列'],
+  [/Mori\s+Campus(?:\s*[|｜]?\s*學院系列)?/gi, 'Mori Campus｜學院系列'],
+]
+
+export function normalizeSeriesName(name: string) {
+  let normalized = name.trim()
+  for (const [pattern, replacement] of SERIES_LABELS) {
+    normalized = normalized.replace(pattern, replacement)
+  }
+  return normalized.replace(/\s*[|｜]\s*/g, '｜').replace(/\s+/g, ' ')
+}
+
 export function normalizeProductName(name: string) {
   let normalized = name.trim()
   for (const [pattern, replacement] of SERIES_NAMES) {

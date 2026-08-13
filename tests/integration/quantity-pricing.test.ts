@@ -73,7 +73,7 @@ const checkoutInput = {
 class MemoryRepository implements CheckoutRepository {
   readonly attempts: Array<PaymentAttemptInsert & { id: string }> = []
 
-  async getCurrentUserId() { return null }
+  async getCurrentUserId() { return 'member-1' }
   async getMemberCreditBalance() { return 0 }
   async getGuestAccessToken() { return null }
   async setGuestAccessToken() {}

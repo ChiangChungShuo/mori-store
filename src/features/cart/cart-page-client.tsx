@@ -234,8 +234,8 @@ export function CartPageClient({ settings, isSignedIn = false, recommendedProduc
             <div className="cart-sidebar">
               {!isSignedIn ? <section className="member-nudge" aria-label="結帳方式說明">
                 <span aria-hidden="true">♧</span>
-                <p><strong>不用註冊也能結帳</strong>已經是會員的話，登入可自動帶入收件資料。</p>
-                <Link href="/login?next=%2Fcart" className="button button-secondary">登入</Link>
+                <p><strong>登入後即可完成結帳</strong>購物車會保留，登入或註冊完成後會直接回到結帳。</p>
+                <Link href="/login?next=%2Fcheckout" className="button button-secondary">登入／註冊</Link>
               </section> : null}
               <aside className="cart-summary cart-order-summary" aria-label="訂單摘要">
                 <h2>訂單資訊</h2>
@@ -255,10 +255,10 @@ export function CartPageClient({ settings, isSignedIn = false, recommendedProduc
                 {appliedCoupon ? <p className="cart-discount"><span>優惠碼 {appliedCoupon.code}</span><strong>−{formatTwd(appliedCoupon.discount)}</strong></p> : null}
                 <p className="cart-total"><span>合計</span><strong>{formatTwd(payableTotal)}</strong></p>
                 <Link
-                  href="/checkout"
+                  href={isSignedIn ? '/checkout' : '/login?next=%2Fcheckout'}
                   className="button button-wide"
                 >
-                  前往結帳
+                  {isSignedIn ? '前往結帳' : '登入後結帳'}
                 </Link>
               </aside>
             </div>

@@ -17,9 +17,9 @@ export function ForgotPasswordForm() {
     <main className="auth-shell">
       <form action={formAction} className="auth-card" noValidate>
         <div className="auth-topbar">
-          <Link className="auth-home-link" href="/" aria-label="回到 mori 商城首頁">
+          <Link className="auth-home-link" href="/" aria-label="回到 MORIMUR BABY 商城首頁">
             <span className="auth-home-mark"><BrandLogo /></span>
-            <span>mori 商城</span>
+            <span>MORIMUR BABY</span>
           </Link>
           <Link className="auth-back-link" href="/login">← 回登入</Link>
         </div>
@@ -42,8 +42,8 @@ export function ForgotPasswordForm() {
         )}
         <p className="auth-switch">想起密碼了？ <Link href="/login">前往登入</Link></p>
       </form>
-      <section className="auth-story" aria-label="mori 會員服務">
-        <p className="eyebrow">mori members</p>
+      <section className="auth-story" aria-label="MORIMUR BABY 會員服務">
+        <p className="eyebrow">MORIMUR BABY members</p>
         <h2>幾秒鐘，重新拿回你的帳號。</h2>
         <p>收到信後點擊連結即可設定新密碼；沒收到請確認垃圾郵件匣，或稍候再試一次。</p>
       </section>

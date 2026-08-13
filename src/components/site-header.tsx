@@ -74,7 +74,7 @@ export function SiteHeader({ cart, isSignedIn = false, isAdmin = false, categori
               <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5" /><path d="M5.5 20c.7-4 3-6 6.5-6s5.8 2 6.5 6" /></svg>
             </summary>
             <div className="account-menu-panel">
-              <header><small>{isSignedIn ? 'WELCOME BACK' : 'MORI MEMBER'}</small><strong>{isSignedIn ? '會員服務' : '登入後管理訂單與收藏'}</strong></header>
+              <header><small>{isSignedIn ? 'WELCOME BACK' : 'MORIMUR MEMBER'}</small><strong>{isSignedIn ? '會員服務' : '登入後管理訂單與收藏'}</strong></header>
               {isSignedIn ? <>
                 <Link href="/account">會員中心</Link>
                 <Link href="/account/orders">我的訂單</Link>

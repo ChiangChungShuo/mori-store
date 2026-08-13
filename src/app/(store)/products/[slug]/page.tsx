@@ -117,7 +117,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         description: product.description,
         image: productImages.map((image) => image.url),
         category: product.category,
-        brand: { '@type': 'Brand', name: 'mori' },
+        brand: { '@type': 'Brand', name: 'MORIMUR BABY' },
         offers: {
           '@type': 'AggregateOffer',
           priceCurrency: 'TWD',

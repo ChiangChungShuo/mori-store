@@ -5,7 +5,7 @@ import { InstagramIcon } from '@/components/instagram-icon'
 
 export const metadata: Metadata = {
   title: '聯絡我們',
-  description: '有任何關於商品、訂單或合作的問題，歡迎與 mori 童裝商城聯絡。',
+  description: '有任何關於商品、訂單或合作的問題，歡迎與 MORIMUR BABY 聯絡。',
   alternates: { canonical: absoluteUrl('/contact') },
 }
 

@@ -84,8 +84,8 @@ const buildFaqGroups = (freeShipping: string | null): FaqGroup[] => [
     eyebrow: 'members',
     heading: '會員與訂單',
     items: [
-      { q: '一定要註冊會員嗎？', a: <>不用。可以直接以訪客身分結帳，之後用訂單編號與 Email 在<Link href="/order-lookup">訪客訂單查詢</Link>查看進度。註冊會員的好處是下次結帳資料自動帶入、訂單集中在會員中心，並可領取新會員購物金。</> },
-      { q: '忘記訂單編號怎麼辦？', a: <>可用下單時的 Email 於<Link href="/order-lookup">訪客訂單查詢</Link>查看，或登入<Link href="/account/orders">會員訂單</Link>。</> },
+      { q: '一定要註冊會員嗎？', a: <>可以先以訪客身分瀏覽商品；結帳前需要<Link href="/login?next=%2Fcheckout">登入會員</Link>，讓收件資料、訂單與取貨進度集中保存在會員中心。</> },
+      { q: '忘記訂單編號怎麼辦？', a: <>登入<Link href="/account/orders">會員訂單</Link>即可查看；若是網站改版前建立的舊訂單，也可使用<Link href="/order-lookup">訂單查詢</Link>。</> },
       { q: '要怎麼追蹤訂單狀態？', a: '出貨與到店取貨時皆會以 Email 通知；會員也可隨時在會員中心查看最新進度。' },
     ],
   },

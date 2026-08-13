@@ -46,7 +46,7 @@ export default async function ProductsPage({
   return (
     <main className="section catalog-page">
       <header className="page-heading">
-        <p className="eyebrow">mori collection</p>
+        <p className="eyebrow">MORIMUR BABY collection</p>
         <h1>孩子的日常衣櫥</h1>
         <p>依年齡、尺寸與顏色，挑到現在真正穿得上的那一件。</p>
       </header>

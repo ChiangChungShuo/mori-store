@@ -3,7 +3,7 @@ import { absoluteUrl } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: '隱私權政策',
-  description: 'mori 童裝商城如何蒐集、使用與保護你的個人資料。',
+  description: 'MORIMUR BABY 如何蒐集、使用與保護你的個人資料。',
   alternates: { canonical: absoluteUrl('/privacy') },
 }
 

@@ -83,6 +83,7 @@ export function BannerSettingsEditor({
             <label>英文小標<input name={`eyebrow-${index}`} value={row.slide.eyebrow} onChange={(event) => update(index, 'eyebrow', event.target.value)} placeholder="mori seasonal edit" required /></label>
             <label>主標題<textarea name={`title-${index}`} value={row.slide.title} onChange={(event) => update(index, 'title', event.target.value)} placeholder={'小小日常，\n自在長大。'} rows={3} required /></label>
             <label>說明文字<textarea name={`body-${index}`} value={row.slide.body} onChange={(event) => update(index, 'body', event.target.value)} rows={3} required /></label>
+            <div className="admin-banner-link-fields"><label>開始顯示（選填）<input name={`startsAt-${index}`} type="date" value={row.slide.startsAt ?? ''} onChange={(event) => update(index, 'startsAt', event.target.value)} /></label><label>結束顯示（選填）<input name={`endsAt-${index}`} type="date" value={row.slide.endsAt ?? ''} onChange={(event) => update(index, 'endsAt', event.target.value)} /></label></div>
             <div className="admin-banner-link-fields"><label>按鈕文字<input name={`buttonLabel-${index}`} value={row.slide.buttonLabel} onChange={(event) => update(index, 'buttonLabel', event.target.value)} required /></label><label>站內連結<input name={`buttonHref-${index}`} value={row.slide.buttonHref} onChange={(event) => update(index, 'buttonHref', event.target.value)} placeholder="/products" pattern="/.*" title="請以 / 開頭的站內連結" required /></label></div>
           </fieldset>
         ))}
@@ -90,7 +91,7 @@ export function BannerSettingsEditor({
       {drafts.length < MAX_SLIDES
         ? <button type="button" className="button button-secondary admin-banner-add" onClick={addSlide}>＋ 新增一張輪播（最多 {MAX_SLIDES} 張）</button>
         : <p className="admin-field-hint">已達最多 {MAX_SLIDES} 張輪播。</p>}
-      <p className="admin-field-hint">首頁需要 2 張以上才會自動輪播；只有 1 張時會顯示為固定主視覺。每張都需填寫完整欄位並選擇圖片。</p>
+      <p className="admin-field-hint">首頁需要 2 張以上才會自動輪播；只有 1 張時會顯示為固定主視覺。活動可設定開始與結束日期，到期後會自動停止顯示。</p>
       <button className="button" type="submit" disabled={pending}>{pending ? '儲存中…' : '儲存首頁輪播'}</button>
     </form>
   )

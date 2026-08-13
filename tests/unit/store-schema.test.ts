@@ -32,11 +32,12 @@ describe('store schema security invariants', () => {
     expect(schema).toMatch(/status public\.payment_attempt_status not null default 'pending'/i)
   })
 
-  it('stores only a SHA-256 guest payment access token hash', () => {
+  it('keeps historical guest access protected while new checkout attempts require a member', () => {
     expect(migrations).toMatch(/payment_access_token_hash text/i)
     expect(migrations).toMatch(/payment_access_token_hash ~ '\^\[0-9a-f\]\{64\}\$'/i)
     expect(databaseTypes).toMatch(/payment_access_token_hash: string \| null/i)
-    expect(checkoutService).toMatch(/randomBytes\(32\)\.toString\('base64url'\)/)
+    expect(checkoutService).toMatch(/if \(!userId\) throw new Error\('請先登入會員再結帳'\)/)
+    expect(checkoutService).toMatch(/const guestToken = null/)
     expect(checkoutService).toMatch(/httpOnly: true/)
     expect(checkoutService).toMatch(/sameSite: 'lax'/)
     expect(checkoutService).toMatch(/path: '\/'/)

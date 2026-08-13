@@ -21,7 +21,7 @@ describe('member auth form', () => {
   it('shows the complete sign-in card, password control and local owner guidance', () => {
     render(<AuthForm fixtureMode mode="sign-in" />)
 
-    expect(screen.getByRole('heading', { name: '歡迎回到 mori' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '歡迎回到 MORIMUR BABY' })).toBeInTheDocument()
     expect(screen.getByLabelText('Email 或手機號碼')).toHaveAttribute('autocomplete', 'username')
     expect(screen.getByLabelText('密碼')).toHaveAttribute('type', 'password')
     expect(screen.getByLabelText('密碼')).not.toHaveAttribute('aria-describedby')
@@ -35,7 +35,7 @@ describe('member auth form', () => {
   it('explains registration requirements without exposing owner credentials in live mode', () => {
     render(<AuthForm mode="sign-up" />)
 
-    expect(screen.getByRole('heading', { name: '建立你的 mori 帳號' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '建立你的 MORIMUR BABY 帳號' })).toBeInTheDocument()
     expect(screen.getByText('至少 8 個字元')).toBeInTheDocument()
     expect(screen.getByLabelText('密碼')).toHaveAttribute('aria-describedby', 'password-help')
     expect(screen.queryByText('本機老闆示範帳號')).not.toBeInTheDocument()

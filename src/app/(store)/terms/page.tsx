@@ -4,7 +4,7 @@ import { absoluteUrl } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: '服務條款',
-  description: '使用 mori 童裝商城購物前，請詳閱以下服務條款。',
+  description: '使用 MORIMUR BABY 購物前，請詳閱以下服務條款。',
   alternates: { canonical: absoluteUrl('/terms') },
 }
 
@@ -14,7 +14,7 @@ export default function TermsPage() {
       <header className="page-heading">
         <p>terms</p>
         <h1>服務條款</h1>
-        <span>歡迎光臨 mori 童裝商城。當你在本站瀏覽或下單，即表示同意以下條款。</span>
+        <span>歡迎光臨 MORIMUR BABY。當你在本站瀏覽或下單，即表示同意以下條款。</span>
       </header>
       <div className="legal-content">
         <section>

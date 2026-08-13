@@ -35,14 +35,27 @@ describe('payment method tampering', () => {
     expect(tampered.success).toBe(false)
 
     expect(checkoutSchema.safeParse({ ...customer, paymentMethod: 'bank_transfer' }).success).toBe(true)
-    expect(checkoutSchema.safeParse({ ...customer, paymentMethod: 'convenience_cod' }).success).toBe(true)
+    expect(checkoutSchema.safeParse({ ...customer, paymentMethod: 'convenience_cod' }).success).toBe(false)
+  })
+
+  it('rejects a new checkout attempt without a signed-in member', async () => {
+    const store = createE2EStore()
+    const checkout = createCheckoutService(createFixtureCheckoutRepository({
+      store,
+      getCurrentUserId: async () => null,
+    }))
+
+    await expect(checkout.createPaymentAttempt(
+      { ...customer, paymentMethod: 'bank_transfer' },
+      [{ variantId: '00000000-0000-4000-8000-000000000001', quantity: 1 }],
+    )).rejects.toThrow('請先登入會員再結帳')
   })
 
   it('never marks a submitted order as paid: bank transfers wait for the money', async () => {
     const store = createE2EStore()
     const checkout = createCheckoutService(createFixtureCheckoutRepository({
       store,
-      getCurrentUserId: async () => null,
+      getCurrentUserId: async () => 'member-1',
     }))
 
     const { attemptId } = await checkout.createPaymentAttempt(

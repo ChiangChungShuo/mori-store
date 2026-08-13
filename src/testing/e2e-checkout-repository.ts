@@ -162,10 +162,8 @@ export function createFixtureCheckoutRepository(
         shippingFee: attempt.shippingFee,
         total: attempt.total,
         // The test gateway is the only thing that can produce an order that is
-        // already paid; manual methods wait for the transfer or the pickup.
-        status: options?.useTestGateway
-          ? 'paid'
-          : attempt.paymentMethod === 'convenience_cod' ? 'preparing' : 'pending_payment',
+        // already paid; bank transfers always wait for manual confirmation.
+        status: options?.useTestGateway ? 'paid' : 'pending_payment',
         createdAt,
         items: attempt.items.map((item) => ({
           id: randomUUID(),

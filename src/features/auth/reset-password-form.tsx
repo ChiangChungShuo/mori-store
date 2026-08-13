@@ -18,9 +18,9 @@ export function ResetPasswordForm() {
     <main className="auth-shell">
       <form action={formAction} className="auth-card" noValidate>
         <div className="auth-topbar">
-          <Link className="auth-home-link" href="/" aria-label="回到 mori 商城首頁">
+          <Link className="auth-home-link" href="/" aria-label="回到 MORIMUR BABY 商城首頁">
             <span className="auth-home-mark"><BrandLogo /></span>
-            <span>mori 商城</span>
+            <span>MORIMUR BABY</span>
           </Link>
           <Link className="auth-back-link" href="/login">← 回登入</Link>
         </div>
@@ -47,8 +47,8 @@ export function ResetPasswordForm() {
         </button>
         <p className="auth-switch">連結失效了？ <Link href="/forgot-password">重新申請</Link></p>
       </form>
-      <section className="auth-story" aria-label="mori 會員服務">
-        <p className="eyebrow">mori members</p>
+      <section className="auth-story" aria-label="MORIMUR BABY 會員服務">
+        <p className="eyebrow">MORIMUR BABY members</p>
         <h2>設定好密碼，繼續陪孩子挑選日常。</h2>
         <p>為了帳號安全，請設定至少 8 個字元、不易被猜到的密碼。</p>
       </section>

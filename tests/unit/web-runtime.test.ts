@@ -73,19 +73,15 @@ describe('Next.js web runtime contracts', () => {
     expect(readFileSync(forbiddenPage, 'utf8')).toMatch(/無權限/)
   })
 
-  it('keeps the live guest idempotency acceptance test tied to DB effects', () => {
+  it('keeps checkout protected by the member sign-in flow', () => {
     const acceptance = readFileSync(
       resolve(process.cwd(), 'tests/e2e/guest-checkout.spec.ts'),
       'utf8',
     )
 
-    expect(acceptance).toMatch(/SUPABASE_SECRET_KEY/)
-    expect(acceptance).toMatch(/orderCountBefore/)
-    expect(acceptance).toMatch(/stockBefore/)
-    expect(acceptance).toMatch(/模擬付款成功[\s\S]*click/)
-    expect(acceptance).toMatch(/page\.request\.post\(['"]\/api\/test-payment['"]/)
-    expect(acceptance).toMatch(/orderCountAfter[\s\S]*orderCountBefore\s*\+\s*1/)
-    expect(acceptance).toMatch(/stockAfter[\s\S]*stockBefore\s*-\s*1/)
+    expect(acceptance).toMatch(/page\.goto\(['"]\/checkout['"]\)/)
+    expect(acceptance).toMatch(/\/login\\\?next=%2Fcheckout/)
+    expect(acceptance).toMatch(/歡迎回到 MORIMUR BABY/)
   })
 
   it('renders checkout and payment summaries from server-owned data', () => {

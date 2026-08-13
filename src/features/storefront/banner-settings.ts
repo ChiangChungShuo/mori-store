@@ -12,15 +12,33 @@ export const bannerSlideSchema = z.object({
   body: z.string().trim().min(1, '說明文字為必填'),
   buttonLabel: z.string().trim().min(1, '按鈕文字為必填'),
   buttonHref: internalHref,
+  startsAt: z.string().date().optional(),
+  endsAt: z.string().date().optional(),
 }).strict()
 
 const bannerSlidesSchema = z.array(bannerSlideSchema).min(1).max(5)
 export type BannerSlide = z.infer<typeof bannerSlideSchema>
 
+const TAIPEI_OFFSET = '+08:00'
+
+export function activeBannerSlides(slides: BannerSlide[], now = new Date()) {
+  const timestamp = now.getTime()
+  return slides.filter((slide) => {
+    const startsAt = slide.startsAt ? Date.parse(`${slide.startsAt}T00:00:00${TAIPEI_OFFSET}`) : null
+    const endsAt = slide.endsAt ? Date.parse(`${slide.endsAt}T23:59:59.999${TAIPEI_OFFSET}`) : null
+    return (startsAt === null || startsAt <= timestamp) && (endsAt === null || endsAt >= timestamp)
+  })
+}
+
+function visibleBannerSlides(slides: BannerSlide[]) {
+  const activeSlides = activeBannerSlides(slides)
+  return activeSlides.length > 0 ? activeSlides : defaultBannerSlides
+}
+
 export const defaultBannerSlides: BannerSlide[] = [{
   imageUrl: '/images/mori-hero.jpg',
   imageAlt: '兩位穿著舒適童裝的孩子在庭院散步',
-  eyebrow: 'mori summer edit · 2026',
+  eyebrow: 'MORIMUR BABY seasonal edit',
   title: '小小日常，\n自在長大。',
   body: '替 0–12 歲孩子挑選柔軟、好活動、每天都願意穿的衣服。',
   buttonLabel: '選購本週新品',
@@ -44,7 +62,8 @@ export async function getBannerSlides(): Promise<BannerSlide[]> {
   const { isE2EMode } = await import('@/testing/e2e-mode')
   if (isE2EMode()) {
     const { getE2EStore } = await import('@/testing/e2e-store')
-    return getE2EStore().bannerSlides ?? defaultBannerSlides
+    const slides = getE2EStore().bannerSlides ?? defaultBannerSlides
+    return visibleBannerSlides(slides)
   }
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) return defaultBannerSlides
 
@@ -55,7 +74,7 @@ export async function getBannerSlides(): Promise<BannerSlide[]> {
     .eq('key', 'home_banner_slides')
     .maybeSingle()
   if (error) throw error
-  return parseSlides(data?.value)
+  return visibleBannerSlides(parseSlides(data?.value))
 }
 
 async function uploadBanner(file: File) {
@@ -107,6 +126,8 @@ export async function updateBannerSlidesFromForm(
         body: String(formData.get(`body-${index}`) ?? ''),
         buttonLabel: String(formData.get(`buttonLabel-${index}`) ?? ''),
         buttonHref: String(formData.get(`buttonHref-${index}`) ?? ''),
+        ...(formData.get(`startsAt-${index}`) ? { startsAt: String(formData.get(`startsAt-${index}`)) } : {}),
+        ...(formData.get(`endsAt-${index}`) ? { endsAt: String(formData.get(`endsAt-${index}`)) } : {}),
       })
     }
     const parsed = bannerSlidesSchema.safeParse(slides)

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { ProductSeries } from '@/features/catalog/product-series'
 import type { ProductFilters } from '@/features/catalog/queries'
-import { normalizeProductName } from '@/features/catalog/product-presentation'
+import { normalizeSeriesName } from '@/features/catalog/product-presentation'
 
 function seriesHref(filters: ProductFilters, series?: string) {
   const params = new URLSearchParams()
@@ -34,7 +34,7 @@ export function ProductSeriesFilter({
           href={seriesHref(filters, item.name)}
           key={item.id}
         >
-          {normalizeProductName(item.name)}
+          {normalizeSeriesName(item.name)}
         </Link>
       ))}
     </nav>

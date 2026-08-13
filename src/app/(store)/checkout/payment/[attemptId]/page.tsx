@@ -40,7 +40,7 @@ export default async function TestPaymentPage({ params }: TestPaymentPageProps) 
               <li key={item.variantId}>
                 <div className="payment-product-image">{item.imageUrl ? (
                   <Image alt={item.productName} height={100} src={item.imageUrl} width={80} />
-                ) : <span>mori</span>}</div>
+                ) : <span>MORIMUR BABY</span>}</div>
                 <div className="payment-product-copy">
                   <h3>{item.productName}</h3>
                   <dl><div><dt>型號</dt><dd>{item.sku}</dd></div><div><dt>顏色</dt><dd>{item.color}</dd></div><div><dt>尺寸</dt><dd>{item.size}</dd></div></dl>

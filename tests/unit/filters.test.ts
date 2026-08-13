@@ -189,7 +189,7 @@ describe('ProductSeriesFilter', () => {
 
     const forestUrl = new URL(screen.getByRole('link', { name: 'Mori forest 森林系列' }).getAttribute('href')!, 'http://localhost')
     expect(forestUrl.searchParams.get('series')).toBe('Mori forest 森林系列')
-    expect(screen.getByRole('link', { name: 'Mori Flora' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Mori Flora｜漫花系列' })).toHaveAttribute('aria-current', 'page')
   })
 })
 

@@ -13,7 +13,7 @@ export const checkoutSchema = z.object({
   // Only the manual methods the shop actually operates. `online_test` used to be
   // accepted here, which let a shopper edit the hidden field and route their
   // order through the test gateway — landing it in `paid` without paying.
-  paymentMethod: z.enum(['bank_transfer', 'convenience_cod']).optional(),
+  paymentMethod: z.literal('bank_transfer').optional(),
 })
 
 export type CheckoutInput = z.infer<typeof checkoutSchema>

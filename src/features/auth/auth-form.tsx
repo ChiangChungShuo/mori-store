@@ -34,14 +34,14 @@ export function AuthForm({ mode, nextPath, fixtureMode = false, notice }: AuthFo
     <main className="auth-shell">
       <form action={formAction} className="auth-card" noValidate>
         <div className="auth-topbar">
-          <Link className="auth-home-link" href="/" aria-label="回到 mori 商城首頁">
+          <Link className="auth-home-link" href="/" aria-label="回到 MORIMUR BABY 商城首頁">
             <span className="auth-home-mark"><BrandLogo /></span>
-            <span>mori 商城</span>
+            <span>MORIMUR BABY</span>
           </Link>
           <Link className="auth-back-link" href="/products">先逛逛商品 →</Link>
         </div>
         <p className="eyebrow">member account</p>
-        <h1>{isSignIn ? '歡迎回到 mori' : '建立你的 mori 帳號'}</h1>
+        <h1>{isSignIn ? '歡迎回到 MORIMUR BABY' : '建立你的 MORIMUR BABY 帳號'}</h1>
         <p className="auth-intro">{isSignIn ? '登入查看訂單與取貨進度。' : '建立帳號，保存你的訂單與取貨資訊。'}</p>
         {notice && <p className="auth-success" role="status">{notice}</p>}
         {nextPath && <input type="hidden" name="next" value={nextPath} />}
@@ -81,9 +81,9 @@ export function AuthForm({ mode, nextPath, fixtureMode = false, notice }: AuthFo
         {!isSignIn && (
           <p className="auth-consent">建立帳號即表示你已閱讀並同意 <Link href="/terms">服務條款</Link> 與 <Link href="/privacy">隱私權政策</Link>。</p>
         )}
-        <p className="auth-guest-note">不想註冊？也可以直接<Link href="/products">以訪客身分購物</Link>。</p>
+        <p className="auth-guest-note">可以先<Link href="/products">以訪客身分瀏覽</Link>，結帳前再登入會員。</p>
         <p className={isSignIn ? 'auth-switch auth-create-account' : 'auth-switch'}>
-          {isSignIn ? '第一次來 mori？' : '已經有帳號？'}{' '}
+          {isSignIn ? '第一次來 MORIMUR BABY？' : '已經有帳號？'}{' '}
           <Link href={isSignIn ? alternateHref : loginHref}>{isSignIn ? '建立會員帳號' : '前往登入'}</Link>
         </p>
         {fixtureMode && isSignIn && (
@@ -94,11 +94,11 @@ export function AuthForm({ mode, nextPath, fixtureMode = false, notice }: AuthFo
           </aside>
         )}
       </form>
-      <section className="auth-story" aria-label="mori 會員服務">
-        <p className="eyebrow">mori members</p>
+      <section className="auth-story" aria-label="MORIMUR BABY 會員服務">
+        <p className="eyebrow">MORIMUR BABY members</p>
         <h2>陪孩子，把每天穿得舒服一點。</h2>
         <p>登入後可查看訂單、取貨門市與付款狀態，讓每一次選衣都簡單安心。</p>
-        <ol className="size-track" aria-label="mori 適穿年齡">
+        <ol className="size-track" aria-label="MORIMUR BABY 適穿年齡">
           <li>0–2</li><li>3–5</li><li>6–9</li><li>10–12</li>
         </ol>
       </section>

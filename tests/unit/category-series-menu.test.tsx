@@ -24,7 +24,7 @@ describe('CategorySeriesMenu', () => {
     expect(within(menu).getByRole('link', { name: /上衣.*2 個系列/ })).toBeInTheDocument()
     expect(within(menu).getByRole('link', { name: /褲裝.*1 個系列/ })).toBeInTheDocument()
     expect(within(menu).getByRole('link', { name: '全部上衣' })).toHaveAttribute('href', '/products?category=%E4%B8%8A%E8%A1%A3')
-    expect(within(menu).getByRole('link', { name: 'Mori Flora' })).toHaveAttribute('href', '/products?category=%E4%B8%8A%E8%A1%A3&series=Mori%20flora%20%E6%BC%AB%E8%8A%B1%E7%B3%BB%E5%88%97')
+    expect(within(menu).getByRole('link', { name: 'Mori Flora｜漫花系列' })).toHaveAttribute('href', '/products?category=%E4%B8%8A%E8%A1%A3&series=Mori%20flora%20%E6%BC%AB%E8%8A%B1%E7%B3%BB%E5%88%97')
   })
 
   it('renders a nested category accordion for the mobile drawer', () => {

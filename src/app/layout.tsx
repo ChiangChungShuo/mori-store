@@ -6,10 +6,10 @@ export async function generateMetadata(): Promise<Metadata> {
   const { siteTitle, siteDescription, siteKeywords } = await getPublicSiteSettings()
   return {
     metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
-    title: { default: siteTitle, template: `%s｜mori 童裝商城` },
+    title: { default: siteTitle, template: `%s｜MORIMUR BABY` },
     description: siteDescription,
     keywords: siteKeywords,
-    openGraph: { type: 'website', locale: 'zh_TW', siteName: 'mori 童裝商城', title: siteTitle, description: siteDescription },
+    openGraph: { type: 'website', locale: 'zh_TW', siteName: 'MORIMUR BABY', title: siteTitle, description: siteDescription },
     twitter: { card: 'summary_large_image', title: siteTitle, description: siteDescription },
   }
 }

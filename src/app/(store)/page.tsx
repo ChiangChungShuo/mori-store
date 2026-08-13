@@ -9,6 +9,8 @@ import { getBannerSlides } from '@/features/storefront/banner-settings'
 import { HeroCarousel } from '@/features/storefront/hero-carousel'
 import { absoluteUrl } from '@/lib/site'
 import { AGE_BANDS } from '@/lib/age-bands'
+import { getStorefrontSettings } from '@/features/checkout/settings'
+import { formatTwd } from '@/lib/money'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,10 +20,11 @@ export const metadata: Metadata = {
 }
 
 export default async function StoreHomePage() {
-  const [products, bannerSlides, ratings] = await Promise.all([
+  const [products, bannerSlides, ratings, settings] = await Promise.all([
     listProducts({}),
     getBannerSlides(),
     listProductRatings(),
+    getStorefrontSettings(),
   ])
   const newProducts = products.filter((product) => product.isNew).slice(0, 8)
   // A first-time visitor wants to know what other people buy before they want to
@@ -71,7 +74,7 @@ export default async function StoreHomePage() {
         <section id="popular" className="section" aria-labelledby="popular-title">
           <header className="section-heading">
             <div>
-              <p className="eyebrow">{lovedMode === 'loved' ? 'most loved' : lovedMode === 'ready' ? 'ready to ship' : 'mori picks'}</p>
+              <p className="eyebrow">{lovedMode === 'loved' ? 'most loved' : lovedMode === 'ready' ? 'ready to ship' : 'MORIMUR BABY picks'}</p>
               <h2 id="popular-title">{lovedMode === 'loved' ? '大家都在買' : lovedMode === 'ready' ? '現貨，今天就能訂' : '本季精選'}</h2>
             </div>
             <Link href={lovedMode === 'loved' ? '/products?view=popular' : lovedMode === 'ready' ? '/products?view=ready' : '/products'} className="text-link">
@@ -105,7 +108,7 @@ export default async function StoreHomePage() {
 
       <section className="section category-feature" aria-labelledby="category-title">
         <div className="category-copy">
-          <p className="eyebrow">mori selection</p>
+          <p className="eyebrow">MORIMUR BABY selection</p>
           <h2 id="category-title">會跑、會跳，<br />也好好整理。</h2>
           <p>柔軟上衣、耐穿下著與不費力就能搭好的日常單品。</p>
           <Link href="/products" className="button button-light">挑選日常衣櫥</Link>
@@ -137,7 +140,7 @@ export default async function StoreHomePage() {
           </div>
           <p className="home-keep-browsing-cta">
             <Link className="button" href="/products">挑選日常衣櫥</Link>
-            <small>滿 NT$1,500 免運・7-ELEVEN 取貨</small>
+             <small>{settings.freeShippingThreshold ? `滿 ${formatTwd(settings.freeShippingThreshold)} 免運・` : ''}7-ELEVEN 取貨</small>
           </p>
         </section>
       ) : null}
@@ -145,7 +148,7 @@ export default async function StoreHomePage() {
       <section id="story" className="section brand-story" aria-labelledby="story-title">
         <p className="eyebrow">our point of view</p>
         <h2 id="story-title">衣服不該限制孩子怎麼玩。</h2>
-        <p>MORI 的開始，源自於一位媽媽為孩子挑選衣服時的龜毛。因為知道孩子每天都穿在身上，所以更在意每一塊布料、每一份舒適與耐穿，也希望把這份安心，分享給每一位來到 MORI 的孩子。</p>
+        <p>MORIMUR BABY 的開始，源自於一位媽媽為孩子挑選衣服時的龜毛。因為知道孩子每天都穿在身上，所以更在意每一塊布料、每一份舒適與耐穿，也希望把這份安心，分享給每一位來到 MORIMUR BABY 的孩子。</p>
         <dl className="story-values">
           <div><dt>01</dt><dd>舒服，是每天願意穿的第一件事。</dd></div>
           <div><dt>02</dt><dd>耐穿，才能陪著孩子真正生活。</dd></div>

@@ -81,10 +81,10 @@ describe('購物金 at checkout', () => {
     expect(empty.attempts[0]).toMatchObject({ creditApplied: 0, total: 740 })
   })
 
-  it('leaves guests alone', async () => {
-    const { repository, attempts } = createRepository({ userId: null, balance: 500 })
-    await createCheckoutService(repository).createPaymentAttempt(customer, [{ variantId, quantity: 1 }])
-    expect(attempts[0]).toMatchObject({ creditApplied: 0, total: 740 })
+  it('rejects checkout when there is no signed-in member', async () => {
+    const { repository } = createRepository({ userId: null, balance: 500 })
+    await expect(createCheckoutService(repository).createPaymentAttempt(customer, [{ variantId, quantity: 1 }]))
+      .rejects.toThrow('請先登入會員再結帳')
   })
 })
 

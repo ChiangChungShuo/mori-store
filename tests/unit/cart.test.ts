@@ -277,7 +277,7 @@ describe('CartProvider', () => {
 
   it('renders hydrated items and their subtotal in the cart drawer', async () => {
     window.localStorage.setItem('mori-cart-v1', JSON.stringify([tee]))
-    render(createElement(CartProvider, null, createElement(CartDrawer, { settings: storeSettings })))
+    render(createElement(CartProvider, null, createElement(CartDrawer, { settings: storeSettings, isSignedIn: true })))
 
     expect(await screen.findByText('有機棉小樹 T 恤')).toBeInTheDocument()
     expect(screen.getAllByText('購物車')).toHaveLength(2)

@@ -10,7 +10,7 @@ import type { StorefrontSettings } from '@/features/checkout/settings'
 import { formatTwd } from '@/lib/money'
 import { ConfirmModal } from '@/components/confirm-modal'
 
-export function CartDrawer({ settings }: { settings: StorefrontSettings }) {
+export function CartDrawer({ settings, isSignedIn = false }: { settings: StorefrontSettings; isSignedIn?: boolean }) {
   const { items, dispatch, quantityTiers } = useCart()
   const [bumping, setBumping] = useState(false)
   const [open, setOpen] = useState(false)
@@ -135,7 +135,7 @@ export function CartDrawer({ settings }: { settings: StorefrontSettings }) {
               <p className="cart-total"><span>合計</span><strong>{formatTwd(totals.total)}</strong></p>
             </div>
             <div className="cart-drawer-actions">
-              <Link href="/checkout" className="button" onClick={() => setOpen(false)}>前往結帳</Link>
+              <Link href={isSignedIn ? '/checkout' : '/login?next=%2Fcheckout'} className="button" onClick={() => setOpen(false)}>{isSignedIn ? '前往結帳' : '登入後結帳'}</Link>
               <Link href="/cart" className="cart-drawer-view-all" onClick={() => setOpen(false)}>查看完整購物車</Link>
             </div>
           </div>
