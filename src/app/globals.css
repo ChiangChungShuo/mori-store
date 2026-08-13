@@ -2591,8 +2591,15 @@ a.contact-card:hover { border-color: var(--sage); box-shadow: 0 0.8rem 1.8rem rg
   .account-topbar nav { gap: 0.4rem; }
   .account-topbar nav a { padding: 0.45rem 0.8rem; font-size: 0.68rem; }
   .account-layout { width: min(100% - 1.5rem, 76rem); padding-block: 1rem 3.5rem; }
+  .account-sidebar { grid-template-columns: minmax(0, 1fr) auto; padding: 0.85rem; }
+  .account-sidebar-user { min-width: 0; }
+  .account-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
+  .account-nav a { min-width: 0; justify-content: center; padding-inline: 0.55rem; white-space: nowrap; }
+  .account-nav a:last-child:nth-child(odd) { grid-column: 1 / -1; }
   .account-page-heading h1 { font-size: 1.65rem; }
   .member-pass { grid-template-columns: minmax(0, 1fr) auto; gap: 0.9rem; padding: 1.2rem; }
+  .member-pass-identity { min-width: 0; }
+  .member-pass-identity strong, .member-pass-identity span { overflow-wrap: anywhere; }
   .member-pass dl { grid-column: 1 / -1; grid-row: 2; gap: 0.4rem; }
   .member-pass dl div { padding: 0.6rem 0.5rem; text-align: center; }
   .member-pass dd { font-size: 0.76rem; }

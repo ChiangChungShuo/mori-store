@@ -111,6 +111,25 @@ test('registered customer pays and owner sees the same order', async ({ browser 
   await owner.close()
 })
 
+test('member centre fits the mobile viewport without clipping its navigation', async ({ page }, testInfo) => {
+  test.skip(Boolean(process.env.E2E_BASE_URL) || testInfo.project.name !== 'mobile', 'local mobile fixture flow only')
+
+  await page.goto('/login?next=%2Faccount')
+  await page.getByLabel('Email 或手機號碼').fill('admin@mori.tw')
+  await page.getByLabel('密碼', { exact: true }).fill('mori123456')
+  await page.getByRole('button', { name: '登入' }).click()
+  await expect(page).toHaveURL('/admin')
+  await page.goto('/account')
+  await expect(page).toHaveURL('/account')
+
+  const accountNavigation = page.getByRole('navigation', { name: '會員中心導覽' })
+  for (const name of ['會員首頁', '訂單紀錄', '追蹤清單', '會員福利', '基本資料']) {
+    await expect(accountNavigation.getByRole('link', { name, exact: true })).toBeVisible()
+  }
+  await expect.poll(() => accountNavigation.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true)
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+})
+
 test('customer is denied while owner can manage the seeded order on mobile', async ({ page, context }, testInfo) => {
   test.skip(Boolean(process.env.E2E_BASE_URL), 'local fixture flow only')
   const email = `admin-access-${testInfo.project.name}-${Date.now()}@example.com`
